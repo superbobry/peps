@@ -1,0 +1,1573 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 570 – Python Positional-Only Parameters &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 571 – The manylinux2010 Platform Tag" href="../pep-0571/" />
+    <link rel="prev" title="PEP 569 – Python 3.8 Release Schedule" href="../pep-0569/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pep-570-python-positional-only-parameters">
+<h1 class="page-title">PEP 570 – Python Positional-Only Parameters<a class="headerlink" href="#pep-570-python-positional-only-parameters" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>570</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>Python Positional-Only Parameters</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Larry Hastings &lt;<a class="reference external" href="mailto:larry&#37;&#52;&#48;hastings&#46;org?subject=PEP%20-1">larry&#32;&#97;t&#32;hastings.org</a>&gt;,
+Pablo Galindo &lt;<a class="reference external" href="mailto:pablogsal&#37;&#52;&#48;python&#46;org?subject=PEP%20-1">pablogsal&#32;&#97;t&#32;python.org</a>&gt;,
+Mario Corchero &lt;<a class="reference external" href="mailto:mariocj89&#37;&#52;&#48;gmail&#46;com?subject=PEP%20-1">mariocj89&#32;&#97;t&#32;gmail.com</a>&gt;,
+Eric N. Vander Weele &lt;<a class="reference external" href="mailto:ericvw&#37;&#52;&#48;gmail&#46;com?subject=PEP%20-1">ericvw&#32;&#97;t&#32;gmail.com</a>&gt;</p>
+</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even"><p>Guido van Rossum &lt;<a class="reference external" href="mailto:guido&#37;&#52;&#48;python&#46;org?subject=PEP%20-1">guido&#32;&#97;t&#32;python.org</a>&gt;</p>
+</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://discuss.python.org/t/pep-570-python-positional-only-parameters/1078">https://discuss.python.org/t/pep-570-python-positional-only-parameters/1078</a></p>
+</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even"><p>Accepted</p>
+</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Standards Track</p>
+</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even"><p>20-Jan-2018</p>
+</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd"><p>3.8</p>
+</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#abstract" id="id23">Abstract</a></p></li>
+<li><p><a class="reference internal" href="#motivation" id="id24">Motivation</a></p>
+<ul>
+<li><p><a class="reference internal" href="#history-of-positional-only-parameter-semantics-in-python" id="id25">History of Positional-Only Parameter Semantics in Python</a></p></li>
+<li><p><a class="reference internal" href="#problems-without-positional-only-parameters" id="id26">Problems Without Positional-Only Parameters</a></p>
+<ul>
+<li><p><a class="reference internal" href="#challenges-for-library-authors" id="id27">Challenges for Library Authors</a></p></li>
+<li><p><a class="reference internal" href="#challenges-for-users-of-an-api" id="id28">Challenges for Users of an API</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#benefits-of-positional-only-parameters" id="id29">Benefits of Positional-Only Parameters</a></p>
+<ul>
+<li><p><a class="reference internal" href="#empowering-library-authors" id="id30">Empowering Library Authors</a></p></li>
+<li><p><a class="reference internal" href="#improving-language-consistency" id="id31">Improving Language Consistency</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#rationale" id="id32">Rationale</a></p>
+<ul>
+<li><p><a class="reference internal" href="#performance" id="id33">Performance</a></p></li>
+<li><p><a class="reference internal" href="#maintainability" id="id34">Maintainability</a></p></li>
+<li><p><a class="reference internal" href="#logical-ordering" id="id35">Logical ordering</a></p></li>
+<li><p><a class="reference internal" href="#compatibility-for-pure-python-and-c-modules" id="id36">Compatibility for Pure Python and C Modules</a></p></li>
+<li><p><a class="reference internal" href="#consistency-in-subclasses" id="id37">Consistency in Subclasses</a></p></li>
+<li><p><a class="reference internal" href="#optimizations" id="id38">Optimizations</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#specification" id="id39">Specification</a></p>
+<ul>
+<li><p><a class="reference internal" href="#syntax-and-semantics" id="id40">Syntax and Semantics</a></p></li>
+<li><p><a class="reference internal" href="#full-grammar-specification" id="id41">Full Grammar Specification</a></p></li>
+<li><p><a class="reference internal" href="#semantic-corner-case" id="id42">Semantic Corner Case</a></p></li>
+<li><p><a class="reference internal" href="#origin-of-as-a-separator" id="id43">Origin of “/” as a Separator</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#how-to-teach-this" id="id44">How To Teach This</a></p>
+<ul>
+<li><p><a class="reference internal" href="#positional-or-keyword-arguments" id="id45">Positional-or-Keyword Arguments</a></p></li>
+<li><p><a class="reference internal" href="#positional-only-parameters" id="id46">Positional-Only Parameters</a></p></li>
+<li><p><a class="reference internal" href="#keyword-only-arguments" id="id47">Keyword-Only Arguments</a></p></li>
+<li><p><a class="reference internal" href="#function-examples" id="id48">Function Examples</a></p></li>
+<li><p><a class="reference internal" href="#recap" id="id49">Recap</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#reference-implementation" id="id50">Reference Implementation</a></p></li>
+<li><p><a class="reference internal" href="#rejected-ideas" id="id51">Rejected Ideas</a></p>
+<ul>
+<li><p><a class="reference internal" href="#do-nothing" id="id52">Do Nothing</a></p></li>
+<li><p><a class="reference internal" href="#decorators" id="id53">Decorators</a></p></li>
+<li><p><a class="reference internal" href="#per-argument-marker" id="id54">Per-Argument Marker</a></p></li>
+<li><p><a class="reference internal" href="#using-as-a-per-argument-marker" id="id55">Using “__” as a Per-Argument Marker</a></p></li>
+<li><p><a class="reference internal" href="#group-positional-only-parameters-with-parentheses" id="id56">Group Positional-Only Parameters With Parentheses</a></p></li>
+<li><p><a class="reference internal" href="#after-separator-proposal" id="id57">After Separator Proposal</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#thanks" id="id58">Thanks</a></p></li>
+<li><p><a class="reference internal" href="#id20" id="id59">References</a></p></li>
+<li><p><a class="reference internal" href="#copyright" id="id60">Copyright</a></p></li>
+</ul>
+</div>
+<section id="abstract">
+<h2><a class="toc-backref" href="#id23">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes to introduce a new syntax, <code class="docutils literal notranslate"><span class="pre">/</span></code>, for specifying
+positional-only parameters in Python function definitions.</p>
+<p>Positional-only parameters have no externally-usable name. When a function
+accepting positional-only parameters is called, positional arguments are mapped
+to these parameters based solely on their order.</p>
+<p>When designing APIs (application programming interfaces), library
+authors try to ensure correct and intended usage of an API. Without the ability to
+specify which parameters are positional-only, library authors must be careful
+when choosing appropriate parameter names. This care must be taken
+even for required parameters or when the parameters
+have no external semantic meaning for callers of the API.</p>
+<p>In this PEP, we discuss:</p>
+<ul class="simple">
+<li><p>Python’s history and current semantics for positional-only parameters</p></li>
+<li><p>the problems encountered by not having them</p></li>
+<li><p>how these problems are handled without language-intrinsic support for
+positional-only parameters</p></li>
+<li><p>the benefits of having positional-only parameters</p></li>
+</ul>
+<p>Within context of the motivation, we then:</p>
+<ul class="simple">
+<li><p>discuss why positional-only parameters should be a feature intrinsic to the
+language</p></li>
+<li><p>propose the syntax for marking positional-only parameters</p></li>
+<li><p>present how to teach this new feature</p></li>
+<li><p>note rejected ideas in further detail</p></li>
+</ul>
+</section>
+<section id="motivation">
+<h2><a class="toc-backref" href="#id24">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<section id="history-of-positional-only-parameter-semantics-in-python">
+<h3><a class="toc-backref" href="#id25">History of Positional-Only Parameter Semantics in Python</a><a class="headerlink" href="#history-of-positional-only-parameter-semantics-in-python" title="Permalink to this headline">¶</a></h3>
+<p>Python originally supported positional-only parameters. Early versions of the
+language lacked the ability to call functions with arguments bound to parameters
+by name. Around Python 1.0, parameter semantics changed to be
+positional-or-keyword.  Since then, users have been able to provide arguments
+to a function either positionally or by the keyword name specified in the
+function’s definition.</p>
+<p>In current versions of Python, many CPython “builtin” and standard library
+functions only accept positional-only parameters. The resulting semantics can be
+easily observed by calling one of these functions using keyword arguments:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="nb">pow</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="go">pow(x, y, z=None, /)</span>
+<span class="gp">...</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">pow</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">TypeError</span>: <span class="n">pow() takes no keyword arguments</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">pow()</span></code> expresses that its parameters are positional-only via the
+<code class="docutils literal notranslate"><span class="pre">/</span></code> marker. However, this is only a documentation convention; Python
+developers cannot use this syntax in code.</p>
+<p>There are functions with other interesting semantics:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">range()</span></code>, an overloaded function, accepts an optional parameter to the
+<em>left</em> of its required parameter. <a class="footnote-reference brackets" href="#range" id="id1">4</a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dict()</span></code>, whose mapping/iterator parameter is optional and semantically
+must be positional-only. Any externally visible name for this parameter
+would occlude that name going into the <code class="docutils literal notranslate"><span class="pre">**kwarg</span></code> keyword variadic parameter
+dict. <a class="footnote-reference brackets" href="#dict" id="id2">3</a></p></li>
+</ul>
+<p>One can emulate these semantics in Python code by accepting
+<code class="docutils literal notranslate"><span class="pre">(*args,</span> <span class="pre">**kwargs)</span></code> and parsing the arguments manually. However, this results
+in a disconnect between the function definition and what the function
+contractually accepts. The function definition does not match the logic of the
+argument handling.</p>
+<p>Additionally, the <code class="docutils literal notranslate"><span class="pre">/</span></code> syntax is used beyond CPython for specifying similar
+semantics (i.e., <a class="footnote-reference brackets" href="#numpy-ufuncs" id="id3">1</a> <a class="footnote-reference brackets" href="#scipy-gammaln" id="id4">2</a>); thus, indicating that
+these scenarios are not exclusive to CPython and the standard library.</p>
+</section>
+<section id="problems-without-positional-only-parameters">
+<h3><a class="toc-backref" href="#id26">Problems Without Positional-Only Parameters</a><a class="headerlink" href="#problems-without-positional-only-parameters" title="Permalink to this headline">¶</a></h3>
+<p>Without positional-only parameters, there are challenges for library authors
+and users of APIs. The following subsections outline the problems
+encountered by each entity.</p>
+<section id="challenges-for-library-authors">
+<h4><a class="toc-backref" href="#id27">Challenges for Library Authors</a><a class="headerlink" href="#challenges-for-library-authors" title="Permalink to this headline">¶</a></h4>
+<p>With positional-or-keyword parameters, the mix of calling conventions is not
+always desirable. Authors may want to restrict usage of an API by disallowing
+calling the API with keyword arguments, which exposes the name of the parameter when
+part of the public API. This approach is especially useful for required function
+parameters that already have semantic meaning (e.g,
+<code class="docutils literal notranslate"><span class="pre">namedtuple(typenames,</span> <span class="pre">field_names,</span> <span class="pre">…)</span></code> or when the parameter name has no
+true external meaning (e.g., <code class="docutils literal notranslate"><span class="pre">arg1</span></code>, <code class="docutils literal notranslate"><span class="pre">arg2</span></code>, …, etc for <code class="docutils literal notranslate"><span class="pre">min()</span></code>). If a
+caller of an API starts using a keyword argument, the library author cannot rename
+the parameter because it would be a breaking change.</p>
+<p>Positional-only parameters can be emulated by extracting arguments from
+<code class="docutils literal notranslate"><span class="pre">*args</span></code> one by one. However, this approach is error-prone and is not
+synonymous with the function definition, as previously mentioned. The usage of
+the function is ambiguous and forces users to look at <code class="docutils literal notranslate"><span class="pre">help()</span></code>, the
+associated auto-generated documentation, or source code to understand what
+parameters the function contractually accepts.</p>
+</section>
+<section id="challenges-for-users-of-an-api">
+<h4><a class="toc-backref" href="#id28">Challenges for Users of an API</a><a class="headerlink" href="#challenges-for-users-of-an-api" title="Permalink to this headline">¶</a></h4>
+<p>Users may be surprised when first encountering positional-only notation. This
+is expected given that it has only recently been documented
+<a class="footnote-reference brackets" href="#document-positional-only" id="id5">14</a> and it is not possible to use in Python code. For
+these reasons, this notation is currently an outlier that appears only in
+CPython APIs developed in C. Documenting the notation and making it possible
+to use it in Python code would eliminate this disconnect.</p>
+<p>Furthermore, the current documentation for positional-only parameters is inconsistent:</p>
+<ul class="simple">
+<li><p>Some functions denote optional groups of positional-only parameters by
+enclosing them in nested square brackets. <a class="footnote-reference brackets" href="#border" id="id6">5</a></p></li>
+<li><p>Some functions denote optional groups of positional-only parameters by
+presenting multiple prototypes with varying numbers of parameters.
+<a class="footnote-reference brackets" href="#sendfile" id="id7">6</a></p></li>
+<li><p>Some functions use <em>both</em> of the above approaches. <a class="footnote-reference brackets" href="#range" id="id8">4</a> <a class="footnote-reference brackets" href="#addch" id="id9">7</a></p></li>
+</ul>
+<p>Another point the current documentation does not distinguish is
+whether a function takes positional-only parameters. <code class="docutils literal notranslate"><span class="pre">open()</span></code> accepts keyword
+arguments; however, <code class="docutils literal notranslate"><span class="pre">ord()</span></code> does not — there is no way of telling just by
+reading the existing documentation.</p>
+</section>
+</section>
+<section id="benefits-of-positional-only-parameters">
+<h3><a class="toc-backref" href="#id29">Benefits of Positional-Only Parameters</a><a class="headerlink" href="#benefits-of-positional-only-parameters" title="Permalink to this headline">¶</a></h3>
+<p>Positional-only parameters give more control to library authors to better
+express the intended usage of an API and allows the API to evolve in a safe,
+backward-compatible way. Additionally, it makes the Python language more
+consistent with existing documentation and the behavior of various
+“builtin” and standard library functions.</p>
+<section id="empowering-library-authors">
+<h4><a class="toc-backref" href="#id30">Empowering Library Authors</a><a class="headerlink" href="#empowering-library-authors" title="Permalink to this headline">¶</a></h4>
+<p>Library authors would have the flexibility to change the name of
+positional-only parameters without breaking callers. This flexibility reduces the
+cognitive burden for choosing an appropriate public-facing name for required
+parameters or parameters that have no true external semantic meaning.</p>
+<p>Positional-only parameters are useful in several situations such as:</p>
+<ul class="simple">
+<li><p>when a function accepts any keyword argument but also can accept a positional one</p></li>
+<li><p>when a parameter has no external semantic meaning</p></li>
+<li><p>when an API’s parameters are required and unambiguous</p></li>
+</ul>
+<p>A key
+scenario is when a function accepts any keyword argument but can also accepts a
+positional one. Prominent examples are <code class="docutils literal notranslate"><span class="pre">Formatter.format</span></code> and
+<code class="docutils literal notranslate"><span class="pre">dict.update</span></code>. For instance, <code class="docutils literal notranslate"><span class="pre">dict.update</span></code> accepts a dictionary
+(positionally), an iterable of key/value pairs (positionally), or multiple
+keyword arguments. In this scenario, if the dictionary parameter were not
+positional-only, the user could not use the name that the function definition
+uses for the parameter or, conversely, the function could not distinguish
+easily if the argument received is the dictionary/iterable or a keyword
+argument for updating the key/value pair.</p>
+<p>Another scenario where positional-only parameters are useful is when the
+parameter name has no true external semantic meaning. For example, let’s say
+we want to create a function that converts from one type to another:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">as_my_type</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>The name of the parameter provides no intrinsic value and forces the API author
+to maintain its name forever since callers might pass <code class="docutils literal notranslate"><span class="pre">x</span></code> as a keyword
+argument.</p>
+<p>Additionally, positional-only parameters are useful when an API’s parameters
+are required and is unambiguous with respect to function. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">add_to_queue</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="n">QueueItem</span><span class="p">):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>The name of the function makes clear the argument expected. A keyword
+argument provides minimal benefit and also limits the future evolution of the
+API. Say at a later time we want this function to be able to take multiple
+items, while preserving backwards compatibility:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">add_to_queue</span><span class="p">(</span><span class="n">items</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">QueueItem</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">QueueItem</span><span class="p">]]):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>or to take them by using argument lists:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">add_to_queue</span><span class="p">(</span><span class="o">*</span><span class="n">items</span><span class="p">:</span> <span class="n">QueueItem</span><span class="p">):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>the author would be forced to always keep the original parameter name to avoid
+potentially breaking callers.</p>
+<p>By being able to specify positional-only parameters, an author can change the
+name of the parameters freely or even change them to <code class="docutils literal notranslate"><span class="pre">*args</span></code>, as seen in the
+previous example. There are multiple function definitions in the standard
+library which fall into this category. For example, the required parameter to
+<code class="docutils literal notranslate"><span class="pre">collections.defaultdict</span></code> (called <em>default_factory</em> in its documentation) can
+only be passed positionally. One special case of this situation is the <em>self</em>
+parameter for class methods: it is undesirable that a caller can bind by
+keyword to the name <code class="docutils literal notranslate"><span class="pre">self</span></code> when calling the method from the class:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">io</span><span class="o">.</span><span class="n">FileIO</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">=</span><span class="n">f</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Indeed, function definitions from the standard library implemented in C usually
+take <code class="docutils literal notranslate"><span class="pre">self</span></code> as a positional-only parameter:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">FileIO</span><span class="o">.</span><span class="n">write</span><span class="p">)</span>
+<span class="go">Help on method_descriptor:</span>
+
+<span class="go">write(self, b, /)</span>
+<span class="go">    Write buffer b to file, return number of bytes written.</span>
+</pre></div>
+</div>
+</section>
+<section id="improving-language-consistency">
+<h4><a class="toc-backref" href="#id31">Improving Language Consistency</a><a class="headerlink" href="#improving-language-consistency" title="Permalink to this headline">¶</a></h4>
+<p>The Python language would be more consistent with positional-only
+parameters. If the concept is a normal feature of Python rather than a feature
+exclusive to extension modules, it would reduce confusion for users
+encountering functions with positional-only parameters. Some major
+third-party packages are already using the <code class="docutils literal notranslate"><span class="pre">/</span></code> notation in their function
+definitions <a class="footnote-reference brackets" href="#numpy-ufuncs" id="id10">1</a> <a class="footnote-reference brackets" href="#scipy-gammaln" id="id11">2</a>.</p>
+<p>Bridging the gap found between “builtin” functions which
+specify positional-only parameters and pure Python implementations that lack
+the positional syntax would improve consistency. The <code class="docutils literal notranslate"><span class="pre">/</span></code> syntax is already exposed
+in the existing documentation such as when builtins and interfaces are generated
+by the argument clinic.</p>
+<p>Another essential aspect to consider is <a class="reference external" href="pep-0399.html">PEP 399</a>, which mandates that
+pure Python versions of modules in the standard library <em>must</em> have the same
+interface and semantics that the accelerator modules implemented in C. For
+example, if <code class="docutils literal notranslate"><span class="pre">collections.defaultdict</span></code> were to have a pure Python
+implementation it would need to make use of positional-only parameters to match
+the interface of its C counterpart.</p>
+</section>
+</section>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#id32">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>We propose to introduce positional-only parameters as a new syntax to the
+Python language.</p>
+<p>The new syntax will enable library authors to further control how their API
+can be called. It will allow designating which parameters must be called as
+positional-only, while preventing them from being called as keyword arguments.</p>
+<p>Previously, (informational) <a class="reference external" href="pep-0457.html">PEP 457</a> defined the syntax, but with a much more vague
+scope. This PEP takes the original proposal a step further by justifying
+the syntax and providing an implementation for the <code class="docutils literal notranslate"><span class="pre">/</span></code> syntax in function
+definitions.</p>
+<section id="performance">
+<h3><a class="toc-backref" href="#id33">Performance</a><a class="headerlink" href="#performance" title="Permalink to this headline">¶</a></h3>
+<p>In addition to the aforementioned benefits, the parsing and handling of
+positional-only arguments is faster. This performance benefit can be
+demonstrated in this thread about converting keyword arguments to positional:
+<a class="footnote-reference brackets" href="#thread-keyword-to-positional" id="id12">12</a>. Due to this speedup, there has been a recent
+trend towards moving builtins away from keyword arguments: recently,
+backwards-incompatible changes were made to disallow keyword arguments to
+<code class="docutils literal notranslate"><span class="pre">bool</span></code>, <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">list</span></code>, <code class="docutils literal notranslate"><span class="pre">int</span></code>, <code class="docutils literal notranslate"><span class="pre">tuple</span></code>.</p>
+</section>
+<section id="maintainability">
+<h3><a class="toc-backref" href="#id34">Maintainability</a><a class="headerlink" href="#maintainability" title="Permalink to this headline">¶</a></h3>
+<p>Providing a way to specify positional-only parameters in Python will make it
+easier to maintain pure Python implementations of C modules. Additionally,
+library authors defining functions will have the choice for choosing
+positional-only parameters if they determine that passing a keyword argument
+provides no additional clarity.</p>
+<p>This is a well discussed, recurring topic on the Python mailing lists:</p>
+<ul class="simple">
+<li><p>September 2018: <a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2018-September/053233.html">Anders Hovmöller: [Python-ideas] Positional-only
+parameters</a></p></li>
+<li><p>February 2017: <a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2017-February/044879.html">Victor Stinner: [Python-ideas] Positional-only
+parameters</a>,
+<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2017-March/044956.html">discussion continued in March</a></p></li>
+<li><p>February 2017: <a class="footnote-reference brackets" href="#python-ideas-decorator-based" id="id13">10</a></p></li>
+<li><p>March 2012: <a class="footnote-reference brackets" href="#guido" id="id14">8</a></p></li>
+<li><p>May 2007: <a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2007-May/000704.html">George Sakkis: [Python-ideas] Positional only arguments</a></p></li>
+<li><p>May 2006: <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2006-May/064790.html">Benji York: [Python-Dev] Positional-only Arguments</a></p></li>
+</ul>
+</section>
+<section id="logical-ordering">
+<h3><a class="toc-backref" href="#id35">Logical ordering</a><a class="headerlink" href="#logical-ordering" title="Permalink to this headline">¶</a></h3>
+<p>Positional-only parameters also have the (minor) benefit of enforcing some
+logical order when calling interfaces that make use of them. For example, the
+<code class="docutils literal notranslate"><span class="pre">range</span></code> function takes all its parameters positionally and disallows forms
+like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">range</span><span class="p">(</span><span class="n">stop</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="nb">range</span><span class="p">(</span><span class="n">stop</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">range</span><span class="p">(</span><span class="n">step</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="nb">range</span><span class="p">(</span><span class="n">step</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>at the price of disallowing the use of keyword arguments for the (unique)
+intended order:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="compatibility-for-pure-python-and-c-modules">
+<h3><a class="toc-backref" href="#id36">Compatibility for Pure Python and C Modules</a><a class="headerlink" href="#compatibility-for-pure-python-and-c-modules" title="Permalink to this headline">¶</a></h3>
+<p>Another critical motivation for positional-only parameters is <a class="reference external" href="pep-0399.html">PEP 399</a>:
+Pure Python/C Accelerator Module Compatibility Requirements. This
+PEP states that:</p>
+<blockquote>
+<div><p>This PEP requires that in these instances that the C code must pass the
+test suite used for the pure Python code to act as much as a drop-in
+replacement as reasonably possible</p>
+</div></blockquote>
+<p>If the C code is implemented using the existing capabilities
+to implement positional-only parameters using the argument clinic, and related
+machinery, it is not possible for the pure Python counterpart to match the
+provided interface and requirements. This creates a disparity between the
+interfaces of some functions and classes in the CPython standard library and
+other Python implementations. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python3 # CPython 3.7.2
+&gt;&gt;&gt; import binascii; binascii.crc32(data=b&#39;data&#39;)
+TypeError: crc32() takes no keyword arguments
+
+$ pypy3 # PyPy 6.0.0
+&gt;&gt;&gt;&gt; import binascii; binascii.crc32(data=b&#39;data&#39;)
+2918445923
+</pre></div>
+</div>
+<p>Other Python implementations can reproduce the CPython APIs manually, but this
+goes against the spirit of <a class="reference external" href="pep-0399.html">PEP 399</a> to avoid duplication of effort by
+mandating that all modules added to Python’s standard library <strong>must</strong> have a
+pure Python implementation with the same interface and semantics.</p>
+</section>
+<section id="consistency-in-subclasses">
+<h3><a class="toc-backref" href="#id37">Consistency in Subclasses</a><a class="headerlink" href="#consistency-in-subclasses" title="Permalink to this headline">¶</a></h3>
+<p>Another scenario where positional-only parameters provide benefit occurs when a
+subclass overrides a method of the base class and changes the name of parameters
+that are intended to be positional:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Base</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">meth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="o">...</span>
+
+<span class="k">class</span> <span class="nc">Sub</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">meth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other_arg</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Base</span><span class="p">):</span>
+    <span class="n">x</span><span class="o">.</span><span class="n">meth</span><span class="p">(</span><span class="n">arg</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+
+<span class="n">func</span><span class="p">(</span><span class="n">Sub</span><span class="p">())</span>  <span class="c1"># Runtime error</span>
+</pre></div>
+</div>
+<p>This situation could be considered a Liskov violation — the subclass cannot be
+used in a context when an instance of the base class is expected. Renaming
+arguments when overloading methods can happen when the subclass has reasons to
+use a different choice for the parameter name that is more appropriate for the
+specific domain of the subclass (e.g., when subclassing <code class="docutils literal notranslate"><span class="pre">Mapping</span></code> to
+implement a DNS lookup cache, the derived class may not want to use the generic
+argument names ‘key’ and ‘value’ but rather ‘host’ and ‘address’). Having this
+function definition with positional-only parameters can avoid this problem
+because users will not be able to call the interface using keyword arguments.
+In general, designing for subclassing usually involves anticipating code that
+hasn’t been written yet and over which the author has no control. Having
+measures that can facilitate the evolution of interfaces in a
+backwards-compatible would be useful for library authors.</p>
+</section>
+<section id="optimizations">
+<h3><a class="toc-backref" href="#id38">Optimizations</a><a class="headerlink" href="#optimizations" title="Permalink to this headline">¶</a></h3>
+<p>A final argument in favor of positional-only parameters is that they allow some
+new optimizations like the ones already present in the argument clinic due to
+the fact that parameters are expected to be passed in strict order. For example, CPython’s
+internal <code class="docutils literal notranslate"><span class="pre">METH_FASTCALL</span></code> calling convention has been recently specialized for
+functions with positional-only parameters to eliminate the cost for handling
+empty keywords. Similar performance improvements can be applied when creating
+the evaluation frame of Python functions thanks to positional-only parameters.</p>
+</section>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#id39">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<section id="syntax-and-semantics">
+<h3><a class="toc-backref" href="#id40">Syntax and Semantics</a><a class="headerlink" href="#syntax-and-semantics" title="Permalink to this headline">¶</a></h3>
+<p>From the “ten-thousand foot view”, eliding <code class="docutils literal notranslate"><span class="pre">*args</span></code> and <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> for
+illustration, the grammar for a function definition would look like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="n">positional_or_keyword_parameters</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">keyword_only_parameters</span><span class="p">):</span>
+</pre></div>
+</div>
+<p>Building on that example, the new syntax for function definitions would look
+like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="n">positional_only_parameters</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">positional_or_keyword_parameters</span><span class="p">,</span>
+         <span class="o">*</span><span class="p">,</span> <span class="n">keyword_only_parameters</span><span class="p">):</span>
+</pre></div>
+</div>
+<p>The following would apply:</p>
+<ul class="simple">
+<li><p>All parameters left of the <code class="docutils literal notranslate"><span class="pre">/</span></code> are treated as positional-only.</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">/</span></code> is not specified in the function definition, that function does not
+accept any positional-only arguments.</p></li>
+<li><p>The logic around optional values for positional-only parameters remains the
+same as for positional-or-keyword parameters.</p></li>
+<li><p>Once a positional-only parameter is specified with a default, the
+following positional-only and positional-or-keyword parameters need to have
+defaults as well.</p></li>
+<li><p>Positional-only parameters which do not have default
+values are <em>required</em> positional-only parameters.</p></li>
+</ul>
+<p>Therefore, the following would be valid function definitions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">p_or_kw</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kw</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">p_or_kw</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kw</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kw</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">/</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">p_or_kw</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">,</span> <span class="o">/</span><span class="p">):</span>
+</pre></div>
+</div>
+<p>Just like today, the following would be valid function definitions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="n">p_or_kw</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kw</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">kw</span><span class="p">):</span>
+</pre></div>
+</div>
+<p>While the following would be invalid:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">p_or_kw</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kw</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="n">p1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">p2</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">p_or_kw</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kw</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="n">p1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">p2</span><span class="p">,</span> <span class="o">/</span><span class="p">):</span>
+</pre></div>
+</div>
+</section>
+<section id="full-grammar-specification">
+<h3><a class="toc-backref" href="#id41">Full Grammar Specification</a><a class="headerlink" href="#full-grammar-specification" title="Permalink to this headline">¶</a></h3>
+<p>A simplified view of the proposed grammar specification is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedargslist</span><span class="p">:</span>
+  <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">]</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="s1">&#39;,&#39;</span> <span class="s1">&#39;/&#39;</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span>  <span class="c1"># and so on</span>
+
+<span class="n">varargslist</span><span class="p">:</span>
+  <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">]</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="s1">&#39;,&#39;</span> <span class="s1">&#39;/&#39;</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span>  <span class="c1"># and so on</span>
+</pre></div>
+</div>
+<p>Based on the reference implementation in this PEP, the new rule for
+<code class="docutils literal notranslate"><span class="pre">typedarglist</span></code> would be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedargslist</span><span class="p">:</span> <span class="p">(</span><span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">]</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="s1">&#39;,&#39;</span> <span class="s1">&#39;/&#39;</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="p">[</span><span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">]</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="p">[</span>
+        <span class="s1">&#39;*&#39;</span> <span class="p">[</span><span class="n">tfpdef</span><span class="p">]</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="p">[</span><span class="s1">&#39;**&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">]]]</span>
+      <span class="o">|</span> <span class="s1">&#39;**&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">]]]</span>
+  <span class="o">|</span> <span class="s1">&#39;*&#39;</span> <span class="p">[</span><span class="n">tfpdef</span><span class="p">]</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="p">[</span><span class="s1">&#39;**&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">]]]</span>
+  <span class="o">|</span> <span class="s1">&#39;**&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">]]</span> <span class="p">]</span> <span class="p">)</span><span class="o">|</span> <span class="p">(</span>
+   <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">]</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="p">[</span>
+        <span class="s1">&#39;*&#39;</span> <span class="p">[</span><span class="n">tfpdef</span><span class="p">]</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="p">[</span><span class="s1">&#39;**&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">]]]</span>
+      <span class="o">|</span> <span class="s1">&#39;**&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">]]]</span>
+ <span class="o">|</span> <span class="s1">&#39;*&#39;</span> <span class="p">[</span><span class="n">tfpdef</span><span class="p">]</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="p">[</span><span class="s1">&#39;**&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">]]]</span>
+ <span class="o">|</span> <span class="s1">&#39;**&#39;</span> <span class="n">tfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>and for <code class="docutils literal notranslate"><span class="pre">varargslist</span></code> would be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">varargslist</span><span class="p">:</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span> <span class="p">](</span><span class="s1">&#39;,&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="s1">&#39;,&#39;</span> <span class="s1">&#39;/&#39;</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="p">[</span> <span class="p">(</span><span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">]</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="p">[</span>
+        <span class="s1">&#39;*&#39;</span> <span class="p">[</span><span class="n">vfpdef</span><span class="p">]</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="p">[</span><span class="s1">&#39;**&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">]]]</span>
+      <span class="o">|</span> <span class="s1">&#39;**&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">]]]</span>
+  <span class="o">|</span> <span class="s1">&#39;*&#39;</span> <span class="p">[</span><span class="n">vfpdef</span><span class="p">]</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="p">[</span><span class="s1">&#39;**&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">]]]</span>
+  <span class="o">|</span> <span class="s1">&#39;**&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">])</span> <span class="p">]]</span> <span class="o">|</span> <span class="p">(</span><span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">]</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="p">[</span>
+        <span class="s1">&#39;*&#39;</span> <span class="p">[</span><span class="n">vfpdef</span><span class="p">]</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="p">[</span><span class="s1">&#39;**&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">]]]</span>
+      <span class="o">|</span> <span class="s1">&#39;**&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">]]]</span>
+  <span class="o">|</span> <span class="s1">&#39;*&#39;</span> <span class="p">[</span><span class="n">vfpdef</span><span class="p">]</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;=&#39;</span> <span class="n">test</span><span class="p">])</span><span class="o">*</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="p">[</span><span class="s1">&#39;**&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">]]]</span>
+  <span class="o">|</span> <span class="s1">&#39;**&#39;</span> <span class="n">vfpdef</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="semantic-corner-case">
+<h3><a class="toc-backref" href="#id42">Semantic Corner Case</a><a class="headerlink" href="#semantic-corner-case" title="Permalink to this headline">¶</a></h3>
+<p>The following is an interesting corollary of the specification.
+Consider this function definition:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s1">&#39;name&#39;</span> <span class="ow">in</span> <span class="n">kwds</span>
+</pre></div>
+</div>
+<p>There is no possible call that will make it return <code class="docutils literal notranslate"><span class="pre">True</span></code>.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">TypeError</span>: <span class="n">foo() got multiple values for argument &#39;name&#39;</span>
+<span class="go">&gt;&gt;&gt;</span>
+</pre></div>
+</div>
+<p>But using <code class="docutils literal notranslate"><span class="pre">/</span></code> we can support this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s1">&#39;name&#39;</span> <span class="ow">in</span> <span class="n">kwds</span>
+</pre></div>
+</div>
+<p>Now the above call will return <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<p>In other words, the names of positional-only parameters can be used in
+<code class="docutils literal notranslate"><span class="pre">**kwds</span></code> without ambiguity.  (As another example, this benefits the
+signatures of <code class="docutils literal notranslate"><span class="pre">dict()</span></code> and <code class="docutils literal notranslate"><span class="pre">dict.update()</span></code>.)</p>
+</section>
+<section id="origin-of-as-a-separator">
+<h3><a class="toc-backref" href="#id43">Origin of “/” as a Separator</a><a class="headerlink" href="#origin-of-as-a-separator" title="Permalink to this headline">¶</a></h3>
+<p>Using <code class="docutils literal notranslate"><span class="pre">/</span></code> as a separator was initially proposed by Guido van Rossum
+in 2012 <a class="footnote-reference brackets" href="#guido" id="id15">8</a> :</p>
+<blockquote>
+<div><p>Alternative proposal: how about using ‘/’ ? It’s kind of the opposite
+of ‘*’ which means “keyword argument”, and ‘/’ is not a new character.</p>
+</div></blockquote>
+</section>
+</section>
+<section id="how-to-teach-this">
+<h2><a class="toc-backref" href="#id44">How To Teach This</a><a class="headerlink" href="#how-to-teach-this" title="Permalink to this headline">¶</a></h2>
+<p>Introducing a dedicated syntax to mark positional-only parameters is closely
+analogous to existing keyword-only arguments. Teaching these concepts together
+may <em>simplify</em> how to teach the possible function definitions a user may encounter or
+design.</p>
+<p>This PEP recommends adding a new subsection to the Python documentation, in the
+section <a class="reference external" href="https://docs.python.org/3.7/tutorial/controlflow.html#more-on-defining-functions">“More on Defining Functions”</a> <a class="footnote-reference brackets" href="#id21" id="id22">15</a>, where the rest of the argument types
+are discussed. The following paragraphs serve as a draft for these additions.
+They will introduce the notation for both positional-only and
+keyword-only parameters. It is not intended to be exhaustive, nor should it be
+considered the final version to be incorporated into the documentation.</p>
+<hr class="docutils" />
+<p>By default, arguments may be passed to a Python function either by position
+or explicitly by keyword. For readability and performance, it makes sense to
+restrict the way arguments can be passed so that a developer need only look
+at the function definition to determine if items are passed by position, by
+position or keyword, or by keyword.</p>
+<p>A function definition may look like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">pos1</span><span class="p">,</span> <span class="n">pos2</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">pos_or_kwd</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kwd1</span><span class="p">,</span> <span class="n">kwd2</span><span class="p">):</span>
+      <span class="o">-----------</span>    <span class="o">----------</span>     <span class="o">----------</span>
+        <span class="o">|</span>             <span class="o">|</span>                  <span class="o">|</span>
+        <span class="o">|</span>        <span class="n">Positional</span> <span class="ow">or</span> <span class="n">keyword</span>   <span class="o">|</span>
+        <span class="o">|</span>                                <span class="o">-</span> <span class="n">Keyword</span> <span class="n">only</span>
+         <span class="o">--</span> <span class="n">Positional</span> <span class="n">only</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">/</span></code> and <code class="docutils literal notranslate"><span class="pre">*</span></code> are optional. If used, these symbols indicate the kind of
+parameter by how the arguments may be passed to the function:
+positional-only, positional-or-keyword, and keyword-only. Keyword parameters
+are also referred to as named parameters.</p>
+<section id="positional-or-keyword-arguments">
+<h3><a class="toc-backref" href="#id45">Positional-or-Keyword Arguments</a><a class="headerlink" href="#positional-or-keyword-arguments" title="Permalink to this headline">¶</a></h3>
+<p>If <code class="docutils literal notranslate"><span class="pre">/</span></code> and <code class="docutils literal notranslate"><span class="pre">*</span></code> are not present in the function definition, arguments may
+be passed to a function by position or by keyword.</p>
+</section>
+<section id="positional-only-parameters">
+<h3><a class="toc-backref" href="#id46">Positional-Only Parameters</a><a class="headerlink" href="#positional-only-parameters" title="Permalink to this headline">¶</a></h3>
+<p>Looking at this in a bit more detail, it is possible to mark certain parameters
+as <em>positional-only</em>. If <em>positional-only</em>, the parameters’ order matters, and
+the parameters cannot be passed by keyword. Positional-only parameters would
+be placed before a <code class="docutils literal notranslate"><span class="pre">/</span></code> (forward-slash). The <code class="docutils literal notranslate"><span class="pre">/</span></code> is used to logically
+separate the positional-only parameters from the rest of the parameters.
+If there is no <code class="docutils literal notranslate"><span class="pre">/</span></code> in the function definition, there are no positional-only
+parameters.</p>
+<p>Parameters following the <code class="docutils literal notranslate"><span class="pre">/</span></code> may be <em>positional-or-keyword</em> or <em>keyword-only</em>.</p>
+</section>
+<section id="keyword-only-arguments">
+<h3><a class="toc-backref" href="#id47">Keyword-Only Arguments</a><a class="headerlink" href="#keyword-only-arguments" title="Permalink to this headline">¶</a></h3>
+<p>To mark parameters as <em>keyword-only</em>, indicating the parameters must be passed
+by keyword argument, place an <code class="docutils literal notranslate"><span class="pre">*</span></code> in the arguments list just before the first
+<em>keyword-only</em> parameter.</p>
+</section>
+<section id="function-examples">
+<h3><a class="toc-backref" href="#id48">Function Examples</a><a class="headerlink" href="#function-examples" title="Permalink to this headline">¶</a></h3>
+<p>Consider the following example function definitions paying close attention to the
+markers <code class="docutils literal notranslate"><span class="pre">/</span></code> and <code class="docutils literal notranslate"><span class="pre">*</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">standard_arg</span><span class="p">(</span><span class="n">arg</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">pos_only_arg</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="o">/</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">kwd_only_arg</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">combined_example</span><span class="p">(</span><span class="n">pos_only</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">standard</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kwd_only</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">pos_only</span><span class="p">,</span> <span class="n">standard</span><span class="p">,</span> <span class="n">kwd_only</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The first function definition <code class="docutils literal notranslate"><span class="pre">standard_arg</span></code>, the most familiar form,
+places no restrictions on the calling convention and arguments may be
+passed by position or keyword:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">standard_arg</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="go">2</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">standard_arg</span><span class="p">(</span><span class="n">arg</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="go">2</span>
+</pre></div>
+</div>
+<p>The second function <code class="docutils literal notranslate"><span class="pre">pos_only_arg`</span> <span class="pre">is</span> <span class="pre">restricted</span> <span class="pre">to</span> <span class="pre">only</span> <span class="pre">use</span> <span class="pre">positional</span>
+<span class="pre">parameters</span> <span class="pre">as</span> <span class="pre">there</span> <span class="pre">is</span> <span class="pre">a</span> <span class="pre">``/</span></code> in the function definition:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pos_only_arg</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">1</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pos_only_arg</span><span class="p">(</span><span class="n">arg</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">TypeError</span>: <span class="n">pos_only_arg() got an unexpected keyword argument &#39;arg&#39;</span>
+</pre></div>
+</div>
+<p>The third function <code class="docutils literal notranslate"><span class="pre">kwd_only_args</span></code> only allows keyword arguments as indicated
+by a <code class="docutils literal notranslate"><span class="pre">*</span></code> in the function definition:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">kwd_only_arg</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">TypeError</span>: <span class="n">kwd_only_arg() takes 0 positional arguments but 1 was given</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">kwd_only_arg</span><span class="p">(</span><span class="n">arg</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">3</span>
+</pre></div>
+</div>
+<p>And the last uses all three calling conventions in the same function
+definition:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">combined_example</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">TypeError</span>: <span class="n">combined_example() takes 2 positional arguments but 3 were given</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">combined_example</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">kwd_only</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">1 2 3</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">combined_example</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">standard</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">kwd_only</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">1 2 3</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">combined_example</span><span class="p">(</span><span class="n">pos_only</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">standard</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">kwd_only</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">TypeError</span>: <span class="n">combined_example() got an unexpected keyword argument &#39;pos_only&#39;</span>
+</pre></div>
+</div>
+</section>
+<section id="recap">
+<h3><a class="toc-backref" href="#id49">Recap</a><a class="headerlink" href="#recap" title="Permalink to this headline">¶</a></h3>
+<p>The use case will determine which parameters to use in the function definition:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">pos1</span><span class="p">,</span> <span class="n">pos2</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">pos_or_kwd</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kwd1</span><span class="p">,</span> <span class="n">kwd2</span><span class="p">):</span>
+</pre></div>
+</div>
+<p>As guidance:</p>
+<ul class="simple">
+<li><p>Use positional-only if names do not matter or have no meaning, and there are
+only a few arguments which will always be passed in the same order.</p></li>
+<li><p>Use keyword-only when names have meaning and the function definition is
+more understandable by being explicit with names.</p></li>
+</ul>
+</section>
+</section>
+<section id="reference-implementation">
+<h2><a class="toc-backref" href="#id50">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>An initial implementation that passes the CPython test suite is available for
+evaluation <a class="footnote-reference brackets" href="#posonly-impl" id="id16">11</a>.</p>
+<p>The benefits of this implementations are speed of handling positional-only
+parameters, consistency with the implementation of keyword-only parameters (<a class="reference external" href="pep-3102.html">PEP
+3102</a>), and a simpler implementation of all the tools and modules that would be
+impacted by this change.</p>
+</section>
+<section id="rejected-ideas">
+<h2><a class="toc-backref" href="#id51">Rejected Ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<section id="do-nothing">
+<h3><a class="toc-backref" href="#id52">Do Nothing</a><a class="headerlink" href="#do-nothing" title="Permalink to this headline">¶</a></h3>
+<p>Always an option — the status quo. While this was considered, the
+aforementioned benefits are worth the addition to the language.</p>
+</section>
+<section id="decorators">
+<h3><a class="toc-backref" href="#id53">Decorators</a><a class="headerlink" href="#decorators" title="Permalink to this headline">¶</a></h3>
+<p>It has been suggested on python-ideas <a class="footnote-reference brackets" href="#python-ideas-decorator-based" id="id17">10</a> to
+provide a decorator written in Python for this feature.</p>
+<p>This approach has the benefit of not polluting function definition with
+additional syntax. However, we have decided to reject this idea because:</p>
+<ul class="simple">
+<li><p>It introduces an asymmetry with how parameter behavior is declared.</p></li>
+<li><p>It makes it difficult for static analyzers and type checkers to
+safely identify positional-only parameters.  They would need to query the AST
+for the list of decorators and identify the correct one by name or with extra
+heuristics, while keyword-only parameters are exposed
+directly in the AST.  In order for tools to correctly identify
+positional-only parameters, they would need to execute the module to access
+any metadata the decorator is setting.</p></li>
+<li><p>Any error with the declaration will be reported only at runtime.</p></li>
+<li><p>It may be more difficult to identify positional-only parameters in long
+function definitions, as it forces the user to count them to know which is
+the last one that is impacted by the decorator.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">/</span></code> syntax has already been introduced for C functions. This
+inconsistency will make it more challenging to implement any tools and
+modules that deal with this syntax — including but not limited to, the
+argument clinic, the inspect module and the <code class="docutils literal notranslate"><span class="pre">ast</span></code> module.</p></li>
+<li><p>The decorator implementation would likely impose a runtime performance cost,
+particularly when compared to adding support directly to the interpreter.</p></li>
+</ul>
+</section>
+<section id="per-argument-marker">
+<h3><a class="toc-backref" href="#id54">Per-Argument Marker</a><a class="headerlink" href="#per-argument-marker" title="Permalink to this headline">¶</a></h3>
+<p>A per-argument marker is another language-intrinsic option. The approach adds
+a token to each of the parameters to indicate they are positional-only and
+requires those parameters to be placed together. Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="p">(</span><span class="o">.</span><span class="n">arg1</span><span class="p">,</span> <span class="o">.</span><span class="n">arg2</span><span class="p">,</span> <span class="n">arg3</span><span class="p">):</span>
+</pre></div>
+</div>
+<p>Note the dot (i.e., <code class="docutils literal notranslate"><span class="pre">.</span></code>) on <code class="docutils literal notranslate"><span class="pre">.arg1</span></code> and <code class="docutils literal notranslate"><span class="pre">.arg2</span></code>. While this approach
+may be easier to read, it has been rejected because <code class="docutils literal notranslate"><span class="pre">/</span></code> as an explicit marker
+is congruent with <code class="docutils literal notranslate"><span class="pre">*</span></code> for keyword-only arguments and is less error-prone.</p>
+<p>It should be noted that some libraries already use leading underscore
+<a class="footnote-reference brackets" href="#leading-underscore" id="id18">13</a> to conventionally indicate parameters as positional-only.</p>
+</section>
+<section id="using-as-a-per-argument-marker">
+<h3><a class="toc-backref" href="#id55">Using “__” as a Per-Argument Marker</a><a class="headerlink" href="#using-as-a-per-argument-marker" title="Permalink to this headline">¶</a></h3>
+<p>Some libraries and applications (like <code class="docutils literal notranslate"><span class="pre">mypy</span></code> or <code class="docutils literal notranslate"><span class="pre">jinja</span></code>) use names
+prepended with a double underscore (i.e., <code class="docutils literal notranslate"><span class="pre">__</span></code>) as a convention to indicate
+positional-only parameters. We have rejected the idea of introducing <code class="docutils literal notranslate"><span class="pre">__</span></code> as
+a new syntax because:</p>
+<ul class="simple">
+<li><p>It is a backwards-incompatible change.</p></li>
+<li><p>It is not symmetric with how the keyword-only parameters are currently
+declared.</p></li>
+<li><p>Querying the AST for positional-only parameters would require checking the
+normal arguments and inspecting their names, whereas keyword-only parameters
+have a property associated with them (<code class="docutils literal notranslate"><span class="pre">FunctionDef.args.kwonlyargs</span></code>).</p></li>
+<li><p>Every parameter would need to be inspected to know when positional-only
+arguments end.</p></li>
+<li><p>The marker is more verbose, forcing marking every positional-only parameter.</p></li>
+<li><p>It clashes with other uses of the double underscore prefix like invoking name
+mangling in classes.</p></li>
+</ul>
+</section>
+<section id="group-positional-only-parameters-with-parentheses">
+<h3><a class="toc-backref" href="#id56">Group Positional-Only Parameters With Parentheses</a><a class="headerlink" href="#group-positional-only-parameters-with-parentheses" title="Permalink to this headline">¶</a></h3>
+<p>Tuple parameter unpacking is a Python 2 feature which allows the use of a tuple
+as a parameter in a function definition. It allows a sequence argument to be
+unpacked automatically. An example is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">fxn</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">),</span> <span class="n">d</span><span class="p">):</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+<p>Tuple argument unpacking was removed in Python 3 (<a class="reference external" href="pep-3113.html">PEP 3113</a>). There has been a
+proposition to reuse this syntax to implement positional-only parameters. We
+have rejected this syntax for indicating positional only parameters for several
+reasons:</p>
+<ul class="simple">
+<li><p>The syntax is asymmetric with respect to how keyword-only parameters are
+declared.</p></li>
+<li><p>Python 2 uses this syntax which could raise confusion regarding the behavior
+of this syntax. This would be surprising to users porting Python 2 codebases
+that were using this feature.</p></li>
+<li><p>This syntax is very similar to tuple literals. This can raise additional
+confusion because it can be confused with a tuple declaration.</p></li>
+</ul>
+</section>
+<section id="after-separator-proposal">
+<h3><a class="toc-backref" href="#id57">After Separator Proposal</a><a class="headerlink" href="#after-separator-proposal" title="Permalink to this headline">¶</a></h3>
+<p>Marking positional-parameters after the <code class="docutils literal notranslate"><span class="pre">/</span></code> was another idea considered.
+However, we were unable to find an approach which would modify the arguments
+after the marker. Otherwise, would force the parameters before the marker to
+be positional-only as well. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+</pre></div>
+</div>
+<p>If we define that <code class="docutils literal notranslate"><span class="pre">/</span></code> marks <code class="docutils literal notranslate"><span class="pre">z</span></code> as positional-only, it would not be
+possible to specify <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> as keyword arguments. Finding a way to
+work around this limitation would add confusion given that at the moment
+keyword arguments cannot be followed by positional arguments. Therefore, <code class="docutils literal notranslate"><span class="pre">/</span></code>
+would make both the preceding and following parameters positional-only.</p>
+</section>
+</section>
+<section id="thanks">
+<h2><a class="toc-backref" href="#id58">Thanks</a><a class="headerlink" href="#thanks" title="Permalink to this headline">¶</a></h2>
+<p>Credit for some of the content of this PEP is contained in Larry Hastings’s
+<a class="reference external" href="pep-0457.html">PEP 457</a>.</p>
+<p>Credit for the use of <code class="docutils literal notranslate"><span class="pre">/</span></code> as the separator between positional-only and
+positional-or-keyword parameters go to Guido van Rossum, in a proposal from
+2012. <a class="footnote-reference brackets" href="#guido" id="id19">8</a></p>
+<p>Credit for discussion about the simplification of the grammar goes to
+Braulio Valdivieso.</p>
+<dl class="footnote brackets">
+<dt class="label" id="numpy-ufuncs"><span class="brackets">1</span><span class="fn-backref">(<a href="#id3">1</a>,<a href="#id10">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/ufuncs.html#available-ufuncs">https://docs.scipy.org/doc/numpy/reference/ufuncs.html#available-ufuncs</a></p>
+</dd>
+<dt class="label" id="scipy-gammaln"><span class="brackets">2</span><span class="fn-backref">(<a href="#id4">1</a>,<a href="#id11">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gammaln.html">https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gammaln.html</a></p>
+</dd>
+<dt class="label" id="dict"><span class="brackets"><a class="fn-backref" href="#id2">3</a></span></dt>
+<dd><p><a class="reference external" href="http://docs.python.org/3/library/stdtypes.html#dict">http://docs.python.org/3/library/stdtypes.html#dict</a></p>
+</dd>
+<dt class="label" id="range"><span class="brackets">4</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id8">2</a>)</span></dt>
+<dd><p><a class="reference external" href="http://docs.python.org/3/library/functions.html#func-range">http://docs.python.org/3/library/functions.html#func-range</a></p>
+</dd>
+<dt class="label" id="border"><span class="brackets"><a class="fn-backref" href="#id6">5</a></span></dt>
+<dd><p><a class="reference external" href="http://docs.python.org/3/library/curses.html#curses.window.border">http://docs.python.org/3/library/curses.html#curses.window.border</a></p>
+</dd>
+<dt class="label" id="sendfile"><span class="brackets"><a class="fn-backref" href="#id7">6</a></span></dt>
+<dd><p><a class="reference external" href="http://docs.python.org/3/library/os.html#os.sendfile">http://docs.python.org/3/library/os.html#os.sendfile</a></p>
+</dd>
+<dt class="label" id="addch"><span class="brackets"><a class="fn-backref" href="#id9">7</a></span></dt>
+<dd><p><a class="reference external" href="http://docs.python.org/3/library/curses.html#curses.window.addch">http://docs.python.org/3/library/curses.html#curses.window.addch</a></p>
+</dd>
+<dt class="label" id="guido"><span class="brackets">8</span><span class="fn-backref">(<a href="#id14">1</a>,<a href="#id15">2</a>,<a href="#id19">3</a>)</span></dt>
+<dd><p>Guido van Rossum, posting to python-ideas, March 2012:
+<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2012-March/014364.html">https://mail.python.org/pipermail/python-ideas/2012-March/014364.html</a>
+and
+<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2012-March/014378.html">https://mail.python.org/pipermail/python-ideas/2012-March/014378.html</a>
+and
+<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2012-March/014417.html">https://mail.python.org/pipermail/python-ideas/2012-March/014417.html</a></p>
+</dd>
+<dt class="label" id="pep399"><span class="brackets">9</span></dt>
+<dd><p><a class="reference external" href="https://www.python.org/dev/peps/pep-0399/">https://www.python.org/dev/peps/pep-0399/</a></p>
+</dd>
+<dt class="label" id="python-ideas-decorator-based"><span class="brackets">10</span><span class="fn-backref">(<a href="#id13">1</a>,<a href="#id17">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2017-February/044888.html">https://mail.python.org/pipermail/python-ideas/2017-February/044888.html</a></p>
+</dd>
+<dt class="label" id="posonly-impl"><span class="brackets"><a class="fn-backref" href="#id16">11</a></span></dt>
+<dd><p><a class="reference external" href="https://github.com/pablogsal/cpython_positional_only">https://github.com/pablogsal/cpython_positional_only</a></p>
+</dd>
+<dt class="label" id="thread-keyword-to-positional"><span class="brackets"><a class="fn-backref" href="#id12">12</a></span></dt>
+<dd><p><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2016-January/037874.html">https://mail.python.org/pipermail/python-ideas/2016-January/037874.html</a></p>
+</dd>
+<dt class="label" id="leading-underscore"><span class="brackets"><a class="fn-backref" href="#id18">13</a></span></dt>
+<dd><p><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2018-September/053319.html">https://mail.python.org/pipermail/python-ideas/2018-September/053319.html</a></p>
+</dd>
+<dt class="label" id="document-positional-only"><span class="brackets"><a class="fn-backref" href="#id5">14</a></span></dt>
+<dd><p><a class="reference external" href="https://bugs.python.org/issue21314">https://bugs.python.org/issue21314</a></p>
+</dd>
+</dl>
+</section>
+<section id="id20">
+<h2><a class="toc-backref" href="#id59">References</a><a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id21"><span class="brackets"><a class="fn-backref" href="#id22">15</a></span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3.7/tutorial/controlflow.html#more-on-defining-functions">https://docs.python.org/3.7/tutorial/controlflow.html#more-on-defining-functions</a></p>
+</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#id60">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0570.rst">https://github.com/python/peps/blob/master/pep-0570.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0570.rst">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0001/">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0100/">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0101/">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0374/">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0391/">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0423/">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0451/">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0471/">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0479/">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0495/">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0558/">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0584/">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0586/">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0594/">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3118/">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-0569/" title="previous chapter">PEP 569 – Python 3.8 Release Schedule</a></li>
+      <li>Next: <a href="../pep-0571/" title="next chapter">PEP 571 – The manylinux2010 Platform Tag</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-0570.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,1500 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 423 – Naming conventions and recipes related to packaging &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 424 – A method for exposing a length hint" href="../pep-0424/" />
+    <link rel="prev" title="PEP 422 – Simpler customisation of class creation" href="../pep-0422/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pep-423-naming-conventions-and-recipes-related-to-packaging">
+<h1 class="page-title">PEP 423 – Naming conventions and recipes related to packaging<a class="headerlink" href="#pep-423-naming-conventions-and-recipes-related-to-packaging" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>423</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>Naming conventions and recipes related to packaging</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Benoit Bryon &lt;<a class="reference external" href="mailto:benoit&#37;&#52;&#48;marmelune&#46;net?subject=PEP%20-1">benoit&#32;&#97;t&#32;marmelune.net</a>&gt;</p>
+</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><p>&lt;<a class="reference external" href="mailto:distutils-sig&#37;&#52;&#48;python&#46;org">distutils-sig<span>&#64;</span>python<span>&#46;</span>org</a>&gt;</p>
+</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd"><p>Deferred</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Informational</p>
+</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd"><p>24-May-2012</p>
+</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#abstract" id="id75">Abstract</a></p></li>
+<li><p><a class="reference internal" href="#pep-deferral" id="id76">PEP Deferral</a></p></li>
+<li><p><a class="reference internal" href="#terminology" id="id77">Terminology</a></p></li>
+<li><p><a class="reference internal" href="#relationship-with-other-peps" id="id78">Relationship with other PEPs</a></p></li>
+<li><p><a class="reference internal" href="#overview" id="id79">Overview</a></p></li>
+<li><p><a class="reference internal" href="#if-in-doubt-ask" id="id80">If in doubt, ask</a></p></li>
+<li><p><a class="reference internal" href="#top-level-namespace-relates-to-code-ownership" id="id81">Top-level namespace relates to code ownership</a></p>
+<ul>
+<li><p><a class="reference internal" href="#respect-ownership" id="id82">Respect ownership</a></p></li>
+<li><p><a class="reference internal" href="#private-including-closed-source-projects-use-a-namespace" id="id83">Private (including closed-source) projects use a namespace</a></p></li>
+<li><p><a class="reference internal" href="#individual-projects-use-a-namespace" id="id84">Individual projects use a namespace</a></p></li>
+<li><p><a class="reference internal" href="#community-owned-projects-can-avoid-namespace-packages" id="id85">Community-owned projects can avoid namespace packages</a></p></li>
+<li><p><a class="reference internal" href="#in-doubt-use-an-individual-organization-namespace" id="id86">In doubt, use an individual/organization namespace</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#use-a-single-name" id="id87">Use a single name</a></p>
+<ul>
+<li><p><a class="reference internal" href="#multiple-packages-modules-should-be-rare" id="id88">Multiple packages/modules should be rare</a></p></li>
+<li><p><a class="reference internal" href="#distinct-names-should-be-rare" id="id89">Distinct names should be rare</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#follow-pep-8-for-syntax-of-package-and-module-names" id="id90">Follow PEP 8 for syntax of package and module names</a></p></li>
+<li><p><a class="reference internal" href="#pick-memorable-names" id="id91">Pick memorable names</a></p></li>
+<li><p><a class="reference internal" href="#pick-meaningful-names" id="id92">Pick meaningful names</a></p></li>
+<li><p><a class="reference internal" href="#use-packaging-metadata" id="id93">Use packaging metadata</a></p></li>
+<li><p><a class="reference internal" href="#avoid-deep-nesting" id="id94">Avoid deep nesting</a></p>
+<ul>
+<li><p><a class="reference internal" href="#two-levels-is-almost-always-enough" id="id95">Two levels is almost always enough</a></p></li>
+<li><p><a class="reference internal" href="#use-only-one-level-for-ownership" id="id96">Use only one level for ownership</a></p></li>
+<li><p><a class="reference internal" href="#don-t-use-namespace-levels-for-categorization" id="id97">Don’t use namespace levels for categorization</a></p></li>
+<li><p><a class="reference internal" href="#don-t-use-more-than-3-levels" id="id98">Don’t use more than 3 levels</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#conventions-for-communities-or-related-projects" id="id99">Conventions for communities or related projects</a></p>
+<ul>
+<li><p><a class="reference internal" href="#follow-community-or-related-project-conventions-if-any" id="id100">Follow community or related project conventions, if any</a></p></li>
+<li><p><a class="reference internal" href="#use-standard-pattern-for-community-contributions" id="id101">Use standard pattern for community contributions</a></p></li>
+<li><p><a class="reference internal" href="#organize-community-contributions" id="id102">Organize community contributions</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#register-names-with-pypi" id="id103">Register names with PyPI</a></p></li>
+<li><p><a class="reference internal" href="#recipes" id="id104">Recipes</a></p>
+<ul>
+<li><p><a class="reference internal" href="#how-to-check-for-name-availability" id="id105">How to check for name availability?</a></p></li>
+<li><p><a class="reference internal" href="#how-to-rename-a-project" id="id106">How to rename a project?</a></p>
+<ul>
+<li><p><a class="reference internal" href="#improved-handling-of-renamed-projects-on-pypi" id="id107">Improved handling of renamed projects on PyPI</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#how-to-apply-naming-guidelines-on-existing-projects" id="id108">How to apply naming guidelines on existing projects?</a></p>
+<ul>
+<li><p><a class="reference internal" href="#state-about-current-naming" id="id109">State about current naming</a></p></li>
+<li><p><a class="reference internal" href="#promote-migrations" id="id110">Promote migrations</a></p></li>
+<li><p><a class="reference internal" href="#opportunity" id="id111">Opportunity</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#references" id="id112">References</a></p></li>
+<li><p><a class="reference internal" href="#copyright" id="id113">Copyright</a></p></li>
+</ul>
+</div>
+<section id="abstract">
+<h2><a class="toc-backref" href="#id75">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This document deals with:</p>
+<ul class="simple">
+<li><p>names of Python projects,</p></li>
+<li><p>names of Python packages or modules being distributed,</p></li>
+<li><p>namespace packages.</p></li>
+</ul>
+<p>It provides guidelines and recipes for distribution authors:</p>
+<ul class="simple">
+<li><p>new projects should follow the <a class="reference external" href="#overview">guidelines</a> below.</p></li>
+<li><p>existing projects should be aware of these guidelines and can follow
+<a class="reference external" href="#how-to-apply-naming-guidelines-on-existing-projects">specific recipes for existing projects</a>.</p></li>
+</ul>
+</section>
+<section id="pep-deferral">
+<h2><a class="toc-backref" href="#id76">PEP Deferral</a><a class="headerlink" href="#pep-deferral" title="Permalink to this headline">¶</a></h2>
+<p>Further consideration of this PEP has been deferred at least until after
+<a class="reference external" href="pep-0426.html">PEP 426</a> (package metadata 2.0) and related updates have been resolved.</p>
+</section>
+<section id="terminology">
+<h2><a class="toc-backref" href="#id77">Terminology</a><a class="headerlink" href="#terminology" title="Permalink to this headline">¶</a></h2>
+<p>Reference is <a class="reference external" href="https://packaging.python.org/glossary/">packaging terminology in Python documentation</a> <a class="footnote-reference brackets" href="#id2" id="id3">1</a>.</p>
+</section>
+<section id="relationship-with-other-peps">
+<h2><a class="toc-backref" href="#id78">Relationship with other PEPs</a><a class="headerlink" href="#relationship-with-other-peps" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="http://www.python.org/dev/peps/pep-0008/#package-and-module-names">PEP 8</a> <a class="footnote-reference brackets" href="#id4" id="id5">2</a> deals with code style guide, including names of Python
+packages and modules. It covers syntax of package/modules names.</p></li>
+<li><p><a class="reference external" href="http://www.python.org/dev/peps/pep-0345/">PEP 345</a> <a class="footnote-reference brackets" href="#id8" id="id9">3</a> deals with packaging metadata, and defines name argument
+of the <code class="docutils literal notranslate"><span class="pre">packaging.core.setup()</span></code> function.</p></li>
+<li><p><a class="reference external" href="http://www.python.org/dev/peps/pep-0420/">PEP 420</a> <a class="footnote-reference brackets" href="#id10" id="id11">4</a> deals with namespace packages. It brings support of
+namespace packages to Python core. Before, namespaces packages were
+implemented by external libraries.</p></li>
+<li><p><a class="reference external" href="http://www.python.org/dev/peps/pep-3108/">PEP 3108</a> <a class="footnote-reference brackets" href="#id13" id="id14">5</a> deals with transition between Python 2.x and Python 3.x
+applied to standard library: some modules to be deleted, some to be
+renamed. It points out that naming conventions matter and is an
+example of transition plan.</p></li>
+</ul>
+</section>
+<section id="overview">
+<h2><a class="toc-backref" href="#id79">Overview</a><a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>Here is a summarized list of guidelines you should follow to choose
+names:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="#respect-ownership">understand and respect namespace ownership</a>.</p></li>
+<li><p>if your project is related to another project or community:</p>
+<ul>
+<li><p>search for conventions in main project’s documentation, because
+<a class="reference external" href="#organize-community-contributions">projects should organize community contributions</a>.</p></li>
+<li><p><a class="reference external" href="#follow-community-or-related-project-conventions-if-any">follow specific project or related community conventions</a>, if any.</p></li>
+<li><p>if there is no convention, <a class="reference external" href="#use-standard-pattern-for-community-contributions">follow a standard naming pattern</a>.</p></li>
+</ul>
+</li>
+<li><p>make sure your project name is unique, i.e. avoid duplicates:</p>
+<ul>
+<li><p><a class="reference external" href="#top-level-namespace-relates-to-code-ownership">use top-level namespace for ownership</a>,</p></li>
+<li><p><a class="reference external" href="#how-to-check-for-name-availability">check for name availability</a>,</p></li>
+<li><p><a class="reference internal" href="#register-names-with-pypi">register names with PyPI</a>.</p></li>
+</ul>
+</li>
+<li><p>make sure distributed packages and modules names are unique, unless
+you explicitly want to distribute alternatives to existing packages
+or modules. <a class="reference external" href="#use-a-single-name">Using the same value for package/module name and
+project name</a> is the recommended way to
+achieve this.</p></li>
+<li><p><a class="reference external" href="#multiple-packages-modules-should-be-rare">distribute only one package or module at a time</a>, unless you know what
+you are doing. It makes it possible to apply the “<a class="reference internal" href="#use-a-single-name">use a single
+name</a>” rule, and thus make names consistent.</p></li>
+<li><p>make it easy to discover and remember your project:</p>
+<ul>
+<li><p><a class="reference external" href="#pick-memorable-names">use as much memorable names as possible</a>,</p></li>
+<li><p><a class="reference external" href="#pick-meaningful-names">use as much meaningful names as possible</a>,</p></li>
+<li><p><a class="reference external" href="#use-packaging-metadata">use other packaging metadata</a>.</p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#avoid-deep-nesting">avoid deep nesting</a>. Flat things are easier to use and remember
+than nested ones:</p>
+<ul>
+<li><p>one or two namespace levels are recommended, because they are
+almost always enough.</p></li>
+<li><p>even if not recommended, three levels are, de facto, a common
+case.</p></li>
+<li><p>in most cases, you should not need more than three levels.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#follow-pep-8-for-syntax-of-package-and-module-names">follow PEP 8</a> for syntax
+of package and module names.</p></li>
+<li><p>if you followed specific conventions, or if your project is intended
+to receive contributions from the community, <a class="reference internal" href="#organize-community-contributions">organize community
+contributions</a>.</p></li>
+<li><p><a class="reference external" href="#if-in-doubt-ask">if still in doubt, ask</a>.</p></li>
+</ul>
+</section>
+<section id="if-in-doubt-ask">
+<h2><a class="toc-backref" href="#id80">If in doubt, ask</a><a class="headerlink" href="#if-in-doubt-ask" title="Permalink to this headline">¶</a></h2>
+<p>If you feel unsure after reading this document, ask <a class="reference external" href="http://www.python.org/community/">Python
+community</a> <a class="footnote-reference brackets" href="#id15" id="id16">6</a> on IRC or on a mailing list.</p>
+</section>
+<section id="top-level-namespace-relates-to-code-ownership">
+<h2><a class="toc-backref" href="#id81">Top-level namespace relates to code ownership</a><a class="headerlink" href="#top-level-namespace-relates-to-code-ownership" title="Permalink to this headline">¶</a></h2>
+<p>This helps avoid clashes between project names.</p>
+<p>Ownership could be:</p>
+<ul class="simple">
+<li><p>an individual.
+Example: <a class="reference external" href="http://pypi.python.org/pypi/gp.fileupload/">gp.fileupload</a> <a class="footnote-reference brackets" href="#id17" id="id18">7</a> is owned and maintained by Gael
+Pasgrimaud.</p></li>
+<li><p>an organization.
+Examples:</p>
+<ul>
+<li><p><a class="reference external" href="http://pypi.python.org/pypi/zest.releaser/">zest.releaser</a> <a class="footnote-reference brackets" href="#id19" id="id20">8</a> is owned and maintained by Zest Software.</p></li>
+<li><p><a class="reference external" href="http://djangoproject.com/">Django</a> <a class="footnote-reference brackets" href="#id21" id="id22">9</a> is owned and maintained by the Django Software
+Foundation.</p></li>
+</ul>
+</li>
+<li><p>a group or community.
+Example: <a class="reference external" href="http://sphinx.pocoo.org">sphinx</a> <a class="footnote-reference brackets" href="#id23" id="id24">10</a> is maintained by developers of the Sphinx
+project, not only by its author, Georg Brandl.</p></li>
+<li><p>a group or community related to another package.
+Example: <a class="reference external" href="http://pypi.python.org/pypi/collective.recaptcha/">collective.recaptcha</a> <a class="footnote-reference brackets" href="#id31" id="id32">12</a> is owned by its author: David
+Glick, Groundwire. But the “collective” namespace is owned by Plone
+community.</p></li>
+</ul>
+<section id="respect-ownership">
+<h3><a class="toc-backref" href="#id82">Respect ownership</a><a class="headerlink" href="#respect-ownership" title="Permalink to this headline">¶</a></h3>
+<p>Understand the purpose of namespace before you use it.</p>
+<p>Don’t plug into a namespace you don’t own, unless explicitly
+authorized.</p>
+<p><a class="reference internal" href="#if-in-doubt-ask">If in doubt, ask</a>.</p>
+<p>As an example, don’t plug in “django.contrib” namespace because it is
+managed by Django’s core contributors.</p>
+<p>Exceptions can be defined by project authors. See <a class="reference internal" href="#organize-community-contributions">Organize community
+contributions</a> below.</p>
+<p>Also, this rule applies to non-Python projects.</p>
+<p>As an example, don’t use “apache” as top-level namespace: “Apache” is
+the name of an existing project (in the case of “Apache”, it is also a
+trademark).</p>
+</section>
+<section id="private-including-closed-source-projects-use-a-namespace">
+<h3><a class="toc-backref" href="#id83">Private (including closed-source) projects use a namespace</a><a class="headerlink" href="#private-including-closed-source-projects-use-a-namespace" title="Permalink to this headline">¶</a></h3>
+<p>… because private projects are owned by somebody. So apply the
+<a class="reference external" href="#top-level-namespace-relates-to-code-ownership">ownership rule</a>.</p>
+<p>For internal/customer projects, use your company name as the
+namespace.</p>
+<p>This rule applies to closed-source projects.</p>
+<p>As an example, if you are creating a “climbing” project for the
+“Python Sport” company: use “pythonsport.climbing” name, even if it is
+closed source.</p>
+</section>
+<section id="individual-projects-use-a-namespace">
+<h3><a class="toc-backref" href="#id84">Individual projects use a namespace</a><a class="headerlink" href="#individual-projects-use-a-namespace" title="Permalink to this headline">¶</a></h3>
+<p>… because they are owned by individuals. So apply the
+<a class="reference external" href="#top-level-namespace-relates-to-code-ownership">ownership rule</a>.</p>
+<p>There is no shame in releasing a project as open source even if it has
+an “internal” or “individual” name.</p>
+<p>If the project comes to a point where the author wants to change
+ownership (i.e. the project no longer belongs to an individual), keep
+in mind <a class="reference external" href="#how-to-rename-a-project">it is easy to rename the project</a>.</p>
+</section>
+<section id="community-owned-projects-can-avoid-namespace-packages">
+<h3><a class="toc-backref" href="#id85">Community-owned projects can avoid namespace packages</a><a class="headerlink" href="#community-owned-projects-can-avoid-namespace-packages" title="Permalink to this headline">¶</a></h3>
+<p>If your project is generic enough (i.e. it is not a contrib to another
+product or framework), you can avoid namespace packages. The base
+condition is generally that your project is owned by a group (i.e. the
+development team) which is dedicated to this project.</p>
+<p>Only use a “shared” namespace if you really intend the code to be
+community owned.</p>
+<p>As an example, <a class="reference external" href="http://sphinx.pocoo.org">sphinx</a> <a class="footnote-reference brackets" href="#id23" id="id25">10</a> project belongs to the Sphinx development
+team. There is no need to have some “sphinx” namespace package with
+only one “sphinx.sphinx” project inside.</p>
+</section>
+<section id="in-doubt-use-an-individual-organization-namespace">
+<h3><a class="toc-backref" href="#id86">In doubt, use an individual/organization namespace</a><a class="headerlink" href="#in-doubt-use-an-individual-organization-namespace" title="Permalink to this headline">¶</a></h3>
+<p>If your project is really experimental, best choice is to use an
+individual or organization namespace:</p>
+<ul class="simple">
+<li><p>it allows projects to be released early.</p></li>
+<li><p>it won’t block a name if the project is abandoned.</p></li>
+<li><p>it doesn’t block future changes. When a project becomes mature and
+there is no reason to keep individual ownership, <a class="reference external" href="#how-to-rename-a-project">it remains
+possible to rename the project</a>.</p></li>
+</ul>
+</section>
+</section>
+<section id="use-a-single-name">
+<h2><a class="toc-backref" href="#id87">Use a single name</a><a class="headerlink" href="#use-a-single-name" title="Permalink to this headline">¶</a></h2>
+<p>Distribute only one package (or only one module) per project, and use
+package (or module) name as project name.</p>
+<ul>
+<li><p>It avoids possible confusion between project name and distributed
+package or module name.</p></li>
+<li><p>It makes the name consistent.</p></li>
+<li><p>It is explicit: when one sees project name, he guesses
+package/module name, and vice versa.</p></li>
+<li><p>It also limits implicit clashes between package/module names.
+By using a single name, when you register a project name to <a class="reference external" href="http://pypi.python.org">PyPI</a> <a class="footnote-reference brackets" href="#id26" id="id27">11</a>,
+you also perform a basic package/module name availability
+verification.</p>
+<p>As an example, <a class="reference external" href="http://pypi.python.org/pypi/pipeline/">pipeline</a> <a class="footnote-reference brackets" href="#id33" id="id34">13</a>, <a class="reference external" href="http://pypi.python.org/pypi/python-pipeline/">python-pipeline</a> <a class="footnote-reference brackets" href="#id35" id="id36">14</a> and
+<a class="reference external" href="http://pypi.python.org/pypi/django-pipeline/">django-pipeline</a> <a class="footnote-reference brackets" href="#id37" id="id38">15</a> all distribute a package or module called
+“pipeline”. So installing two of them leads to errors. This issue
+wouldn’t have occurred if these distributions used a single name.</p>
+</li>
+</ul>
+<p>Yes:</p>
+<ul class="simple">
+<li><p>Package name: “kheops.pyramid”,
+i.e. <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">kheops.pyramid</span></code></p></li>
+<li><p>Project name: “kheops.pyramid”,
+i.e. <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kheops.pyramid</span></code></p></li>
+</ul>
+<p>No:</p>
+<ul class="simple">
+<li><p>Package name: “kheops”</p></li>
+<li><p>Project name: “KheopsPyramid”</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For historical reasons, <a class="reference external" href="http://pypi.python.org">PyPI</a> <a class="footnote-reference brackets" href="#id26" id="id28">11</a> contains many distributions where
+project and distributed package/module names differ.</p>
+</div>
+<section id="multiple-packages-modules-should-be-rare">
+<h3><a class="toc-backref" href="#id88">Multiple packages/modules should be rare</a><a class="headerlink" href="#multiple-packages-modules-should-be-rare" title="Permalink to this headline">¶</a></h3>
+<p>Technically, Python distributions can provide multiple packages and/or
+modules. See <a class="reference external" href="http://docs.python.org/dev/packaging/setupscript.html">setup script reference</a> <a class="footnote-reference brackets" href="#id39" id="id40">16</a> for details.</p>
+<p>Some distributions actually do.
+As an example, <a class="reference external" href="http://pypi.python.org/pypi/setuptools">setuptools</a> <a class="footnote-reference brackets" href="#id41" id="id42">17</a> and <a class="reference external" href="http://packages.python.org/distribute/">distribute</a> <a class="footnote-reference brackets" href="#id43" id="id44">18</a> are both declaring
+“pkg_resources”, “easy_install” and “site” modules in addition to
+respective “setuptools” and “distribute” packages.</p>
+<p>Consider this use case as exceptional. In most cases, you don’t need
+this feature. So a distribution should provide only one package or
+module at a time.</p>
+</section>
+<section id="distinct-names-should-be-rare">
+<h3><a class="toc-backref" href="#id89">Distinct names should be rare</a><a class="headerlink" href="#distinct-names-should-be-rare" title="Permalink to this headline">¶</a></h3>
+<p>A notable exception to the <a class="reference internal" href="#use-a-single-name">Use a single name</a> rule is when you
+explicitly need distinct names.</p>
+<p>As an example, the <a class="reference external" href="http://pypi.python.org/pypi/Pillow/">Pillow</a> <a class="footnote-reference brackets" href="#id45" id="id46">19</a> project provides an alternative to the
+original <a class="reference external" href="http://pypi.python.org/pypi/PIL/">PIL</a> <a class="footnote-reference brackets" href="#id47" id="id48">20</a> distribution. Both projects distribute a “PIL”
+package.</p>
+<p>Consider this use case as exceptional. In most cases, you don’t need
+this feature. So a distributed package name should be equal to project
+name.</p>
+</section>
+</section>
+<section id="follow-pep-8-for-syntax-of-package-and-module-names">
+<h2>Follow <a class="reference external" href="pep-0008.html">PEP 8</a> for syntax of package and module names<a class="headerlink" href="#follow-pep-8-for-syntax-of-package-and-module-names" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="http://www.python.org/dev/peps/pep-0008/#package-and-module-names">PEP 8</a> <a class="footnote-reference brackets" href="#id4" id="id6">2</a> applies to names of Python packages and modules.</p>
+<p>If you <a class="reference internal" href="#use-a-single-name">Use a single name</a>, <a class="reference external" href="http://www.python.org/dev/peps/pep-0008/#package-and-module-names">PEP 8</a> <a class="footnote-reference brackets" href="#id4" id="id7">2</a> also applies to project names.
+The exceptions are namespace packages, where dots are required in
+project name.</p>
+</section>
+<section id="pick-memorable-names">
+<h2><a class="toc-backref" href="#id91">Pick memorable names</a><a class="headerlink" href="#pick-memorable-names" title="Permalink to this headline">¶</a></h2>
+<p>One important thing about a project name is that it be memorable.</p>
+<p>As an example, <a class="reference external" href="http://pypi.python.org/pypi/celery/">celery</a> <a class="footnote-reference brackets" href="#id49" id="id50">21</a> is not a meaningful name. At first, it is not
+obvious that it deals with message queuing. But it is memorable,
+partly because it can be used to feed a <a class="reference external" href="http://www.rabbitmq.com">RabbitMQ</a> <a class="footnote-reference brackets" href="#id51" id="id52">22</a> server.</p>
+</section>
+<section id="pick-meaningful-names">
+<h2><a class="toc-backref" href="#id92">Pick meaningful names</a><a class="headerlink" href="#pick-meaningful-names" title="Permalink to this headline">¶</a></h2>
+<p>Ask yourself “how would I describe in one sentence what this name is
+for?”, and then “could anyone have guessed that by looking at the
+name?”.</p>
+<p>As an example, <a class="reference external" href="http://pypi.python.org/pypi/DateUtils/">DateUtils</a> <a class="footnote-reference brackets" href="#id53" id="id54">23</a> is a meaningful name. It is obvious that
+it deals with utilities for dates.</p>
+<p>When you are using namespaces, try to make each part meaningful.</p>
+</section>
+<section id="use-packaging-metadata">
+<h2><a class="toc-backref" href="#id93">Use packaging metadata</a><a class="headerlink" href="#use-packaging-metadata" title="Permalink to this headline">¶</a></h2>
+<p>Consider project names as unique identifiers on PyPI:</p>
+<ul class="simple">
+<li><p>it is important that these identifiers remain human-readable.</p></li>
+<li><p>it is even better when these identifiers are meaningful.</p></li>
+<li><p>but the primary purpose of identifiers is not to classify or
+describe projects.</p></li>
+</ul>
+<p><strong>Classifiers and keywords metadata are made for categorization of
+distributions.</strong> Summary and description metadata are meant to
+describe the project.</p>
+<p>As an example, there is a “<a class="reference external" href="http://pypi.python.org/pypi?:action=browse&amp;show=all&amp;c=525">Framework :: Twisted</a> <a class="footnote-reference brackets" href="#id55" id="id56">24</a>” classifier. Even
+if names are quite heterogeneous (they don’t follow a particular
+pattern), we get the list.</p>
+<p>In order to <a class="reference internal" href="#organize-community-contributions">Organize community contributions</a>, conventions about
+names and namespaces matter, but conventions about metadata should be
+even more important.</p>
+<p>As an example, we can find Plone portlets in many places:</p>
+<ul class="simple">
+<li><p>plone.portlet.*</p></li>
+<li><p>collective.portlet.*</p></li>
+<li><p>collective.portlets.*</p></li>
+<li><p>collective.*.portlets</p></li>
+<li><p>some vendor-related projects such as “quintagroup.portlet.cumulus”</p></li>
+<li><p>and even projects where “portlet” pattern doesn’t appear in the
+name.</p></li>
+</ul>
+<p>Even if Plone community has conventions, using the name to categorize
+distributions is inappropriate. It’s impossible to get the full list of
+distributions that provide portlets for Plone by filtering on names.
+But it would be possible if all these distributions used
+“Framework :: Plone” classifier and “portlet” keyword.</p>
+</section>
+<section id="avoid-deep-nesting">
+<h2><a class="toc-backref" href="#id94">Avoid deep nesting</a><a class="headerlink" href="#avoid-deep-nesting" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="http://www.python.org/dev/peps/pep-0020/">The Zen of Python</a> <a class="footnote-reference brackets" href="#id57" id="id58">25</a> says “Flat is better than nested”.</p>
+<section id="two-levels-is-almost-always-enough">
+<h3><a class="toc-backref" href="#id95">Two levels is almost always enough</a><a class="headerlink" href="#two-levels-is-almost-always-enough" title="Permalink to this headline">¶</a></h3>
+<p>Don’t define everything in deeply nested hierarchies: you will end up
+with projects and packages like “pythonsport.common.maps.forest”. This
+type of name is both verbose and cumbersome (e.g. if you have many
+imports from the package).</p>
+<p>Furthermore, big hierarchies tend to break down over time as the
+boundaries between different packages blur.</p>
+<p>The consensus is that two levels of nesting are preferred.</p>
+<p>For example, we have <code class="docutils literal notranslate"><span class="pre">plone.principalsource</span></code> instead of
+<code class="docutils literal notranslate"><span class="pre">plone.source.principal</span></code> or something like that. The name is
+shorter, the package structure is simpler, and there would be very
+little to gain from having three levels of nesting here. It would be
+impractical to try to put all “core Plone” sources (a source is kind
+of vocabulary) into the <code class="docutils literal notranslate"><span class="pre">plone.source.*</span></code> namespace, in part because
+some sources are part of other packages, and in part because sources
+already exist in other places. Had we made a new namespace, it would
+be inconsistently used from the start.</p>
+<p>Yes: “pyranha”</p>
+<p>Yes: “pythonsport.climbing”</p>
+<p>Yes: “pythonsport.forestmap”</p>
+<p>No: “pythonsport.maps.forest”</p>
+</section>
+<section id="use-only-one-level-for-ownership">
+<h3><a class="toc-backref" href="#id96">Use only one level for ownership</a><a class="headerlink" href="#use-only-one-level-for-ownership" title="Permalink to this headline">¶</a></h3>
+<p>Don’t use 3 levels to set individual/organization ownership in
+a community namespace.</p>
+<p>As an example, let’s consider:</p>
+<ul class="simple">
+<li><p>you are plugging into a community namespace, such as “collective”.</p></li>
+<li><p>and you want to add a more restrictive “ownership” level, to avoid
+clashes inside the community.</p></li>
+</ul>
+<p>In such a case, <strong>you’d better use the most restrictive ownership
+level as first level.</strong></p>
+<p>As an example, where “collective” is a major community namespace that
+“gergovie” belongs to, and “vercingetorix” it the name of “gergovie”
+author:</p>
+<p>No: “collective.vercingetorix.gergovie”</p>
+<p>Yes: “vercingetorix.gergovie”</p>
+</section>
+<section id="don-t-use-namespace-levels-for-categorization">
+<h3><a class="toc-backref" href="#id97">Don’t use namespace levels for categorization</a><a class="headerlink" href="#don-t-use-namespace-levels-for-categorization" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference internal" href="#use-packaging-metadata">Use packaging metadata</a> instead.</p>
+</section>
+<section id="don-t-use-more-than-3-levels">
+<h3><a class="toc-backref" href="#id98">Don’t use more than 3 levels</a><a class="headerlink" href="#don-t-use-more-than-3-levels" title="Permalink to this headline">¶</a></h3>
+<p>Technically, you can create deeply nested hierarchies. However, in
+most cases, you shouldn’t need it.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Even communities where namespaces are standard don’t use more than
+3 levels.</p>
+</div>
+</section>
+</section>
+<section id="conventions-for-communities-or-related-projects">
+<h2><a class="toc-backref" href="#id99">Conventions for communities or related projects</a><a class="headerlink" href="#conventions-for-communities-or-related-projects" title="Permalink to this headline">¶</a></h2>
+<section id="follow-community-or-related-project-conventions-if-any">
+<h3><a class="toc-backref" href="#id100">Follow community or related project conventions, if any</a><a class="headerlink" href="#follow-community-or-related-project-conventions-if-any" title="Permalink to this headline">¶</a></h3>
+<p>Projects or related communities can have specific conventions, which
+may differ from those explained in this document.</p>
+<p>In such a case, <a class="reference external" href="#organize-community-contributions">they should declare specific conventions in
+documentation</a>.</p>
+<p>So, if your project belongs to another project or to a community,
+first look for specific conventions in main project’s documentation.</p>
+<p>If there is no specific conventions, follow the ones declared in this
+document.</p>
+<p>As an example, <a class="reference external" href="http://plone.org/community/develop">Plone community</a> <a class="footnote-reference brackets" href="#id59" id="id60">26</a> releases community contributions in
+the “collective” namespace package. It differs from the <a class="reference external" href="#use-standard-pattern-for-community-contributions">standard
+namespace for contributions</a> proposed here.
+But since it is documented, there is no ambiguity and you should
+follow this specific convention.</p>
+</section>
+<section id="use-standard-pattern-for-community-contributions">
+<h3><a class="toc-backref" href="#id101">Use standard pattern for community contributions</a><a class="headerlink" href="#use-standard-pattern-for-community-contributions" title="Permalink to this headline">¶</a></h3>
+<p>When no specific rule is defined, use the
+<code class="docutils literal notranslate"><span class="pre">${MAINPROJECT}contrib.${PROJECT}</span></code> pattern to store community
+contributions for any product or framework, where:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">${MAINPROJECT}</span></code> is the name of the related project. “pyranha” in
+the example below.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">${PROJECT}</span></code> is the name of your project. “giantteeth” in the
+example below.</p></li>
+</ul>
+<p>As an example:</p>
+<ul class="simple">
+<li><p>you are the author of “pyranha” project. You own the “pyranha”
+namespace.</p></li>
+<li><p>you didn’t defined specific naming conventions for community
+contributions.</p></li>
+<li><p>a third-party developer wants to publish a “giantteeth” project
+related to your “pyranha” project in a community namespace. So he
+should publish it as “pyranhacontrib.giantteeth”.</p></li>
+</ul>
+<p>It is the simplest way to <a class="reference internal" href="#organize-community-contributions">Organize community contributions</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Why <code class="docutils literal notranslate"><span class="pre">${MAINPROJECT}contrib.*</span></code> pattern?</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">${MAINPROJECT}c.*</span></code> is not explicit enough. As examples, “zc”
+belongs to “Zope Corporation” whereas “z3c” belongs to “Zope 3
+community”.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">${MAINPROJECT}community</span></code> is too long.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">${MAINPROJECT}community</span></code> conflicts with existing namespaces
+such as “iccommunity” or “PyCommunity”.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">${MAINPROJECT}.contrib.*</span></code> is inside ${MAINPROJECT} namespace,
+i.e. it is owned by ${MAINPROJECT} authors. It breaks the
+<a class="reference internal" href="#top-level-namespace-relates-to-code-ownership">Top-level namespace relates to code ownership</a> rule.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">${MAINPROJECT}.contrib.*</span></code> breaks the <a class="reference internal" href="#avoid-deep-nesting">Avoid deep nesting</a>
+rule.</p></li>
+<li><p>names where <code class="docutils literal notranslate"><span class="pre">${MAINPROJECT}</span></code> doesn’t appear are not explicit
+enough, i.e. nobody can guess they are related to
+<code class="docutils literal notranslate"><span class="pre">${MAINPROJECT}</span></code>. As an example, it is not obvious that
+“collective.*” belongs to Plone community.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{$DIST}contrib.*</span></code> looks like existing <code class="docutils literal notranslate"><span class="pre">sphinxcontrib-*</span></code>
+packages. But <code class="docutils literal notranslate"><span class="pre">sphinxcontrib-*</span></code> is actually about Sphinx
+contrib, so this is not a real conflict… In fact, the “contrib”
+suffix was inspired by “sphinxcontrib”.</p></li>
+</ul>
+</div>
+</section>
+<section id="organize-community-contributions">
+<h3><a class="toc-backref" href="#id102">Organize community contributions</a><a class="headerlink" href="#organize-community-contributions" title="Permalink to this headline">¶</a></h3>
+<p>This is the counterpart of the <a class="reference external" href="#follow-community-or-related-project-conventions-if-any">follow community conventions</a> and
+<a class="reference external" href="#use-standard-pattern-for-community-contributions">standard pattern for contributions</a> rules.</p>
+<p>Actions:</p>
+<ul class="simple">
+<li><p>Choose a naming convention for community contributions.</p></li>
+<li><p>If it is not <a class="reference external" href="#use-standard-pattern-for-community-contributions">the default</a>, then
+document it.</p>
+<ul>
+<li><p>if you use the <a class="reference external" href="#use-standard-pattern-for-community-contributions">default convention</a>, then this
+document should be enough. Don’t reapeat it. You may reference
+it.</p></li>
+<li><p>else, tell users about custom conventions in project’s
+“contribute” or “create modules” documentation.</p></li>
+</ul>
+</li>
+<li><p>Also recommend the use of additional metadata, such as
+<a class="reference external" href="#use-packaging-metadata">classifiers and keywords</a>.</p></li>
+</ul>
+<p>About convention choices:</p>
+<ul>
+<li><p>New projects should choose the <a class="reference external" href="#use-standard-pattern-for-community-contributions">default contrib pattern</a>.</p></li>
+<li><p>Existing projects with community contributions should start with
+custom conventions. Then they can <a class="reference internal" href="#promote-migrations">Promote migrations</a>.</p>
+<p>It means that existing community conventions don’t have to be
+changed. But, at least, they should be explicitly documented.</p>
+</li>
+</ul>
+<p>Example: “pyranha” is your project name and package name.
+Tell contributors that:</p>
+<ul class="simple">
+<li><p>pyranha-related distributions should use the “pyranha” keyword</p></li>
+<li><p>pyranha-related distributions providing templates should also use
+“templates” keyword.</p></li>
+<li><p>community contributions should be released under “pyranhacontrib”
+namespace (i.e. use “pyranhacontrib.*” pattern).</p></li>
+</ul>
+</section>
+</section>
+<section id="register-names-with-pypi">
+<h2><a class="toc-backref" href="#id103">Register names with PyPI</a><a class="headerlink" href="#register-names-with-pypi" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="http://pypi.python.org">PyPI</a> <a class="footnote-reference brackets" href="#id26" id="id29">11</a> is the central place for distributions in Python community.
+So, it is also the place where to register project and package names.</p>
+<p>See <a class="reference external" href="https://docs.python.org/3/distutils/packageindex.html">Registering with the Package Index</a> <a class="footnote-reference brackets" href="#id61" id="id62">27</a> for details.</p>
+</section>
+<section id="recipes">
+<h2><a class="toc-backref" href="#id104">Recipes</a><a class="headerlink" href="#recipes" title="Permalink to this headline">¶</a></h2>
+<p>The following recipes will help you follow the guidelines and
+conventions above.</p>
+<section id="how-to-check-for-name-availability">
+<h3><a class="toc-backref" href="#id105">How to check for name availability?</a><a class="headerlink" href="#how-to-check-for-name-availability" title="Permalink to this headline">¶</a></h3>
+<p>Before you choose a project name, make sure it hasn’t already been
+registered in the following locations:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://pypi.python.org">PyPI</a> <a class="footnote-reference brackets" href="#id26" id="id30">11</a></p></li>
+<li><p>that’s all. PyPI is the only official place.</p></li>
+</ul>
+<p>As an example, you could also check in various locations such as
+popular code hosting services, but keep in mind that PyPI is the only
+place you can <strong>register</strong> for names in Python community.</p>
+<p>That’s why it is important you <a class="reference internal" href="#register-names-with-pypi">register names with PyPI</a>.</p>
+<p>Also make sure the names of distributed packages or modules haven’t
+already been registered:</p>
+<ul class="simple">
+<li><p>in the <a class="reference external" href="http://docs.python.org/library/index.html">Python Standard Library</a> <a class="footnote-reference brackets" href="#id63" id="id64">28</a>.</p></li>
+<li><p>inside projects at <cite>PyPI</cite>. There is currently no helper for that.
+Notice that the more projects follow the <a class="reference internal" href="#use-a-single-name">use a single name</a> rule,
+the easier is the verification.</p></li>
+<li><p>you may <a class="reference external" href="#if-in-doubt-ask">ask the community</a>.</p></li>
+</ul>
+<p>The <a class="reference internal" href="#use-a-single-name">use a single name</a> rule also helps you avoid clashes with
+package names: if a project name is available, then the package name
+has good chances to be available too.</p>
+</section>
+<section id="how-to-rename-a-project">
+<h3><a class="toc-backref" href="#id106">How to rename a project?</a><a class="headerlink" href="#how-to-rename-a-project" title="Permalink to this headline">¶</a></h3>
+<p>Renaming a project is possible, but keep in mind that it will cause
+some confusions. So, pay particular attention to README and
+documentation, so that users understand what happened.</p>
+<ol class="arabic simple">
+<li><p>First of all, <strong>do not remove legacy distributions from PyPI</strong>.
+Because some users may be using them.</p></li>
+<li><p>Copy the legacy project, then change names (project and
+package/module). Pay attention to, at least:</p>
+<ul class="simple">
+<li><p>packaging files,</p></li>
+<li><p>folder name that contains source files,</p></li>
+<li><p>documentation, including README,</p></li>
+<li><p>import statements in code.</p></li>
+</ul>
+</li>
+<li><p>Assign <code class="docutils literal notranslate"><span class="pre">Obsoletes-Dist</span></code> metadata to new distribution in setup.cfg
+file. See <a class="reference external" href="http://www.python.org/dev/peps/pep-0345/#obsoletes-dist-multiple-use">PEP 345 about Obsolete-Dist</a> <a class="footnote-reference brackets" href="#id65" id="id66">29</a> and <a class="reference external" href="http://docs.python.org/dev/packaging/setupcfg.html">setup.cfg
+specification</a> <a class="footnote-reference brackets" href="#id67" id="id68">30</a>.</p></li>
+<li><p>Release a new version of the renamed project, then publish it.</p></li>
+<li><p>Edit legacy project:</p>
+<ul class="simple">
+<li><p>add dependency to new project,</p></li>
+<li><p>drop everything except packaging stuff,</p></li>
+<li><p>add the <code class="docutils literal notranslate"><span class="pre">Development</span> <span class="pre">Status</span> <span class="pre">::</span> <span class="pre">7</span> <span class="pre">-</span> <span class="pre">Inactive</span></code> classifier in
+setup script,</p></li>
+<li><p>publish a new release.</p></li>
+</ul>
+</li>
+</ol>
+<p>So, users of the legacy package:</p>
+<ul class="simple">
+<li><p>can continue using the legacy distributions at a deprecated version,</p></li>
+<li><p>can upgrade to last version of legacy distribution, which is
+empty…</p></li>
+<li><p>… and automatically download new distribution as a dependency of
+the legacy one.</p></li>
+</ul>
+<p>Users who discover the legacy project see it is inactive.</p>
+<section id="improved-handling-of-renamed-projects-on-pypi">
+<h4><a class="toc-backref" href="#id107">Improved handling of renamed projects on PyPI</a><a class="headerlink" href="#improved-handling-of-renamed-projects-on-pypi" title="Permalink to this headline">¶</a></h4>
+<p>If many projects follow <a class="reference external" href="#how-to-rename-a-project">Renaming howto</a>
+recipe, then many legacy distributions will have the following
+characteristics:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Development</span> <span class="pre">Status</span> <span class="pre">::</span> <span class="pre">7</span> <span class="pre">-</span> <span class="pre">Inactive</span></code> classifier.</p></li>
+<li><p>latest version is empty, except packaging stuff.</p></li>
+<li><p>latest version “redirects” to another distribution. E.g. it has a
+single dependency on the renamed project.</p></li>
+<li><p>referenced as <code class="docutils literal notranslate"><span class="pre">Obsoletes-Dist</span></code> in a newer distribution.</p></li>
+</ul>
+<p>So it will be possible to detect renamed projects and improve
+readability on PyPI. So that users can focus on active distributions.
+But this feature is not required now. There is no urge. It won’t be
+covered in this document.</p>
+</section>
+</section>
+<section id="how-to-apply-naming-guidelines-on-existing-projects">
+<h3><a class="toc-backref" href="#id108">How to apply naming guidelines on existing projects?</a><a class="headerlink" href="#how-to-apply-naming-guidelines-on-existing-projects" title="Permalink to this headline">¶</a></h3>
+<p><strong>There is no obligation for existing projects to be renamed</strong>. The
+choice is left to project authors and mainteners for obvious reasons.</p>
+<p>However, project authors are invited to:</p>
+<ul class="simple">
+<li><p>at least, <a class="reference internal" href="#state-about-current-naming">state about current naming</a>.</p></li>
+<li><p>then <a class="reference external" href="#promote-migrations">plan and promote migration</a>.</p></li>
+<li><p>optionally actually <a class="reference external" href="#how-to-rename-a-project">rename existing project or distributed
+packages/modules</a>.</p></li>
+</ul>
+<section id="state-about-current-naming">
+<h4><a class="toc-backref" href="#id109">State about current naming</a><a class="headerlink" href="#state-about-current-naming" title="Permalink to this headline">¶</a></h4>
+<p>The important thing, at first, is that you state about current
+choices:</p>
+<ul class="simple">
+<li><p>Ask yourself “why did I choose the current name?”, then document it.</p></li>
+<li><p>If there are differences with the guidelines provided in this
+document, you should tell your users.</p></li>
+<li><p>If possible, create issues in the project’s bugtracker, at least for
+record. Then you are free to resolve them later, or maybe mark them
+as “wontfix”.</p></li>
+</ul>
+<p>Projects that are meant to receive contributions from community should
+also <a class="reference internal" href="#organize-community-contributions">organize community contributions</a>.</p>
+</section>
+<section id="promote-migrations">
+<h4><a class="toc-backref" href="#id110">Promote migrations</a><a class="headerlink" href="#promote-migrations" title="Permalink to this headline">¶</a></h4>
+<p>Every Python developer should migrate whenever possible, or promote
+the migrations in their respective communities.</p>
+<p>Apply these guidelines on your projects, then the community will see
+it is safe.</p>
+<p>In particular, “leaders” such as authors of popular projects are
+influential, they have power and, thus, responsibility over
+communities.</p>
+<p>Apply these guidelines on popular projects, then communities will
+adopt the conventions too.</p>
+<p><strong>Projects should promote migrations when they release a new (major)
+version</strong>, particularly <a class="reference external" href="#opportunity">if this version introduces support for
+Python 3.x, new standard library’s packaging or namespace packages</a>.</p>
+</section>
+<section id="opportunity">
+<h4><a class="toc-backref" href="#id111">Opportunity</a><a class="headerlink" href="#opportunity" title="Permalink to this headline">¶</a></h4>
+<p>As of Python 3.3 being developed:</p>
+<ul class="simple">
+<li><p>many projects are not Python 3.x compatible. It includes “big”
+products or frameworks. It means that many projects will have to do
+a migration to support Python 3.x.</p></li>
+<li><p>packaging (aka distutils2) is on the starting blocks. When it is
+released, projects will be invited to migrate and use new packaging.</p></li>
+<li><p><a class="reference external" href="http://www.python.org/dev/peps/pep-0420/">PEP 420</a> <a class="footnote-reference brackets" href="#id10" id="id12">4</a> brings official support of namespace packages to Python.</p></li>
+</ul>
+<p>It means that most active projects should be about to migrate in the
+next year(s) to support Python 3.x, new packaging or new namespace
+packages.</p>
+<p>Such an opportunity is unique and won’t come again soon!
+So let’s introduce and promote naming conventions as soon as possible
+(i.e. <strong>now</strong>).</p>
+</section>
+</section>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#id112">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<p>Additional background:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://www.martinaspeli.net/articles/the-naming-of-things-package-names-and-namespaces">Martin Aspeli’s article about names</a> <a class="footnote-reference brackets" href="#id69" id="id70">31</a>. Some parts of this document
+are quotes from this article.</p></li>
+<li><p><a class="reference external" href="http://docs.python.org/dev/packaging/">in development official packaging documentation</a> <a class="footnote-reference brackets" href="#id71" id="id72">32</a>.</p></li>
+<li><p><a class="reference external" href="http://guide.python-distribute.org/specification.html#naming-specification">The Hitchhiker’s Guide to Packaging</a> <a class="footnote-reference brackets" href="#id73" id="id74">33</a>, which has an empty
+placeholder for “naming specification”.</p></li>
+</ul>
+<p>References and footnotes:</p>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dd><p><a class="reference external" href="https://packaging.python.org/glossary/">https://packaging.python.org/glossary/</a></p>
+</dd>
+<dt class="label" id="id4"><span class="brackets">2</span><span class="fn-backref">(<a href="#id5">1</a>,<a href="#id6">2</a>,<a href="#id7">3</a>)</span></dt>
+<dd><p><a class="reference external" href="http://www.python.org/dev/peps/pep-0008/#package-and-module-names">http://www.python.org/dev/peps/pep-0008/#package-and-module-names</a></p>
+</dd>
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id9">3</a></span></dt>
+<dd><p><a class="reference external" href="http://www.python.org/dev/peps/pep-0345/">http://www.python.org/dev/peps/pep-0345/</a></p>
+</dd>
+<dt class="label" id="id10"><span class="brackets">4</span><span class="fn-backref">(<a href="#id11">1</a>,<a href="#id12">2</a>)</span></dt>
+<dd><p><a class="reference external" href="http://www.python.org/dev/peps/pep-0420/">http://www.python.org/dev/peps/pep-0420/</a></p>
+</dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id14">5</a></span></dt>
+<dd><p><a class="reference external" href="http://www.python.org/dev/peps/pep-3108/">http://www.python.org/dev/peps/pep-3108/</a></p>
+</dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id16">6</a></span></dt>
+<dd><p><a class="reference external" href="http://www.python.org/community/">http://www.python.org/community/</a></p>
+</dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id18">7</a></span></dt>
+<dd><p><a class="reference external" href="http://pypi.python.org/pypi/gp.fileupload/">http://pypi.python.org/pypi/gp.fileupload/</a></p>
+</dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id20">8</a></span></dt>
+<dd><p><a class="reference external" href="http://pypi.python.org/pypi/zest.releaser/">http://pypi.python.org/pypi/zest.releaser/</a></p>
+</dd>
+<dt class="label" id="id21"><span class="brackets"><a class="fn-backref" href="#id22">9</a></span></dt>
+<dd><p><a class="reference external" href="http://djangoproject.com/">http://djangoproject.com/</a></p>
+</dd>
+<dt class="label" id="id23"><span class="brackets">10</span><span class="fn-backref">(<a href="#id24">1</a>,<a href="#id25">2</a>)</span></dt>
+<dd><p><a class="reference external" href="http://sphinx.pocoo.org">http://sphinx.pocoo.org</a></p>
+</dd>
+<dt class="label" id="id26"><span class="brackets">11</span><span class="fn-backref">(<a href="#id27">1</a>,<a href="#id28">2</a>,<a href="#id29">3</a>,<a href="#id30">4</a>)</span></dt>
+<dd><p><a class="reference external" href="http://pypi.python.org">http://pypi.python.org</a></p>
+</dd>
+<dt class="label" id="id31"><span class="brackets"><a class="fn-backref" href="#id32">12</a></span></dt>
+<dd><p><a class="reference external" href="http://pypi.python.org/pypi/collective.recaptcha/">http://pypi.python.org/pypi/collective.recaptcha/</a></p>
+</dd>
+<dt class="label" id="id33"><span class="brackets"><a class="fn-backref" href="#id34">13</a></span></dt>
+<dd><p><a class="reference external" href="http://pypi.python.org/pypi/pipeline/">http://pypi.python.org/pypi/pipeline/</a></p>
+</dd>
+<dt class="label" id="id35"><span class="brackets"><a class="fn-backref" href="#id36">14</a></span></dt>
+<dd><p><a class="reference external" href="http://pypi.python.org/pypi/python-pipeline/">http://pypi.python.org/pypi/python-pipeline/</a></p>
+</dd>
+<dt class="label" id="id37"><span class="brackets"><a class="fn-backref" href="#id38">15</a></span></dt>
+<dd><p><a class="reference external" href="http://pypi.python.org/pypi/django-pipeline/">http://pypi.python.org/pypi/django-pipeline/</a></p>
+</dd>
+<dt class="label" id="id39"><span class="brackets"><a class="fn-backref" href="#id40">16</a></span></dt>
+<dd><p><a class="reference external" href="http://docs.python.org/dev/packaging/setupscript.html">http://docs.python.org/dev/packaging/setupscript.html</a></p>
+</dd>
+<dt class="label" id="id41"><span class="brackets"><a class="fn-backref" href="#id42">17</a></span></dt>
+<dd><p><a class="reference external" href="http://pypi.python.org/pypi/setuptools">http://pypi.python.org/pypi/setuptools</a></p>
+</dd>
+<dt class="label" id="id43"><span class="brackets"><a class="fn-backref" href="#id44">18</a></span></dt>
+<dd><p><a class="reference external" href="http://packages.python.org/distribute/">http://packages.python.org/distribute/</a></p>
+</dd>
+<dt class="label" id="id45"><span class="brackets"><a class="fn-backref" href="#id46">19</a></span></dt>
+<dd><p><a class="reference external" href="http://pypi.python.org/pypi/Pillow/">http://pypi.python.org/pypi/Pillow/</a></p>
+</dd>
+<dt class="label" id="id47"><span class="brackets"><a class="fn-backref" href="#id48">20</a></span></dt>
+<dd><p><a class="reference external" href="http://pypi.python.org/pypi/PIL/">http://pypi.python.org/pypi/PIL/</a></p>
+</dd>
+<dt class="label" id="id49"><span class="brackets"><a class="fn-backref" href="#id50">21</a></span></dt>
+<dd><p><a class="reference external" href="http://pypi.python.org/pypi/celery/">http://pypi.python.org/pypi/celery/</a></p>
+</dd>
+<dt class="label" id="id51"><span class="brackets"><a class="fn-backref" href="#id52">22</a></span></dt>
+<dd><p><a class="reference external" href="http://www.rabbitmq.com">http://www.rabbitmq.com</a></p>
+</dd>
+<dt class="label" id="id53"><span class="brackets"><a class="fn-backref" href="#id54">23</a></span></dt>
+<dd><p><a class="reference external" href="http://pypi.python.org/pypi/DateUtils/">http://pypi.python.org/pypi/DateUtils/</a></p>
+</dd>
+<dt class="label" id="id55"><span class="brackets"><a class="fn-backref" href="#id56">24</a></span></dt>
+<dd><p><a class="reference external" href="http://pypi.python.org/pypi?:action=browse&amp;show=all&amp;c=525">http://pypi.python.org/pypi?:action=browse&amp;show=all&amp;c=525</a></p>
+</dd>
+<dt class="label" id="id57"><span class="brackets"><a class="fn-backref" href="#id58">25</a></span></dt>
+<dd><p><a class="reference external" href="http://www.python.org/dev/peps/pep-0020/">http://www.python.org/dev/peps/pep-0020/</a></p>
+</dd>
+<dt class="label" id="id59"><span class="brackets"><a class="fn-backref" href="#id60">26</a></span></dt>
+<dd><p><a class="reference external" href="http://plone.org/community/develop">http://plone.org/community/develop</a></p>
+</dd>
+<dt class="label" id="id61"><span class="brackets"><a class="fn-backref" href="#id62">27</a></span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/distutils/packageindex.html">https://docs.python.org/3/distutils/packageindex.html</a></p>
+</dd>
+<dt class="label" id="id63"><span class="brackets"><a class="fn-backref" href="#id64">28</a></span></dt>
+<dd><p><a class="reference external" href="http://docs.python.org/library/index.html">http://docs.python.org/library/index.html</a></p>
+</dd>
+<dt class="label" id="id65"><span class="brackets"><a class="fn-backref" href="#id66">29</a></span></dt>
+<dd><p><a class="reference external" href="http://www.python.org/dev/peps/pep-0345/#obsoletes-dist-multiple-use">http://www.python.org/dev/peps/pep-0345/#obsoletes-dist-multiple-use</a></p>
+</dd>
+<dt class="label" id="id67"><span class="brackets"><a class="fn-backref" href="#id68">30</a></span></dt>
+<dd><p><a class="reference external" href="http://docs.python.org/dev/packaging/setupcfg.html">http://docs.python.org/dev/packaging/setupcfg.html</a></p>
+</dd>
+<dt class="label" id="id69"><span class="brackets"><a class="fn-backref" href="#id70">31</a></span></dt>
+<dd><p><a class="reference external" href="http://www.martinaspeli.net/articles/the-naming-of-things-package-names-and-namespaces">http://www.martinaspeli.net/articles/the-naming-of-things-package-names-and-namespaces</a></p>
+</dd>
+<dt class="label" id="id71"><span class="brackets"><a class="fn-backref" href="#id72">32</a></span></dt>
+<dd><p><a class="reference external" href="http://docs.python.org/dev/packaging/">http://docs.python.org/dev/packaging/</a></p>
+</dd>
+<dt class="label" id="id73"><span class="brackets"><a class="fn-backref" href="#id74">33</a></span></dt>
+<dd><p><a class="reference external" href="http://guide.python-distribute.org/specification.html#naming-specification">http://guide.python-distribute.org/specification.html#naming-specification</a></p>
+</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#id113">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0423.txt">https://github.com/python/peps/blob/master/pep-0423.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0423.txt">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0001/">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0100/">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0101/">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0374/">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0391/">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0451/">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0471/">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0479/">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0495/">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0558/">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0570/">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0584/">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0586/">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0594/">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3118/">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-0422/" title="previous chapter">PEP 422 – Simpler customisation of class creation</a></li>
+      <li>Next: <a href="../pep-0424/" title="next chapter">PEP 424 – A method for exposing a length hint</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-0423.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

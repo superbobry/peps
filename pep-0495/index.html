@@ -1,0 +1,1579 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 495 – Local Time Disambiguation &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 496 – Environment Markers" href="../pep-0496/" />
+    <link rel="prev" title="PEP 494 – Python 3.6 Release Schedule" href="../pep-0494/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pep-495-local-time-disambiguation">
+<h1 class="page-title">PEP 495 – Local Time Disambiguation<a class="headerlink" href="#pep-495-local-time-disambiguation" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>495</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>Local Time Disambiguation</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Alexander Belopolsky &lt;<a class="reference external" href="mailto:alexander&#46;belopolsky&#37;&#52;&#48;gmail&#46;com?subject=PEP%20-1">alexander.belopolsky&#32;&#97;t&#32;gmail.com</a>&gt;, Tim Peters &lt;<a class="reference external" href="mailto:tim&#46;peters&#37;&#52;&#48;gmail&#46;com?subject=PEP%20-1">tim.peters&#32;&#97;t&#32;gmail.com</a>&gt;</p>
+</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><p>Datetime-SIG &lt;<a class="reference external" href="mailto:datetime-sig&#37;&#52;&#48;python&#46;org">datetime-sig<span>&#64;</span>python<span>&#46;</span>org</a>&gt;</p>
+</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd"><p>Final</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Standards Track</p>
+</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd"><p>02-Aug-2015</p>
+</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even"><p>3.6</p>
+</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://mail.python.org/pipermail/datetime-sig/2015-September/000900.html">https://mail.python.org/pipermail/datetime-sig/2015-September/000900.html</a></p>
+</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#abstract" id="id24">Abstract</a></p></li>
+<li><p><a class="reference internal" href="#rationale" id="id25">Rationale</a></p></li>
+<li><p><a class="reference internal" href="#terminology" id="id26">Terminology</a></p></li>
+<li><p><a class="reference internal" href="#proposal" id="id27">Proposal</a></p>
+<ul>
+<li><p><a class="reference internal" href="#the-fold-attribute" id="id28">The “fold” attribute</a></p></li>
+<li><p><a class="reference internal" href="#affected-apis" id="id29">Affected APIs</a></p>
+<ul>
+<li><p><a class="reference internal" href="#attributes" id="id30">Attributes</a></p></li>
+<li><p><a class="reference internal" href="#constructors" id="id31">Constructors</a></p></li>
+<li><p><a class="reference internal" href="#methods" id="id32">Methods</a></p></li>
+<li><p><a class="reference internal" href="#c-api" id="id33">C-API</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#affected-behaviors" id="id34">Affected Behaviors</a></p>
+<ul>
+<li><p><a class="reference internal" href="#what-time-is-it" id="id35">What time is it?</a></p></li>
+<li><p><a class="reference internal" href="#conversion-from-naive-to-aware" id="id36">Conversion from naive to aware</a></p></li>
+<li><p><a class="reference internal" href="#conversion-from-posix-seconds-from-epoch" id="id37">Conversion from POSIX seconds from EPOCH</a></p></li>
+<li><p><a class="reference internal" href="#conversion-to-posix-seconds-from-epoch" id="id38">Conversion to POSIX seconds from EPOCH</a></p></li>
+<li><p><a class="reference internal" href="#aware-datetime-instances" id="id39">Aware datetime instances</a></p></li>
+<li><p><a class="reference internal" href="#combining-and-splitting-date-and-time" id="id40">Combining and splitting date and time</a></p></li>
+<li><p><a class="reference internal" href="#pickles" id="id41">Pickles</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#implementations-of-tzinfo-in-the-standard-library" id="id42">Implementations of tzinfo in the Standard Library</a></p></li>
+<li><p><a class="reference internal" href="#guidelines-for-new-tzinfo-implementations" id="id43">Guidelines for New tzinfo Implementations</a></p>
+<ul>
+<li><p><a class="reference internal" href="#ignorance-is-bliss" id="id44">Ignorance is Bliss</a></p></li>
+<li><p><a class="reference internal" href="#in-the-fold" id="id45">In the Fold</a></p></li>
+<li><p><a class="reference internal" href="#mind-the-gap" id="id46">Mind the Gap</a></p></li>
+<li><p><a class="reference internal" href="#summary-of-rules-at-a-transition" id="id47">Summary of Rules at a Transition</a></p></li>
+<li><p><a class="reference internal" href="#the-dst-transitions" id="id48">The DST Transitions</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#temporal-arithmetic-and-comparison-operators" id="id49">Temporal Arithmetic and Comparison Operators</a></p>
+<ul>
+<li><p><a class="reference internal" href="#aware-datetime-equality-comparison" id="id50">Aware datetime Equality Comparison</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#backward-and-forward-compatibility" id="id51">Backward and Forward Compatibility</a></p></li>
+<li><p><a class="reference internal" href="#questions-and-answers" id="id52">Questions and Answers</a></p>
+<ul>
+<li><p><a class="reference internal" href="#why-not-call-the-new-flag-isdst" id="id53">Why not call the new flag “isdst”?</a></p>
+<ul>
+<li><p><a class="reference internal" href="#a-non-technical-answer" id="id54">A non-technical answer</a></p></li>
+<li><p><a class="reference internal" href="#a-technical-reason" id="id55">A technical reason</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#why-fold" id="id56">Why “fold”?</a></p></li>
+<li><p><a class="reference internal" href="#what-is-first" id="id57">What is “first”?</a></p></li>
+<li><p><a class="reference internal" href="#are-two-values-enough" id="id58">Are two values enough?</a></p>
+<ul>
+<li><p><a class="reference internal" href="#backward-compatibility" id="id59">Backward Compatibility</a></p></li>
+<li><p><a class="reference internal" href="#analogy-with-tm-isdst" id="id60">Analogy with tm_isdst</a></p></li>
+<li><p><a class="reference internal" href="#strict-invalid-time-checking" id="id61">Strict Invalid Time Checking</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#implementation" id="id62">Implementation</a></p></li>
+<li><p><a class="reference internal" href="#id13" id="id63">References</a></p></li>
+<li><p><a class="reference internal" href="#copyright" id="id64">Copyright</a></p></li>
+<li><p><a class="reference internal" href="#picture-credit" id="id65">Picture Credit</a></p></li>
+</ul>
+</div>
+<section id="abstract">
+<h2><a class="toc-backref" href="#id24">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP adds a new attribute <code class="docutils literal notranslate"><span class="pre">fold</span></code> to instances of the
+<code class="docutils literal notranslate"><span class="pre">datetime.time</span></code> and <code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> classes that can be used
+to differentiate between two moments in time for which local times are
+the same.  The allowed values for the <code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute will be 0 and 1
+with 0 corresponding to the earlier and 1 to the later of the two
+possible readings of an ambiguous local time.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#id25">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>In most world locations, there have been and will be times when
+local clocks are moved back. <a class="footnote-reference brackets" href="#id2" id="id1">1</a> In those times, intervals are
+introduced in which local clocks show the same time twice in the same
+day.  In these situations, the information displayed on a local clock
+(or stored in a Python datetime instance) is insufficient to identify
+a particular moment in time.  The proposed solution is to add an
+attribute to the <code class="docutils literal notranslate"><span class="pre">datetime</span></code> instances taking values of 0 and 1 that
+will enumerate the two ambiguous times.</p>
+<a class="reference internal image-reference" href="../_images/pep-0495-daylightsavings.png"><img alt="../_images/pep-0495-daylightsavings.png" class="align-center" src="../_images/pep-0495-daylightsavings.png" style="width: 30%;" /></a>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>People who live in locations observing the Daylight Saving
+Time (DST) move their clocks back (usually one hour) every Fall.</p>
+<p>It is less common, but occasionally clocks can be moved back for
+other reasons.  For example, Ukraine skipped the spring-forward
+transition in March 1990 and instead, moved their clocks back on
+July 1, 1990, switching from Moscow Time to Eastern European Time.
+In that case, standard (winter) time was in effect before and after
+the transition.</p>
+<p>Both DST and standard time changes may result in time shifts other
+than an hour.</p>
+</dd>
+</dl>
+</section>
+<section id="terminology">
+<h2><a class="toc-backref" href="#id26">Terminology</a><a class="headerlink" href="#terminology" title="Permalink to this headline">¶</a></h2>
+<p>When clocks are moved back, we say that a <em>fold</em> <a class="footnote-reference brackets" href="#id4" id="id3">2</a> is created in time.
+When the clocks are moved forward, a <em>gap</em> is created.  A local time
+that falls in the fold is called <em>ambiguous</em>.  A local time that falls
+in the gap is called <em>missing</em>.</p>
+<dl class="footnote brackets">
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id3">2</a></span></dt>
+<dd><p>The term “fall-backward fold” was invented in 1990s by Paul Eggert
+of UCLA who used it in various Internet discussions related to the C language
+standard that culminated in a <a class="reference external" href="http://www.open-std.org/jtc1/sc22/wg14/docs/rr/dr_136.html">Defect Report #139</a> <a class="footnote-reference brackets" href="#id14" id="id15">7</a>.</p>
+</dd>
+</dl>
+</section>
+<section id="proposal">
+<h2><a class="toc-backref" href="#id27">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<section id="the-fold-attribute">
+<h3><a class="toc-backref" href="#id28">The “fold” attribute</a><a class="headerlink" href="#the-fold-attribute" title="Permalink to this headline">¶</a></h3>
+<p>We propose adding an attribute called <code class="docutils literal notranslate"><span class="pre">fold</span></code> to instances of the
+<code class="docutils literal notranslate"><span class="pre">datetime.time</span></code> and <code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> classes.  This attribute
+should have the value 0 for all instances except those that represent
+the second (chronologically) moment in time in an ambiguous case. For
+those instances, the value will be 1. <a class="footnote-reference brackets" href="#id6" id="id5">3</a></p>
+<dl class="footnote brackets">
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id5">3</a></span></dt>
+<dd><p>An instance that has <code class="docutils literal notranslate"><span class="pre">fold=1</span></code> in a non-ambiguous case is
+said to represent an invalid time (or is invalid for short), but
+users are not prevented from creating invalid instances by passing
+<code class="docutils literal notranslate"><span class="pre">fold=1</span></code> to a constructor or to a <code class="docutils literal notranslate"><span class="pre">replace()</span></code> method.  This
+is similar to the current situation with the instances that fall in
+the spring-forward gap.  Such instances don’t represent any valid
+time, but neither the constructors nor the <code class="docutils literal notranslate"><span class="pre">replace()</span></code> methods
+check whether the instances that they produce are valid.  Moreover,
+this PEP specifies how various functions should behave when given an
+invalid instance.</p>
+</dd>
+</dl>
+</section>
+<section id="affected-apis">
+<h3><a class="toc-backref" href="#id29">Affected APIs</a><a class="headerlink" href="#affected-apis" title="Permalink to this headline">¶</a></h3>
+<section id="attributes">
+<h4><a class="toc-backref" href="#id30">Attributes</a><a class="headerlink" href="#attributes" title="Permalink to this headline">¶</a></h4>
+<p>Instances of <code class="docutils literal notranslate"><span class="pre">datetime.time</span></code> and <code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> classes will
+get a new attribute <code class="docutils literal notranslate"><span class="pre">fold</span></code> with two possible values: 0 and 1.</p>
+</section>
+<section id="constructors">
+<h4><a class="toc-backref" href="#id31">Constructors</a><a class="headerlink" href="#constructors" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">__new__</span></code> methods of the <code class="docutils literal notranslate"><span class="pre">datetime.time</span></code> and
+<code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> classes will get a new keyword-only argument
+called <code class="docutils literal notranslate"><span class="pre">fold</span></code> with the default value 0.  The value of the
+<code class="docutils literal notranslate"><span class="pre">fold</span></code> argument will be used to initialize the value of the
+<code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute in the returned instance.</p>
+</section>
+<section id="methods">
+<h4><a class="toc-backref" href="#id32">Methods</a><a class="headerlink" href="#methods" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">replace()</span></code> methods of the <code class="docutils literal notranslate"><span class="pre">datetime.time</span></code> and
+<code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> classes will get a new keyword-only argument
+called <code class="docutils literal notranslate"><span class="pre">fold</span></code>.  It will behave similarly to the other <code class="docutils literal notranslate"><span class="pre">replace()</span></code>
+arguments: if the <code class="docutils literal notranslate"><span class="pre">fold</span></code> argument is specified and given a value 0
+or 1, the new instance returned by <code class="docutils literal notranslate"><span class="pre">replace()</span></code> will have its
+<code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute set to that value.  In CPython, any non-integer
+value of <code class="docutils literal notranslate"><span class="pre">fold</span></code> will raise a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>, but other
+implementations may allow the value <code class="docutils literal notranslate"><span class="pre">None</span></code> to behave the same as
+when <code class="docutils literal notranslate"><span class="pre">fold</span></code> is not given. <a class="footnote-reference brackets" href="#id8" id="id7">4</a>  (This is
+a nod to the existing difference in treatment of <code class="docutils literal notranslate"><span class="pre">None</span></code> arguments
+in other positions of this method across Python implementations;
+it is not intended to leave the door open for future alternative
+interpretation of <code class="docutils literal notranslate"><span class="pre">fold=None</span></code>.)  If the <code class="docutils literal notranslate"><span class="pre">fold</span></code> argument is not
+specified, the original value of the <code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute is copied to
+the result.</p>
+<dl class="footnote brackets">
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id7">4</a></span></dt>
+<dd><p>PyPy and pure Python implementation distributed with CPython
+already allow <code class="docutils literal notranslate"><span class="pre">None</span></code> to mean “no change to existing
+attribute” for all other attributes in <code class="docutils literal notranslate"><span class="pre">replace()</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="c-api">
+<h4><a class="toc-backref" href="#id33">C-API</a><a class="headerlink" href="#c-api" title="Permalink to this headline">¶</a></h4>
+<p>Access macros will be defined to extract the value of <code class="docutils literal notranslate"><span class="pre">fold</span></code> from
+<code class="docutils literal notranslate"><span class="pre">PyDateTime_DateTime</span></code> and <code class="docutils literal notranslate"><span class="pre">PyDateTime_Time</span></code> objects.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">PyDateTime_GET_FOLD</span><span class="p">(</span><span class="n">PyDateTime_DateTime</span> <span class="o">*</span><span class="n">o</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Return the value of <code class="docutils literal notranslate"><span class="pre">fold</span></code> as a C <code class="docutils literal notranslate"><span class="pre">int</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">PyDateTime_TIME_GET_FOLD</span><span class="p">(</span><span class="n">PyDateTime_Time</span> <span class="o">*</span><span class="n">o</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Return the value of <code class="docutils literal notranslate"><span class="pre">fold</span></code> as a C <code class="docutils literal notranslate"><span class="pre">int</span></code>.</p>
+<p>New constructors will be defined that will take an additional
+argument to specify the value of <code class="docutils literal notranslate"><span class="pre">fold</span></code> in the created
+instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span><span class="o">*</span> <span class="n">PyDateTime_FromDateAndTimeAndFold</span><span class="p">(</span>
+    <span class="nb">int</span> <span class="n">year</span><span class="p">,</span> <span class="nb">int</span> <span class="n">month</span><span class="p">,</span> <span class="nb">int</span> <span class="n">day</span><span class="p">,</span> <span class="nb">int</span> <span class="n">hour</span><span class="p">,</span> <span class="nb">int</span> <span class="n">minute</span><span class="p">,</span>
+    <span class="nb">int</span> <span class="n">second</span><span class="p">,</span> <span class="nb">int</span> <span class="n">usecond</span><span class="p">,</span> <span class="nb">int</span> <span class="n">fold</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Return a <code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> object with the specified year, month,
+day, hour, minute, second, microsecond and fold.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span><span class="o">*</span> <span class="n">PyTime_FromTimeAndFold</span><span class="p">(</span>
+    <span class="nb">int</span> <span class="n">hour</span><span class="p">,</span> <span class="nb">int</span> <span class="n">minute</span><span class="p">,</span> <span class="nb">int</span> <span class="n">second</span><span class="p">,</span> <span class="nb">int</span> <span class="n">usecond</span><span class="p">,</span> <span class="nb">int</span> <span class="n">fold</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Return a <code class="docutils literal notranslate"><span class="pre">datetime.time</span></code> object with the specified hour, minute,
+second, microsecond and fold.</p>
+</section>
+</section>
+<section id="affected-behaviors">
+<h3><a class="toc-backref" href="#id34">Affected Behaviors</a><a class="headerlink" href="#affected-behaviors" title="Permalink to this headline">¶</a></h3>
+<section id="what-time-is-it">
+<h4><a class="toc-backref" href="#id35">What time is it?</a><a class="headerlink" href="#what-time-is-it" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">datetime.now()</span></code> method called without arguments will set
+<code class="docutils literal notranslate"><span class="pre">fold=1</span></code> when returning the second of the two ambiguous times in a
+system local time fold.  When called with a <code class="docutils literal notranslate"><span class="pre">tzinfo</span></code> argument, the
+value of the <code class="docutils literal notranslate"><span class="pre">fold</span></code> will be determined by the <code class="docutils literal notranslate"><span class="pre">tzinfo.fromutc()</span></code>
+implementation.  When an instance of the <code class="docutils literal notranslate"><span class="pre">datetime.timezone</span></code> class
+(the stdlib’s fixed-offset <code class="docutils literal notranslate"><span class="pre">tzinfo</span></code> subclass,
+<em>e.g.</em> <code class="docutils literal notranslate"><span class="pre">datetime.timezone.utc</span></code>) is passed as <code class="docutils literal notranslate"><span class="pre">tzinfo</span></code>, the
+returned datetime instance will always have <code class="docutils literal notranslate"><span class="pre">fold=0</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">datetime.utcnow()</span></code> method is unaffected.</p>
+</section>
+<section id="conversion-from-naive-to-aware">
+<h4><a class="toc-backref" href="#id36">Conversion from naive to aware</a><a class="headerlink" href="#conversion-from-naive-to-aware" title="Permalink to this headline">¶</a></h4>
+<p>A new feature is proposed to facilitate conversion from naive datetime
+instances to aware.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">astimezone()</span></code> method will now work for naive <code class="docutils literal notranslate"><span class="pre">self</span></code>.  The
+system local timezone will be assumed in this case and the <code class="docutils literal notranslate"><span class="pre">fold</span></code>
+flag will be used to determine which local timezone is in effect
+in the ambiguous case.</p>
+<p>For example, on a system set to US/Eastern timezone:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2014</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dt</span><span class="o">.</span><span class="n">astimezone</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%D %T %Z%z&#39;</span><span class="p">)</span>
+<span class="go">&#39;11/02/14 01:30:00 EDT-0400&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">fold</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astimezone</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%D %T %Z%z&#39;</span><span class="p">)</span>
+<span class="go">&#39;11/02/14 01:30:00 EST-0500&#39;</span>
+</pre></div>
+</div>
+<p>An implication is that <code class="docutils literal notranslate"><span class="pre">datetime.now(tz)</span></code> is fully equivalent to
+<code class="docutils literal notranslate"><span class="pre">datetime.now().astimezone(tz)</span></code> (assuming <code class="docutils literal notranslate"><span class="pre">tz</span></code> is an instance of a
+post-PEP <code class="docutils literal notranslate"><span class="pre">tzinfo</span></code> implementation, i.e. one that correctly handles
+and sets <code class="docutils literal notranslate"><span class="pre">fold</span></code>).</p>
+</section>
+<section id="conversion-from-posix-seconds-from-epoch">
+<h4><a class="toc-backref" href="#id37">Conversion from POSIX seconds from EPOCH</a><a class="headerlink" href="#conversion-from-posix-seconds-from-epoch" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">fromtimestamp()</span></code> static method of <code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> will
+set the <code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute appropriately in the returned object.</p>
+<p>For example, on a system set to US/Eastern timezone:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="mi">1414906200</span><span class="p">)</span>
+<span class="go">datetime.datetime(2014, 11, 2, 1, 30)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="mi">1414906200</span> <span class="o">+</span> <span class="mi">3600</span><span class="p">)</span>
+<span class="go">datetime.datetime(2014, 11, 2, 1, 30, fold=1)</span>
+</pre></div>
+</div>
+</section>
+<section id="conversion-to-posix-seconds-from-epoch">
+<h4><a class="toc-backref" href="#id38">Conversion to POSIX seconds from EPOCH</a><a class="headerlink" href="#conversion-to-posix-seconds-from-epoch" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">timestamp()</span></code> method of <code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> will return different
+values for <code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> instances that differ only by the value
+of their <code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute if and only if these instances represent an
+ambiguous or a missing time.</p>
+<p>When a <code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> instance <code class="docutils literal notranslate"><span class="pre">dt</span></code> represents an ambiguous
+time, there are two values <code class="docutils literal notranslate"><span class="pre">s0</span></code> and <code class="docutils literal notranslate"><span class="pre">s1</span></code> such that:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">s0</span><span class="p">)</span> <span class="o">==</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">s1</span><span class="p">)</span> <span class="o">==</span> <span class="n">dt</span>
+</pre></div>
+</div>
+<p>(This is because <code class="docutils literal notranslate"><span class="pre">==</span></code> disregards the value of fold – see below.)</p>
+<p>In this case, <code class="docutils literal notranslate"><span class="pre">dt.timestamp()</span></code> will return the smaller of <code class="docutils literal notranslate"><span class="pre">s0</span></code>
+and <code class="docutils literal notranslate"><span class="pre">s1</span></code> values if <code class="docutils literal notranslate"><span class="pre">dt.fold</span> <span class="pre">==</span> <span class="pre">0</span></code> and the larger otherwise.</p>
+<p>For example, on a system set to US/Eastern timezone:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">datetime</span><span class="p">(</span><span class="mi">2014</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">fold</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+<span class="go">1414906200.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">datetime</span><span class="p">(</span><span class="mi">2014</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">fold</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+<span class="go">1414909800.0</span>
+</pre></div>
+</div>
+<p>When a <code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> instance <code class="docutils literal notranslate"><span class="pre">dt</span></code> represents a missing
+time, there is no value <code class="docutils literal notranslate"><span class="pre">s</span></code> for which:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">==</span> <span class="n">dt</span>
+</pre></div>
+</div>
+<p>but we can form two “nice to know” values of <code class="docutils literal notranslate"><span class="pre">s</span></code> that differ
+by the size of the gap in seconds.  One is the value of <code class="docutils literal notranslate"><span class="pre">s</span></code>
+that would correspond to <code class="docutils literal notranslate"><span class="pre">dt</span></code> in a timezone where the UTC offset
+is always the same as the offset right before the gap and the
+other is the similar value but in a timezone the  UTC offset
+is always the same as the offset right after the gap.</p>
+<p>The value returned by <code class="docutils literal notranslate"><span class="pre">dt.timestamp()</span></code> given a missing
+<code class="docutils literal notranslate"><span class="pre">dt</span></code> will be the greater of the two “nice to know” values
+if <code class="docutils literal notranslate"><span class="pre">dt.fold</span> <span class="pre">==</span> <span class="pre">0</span></code> and the smaller otherwise.
+(This is not a typo – it’s intentionally backwards from the rule for
+ambiguous times.)</p>
+<p>For example, on a system set to US/Eastern timezone:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">fold</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+<span class="go">1425799800.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">fold</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+<span class="go">1425796200.0</span>
+</pre></div>
+</div>
+</section>
+<section id="aware-datetime-instances">
+<h4><a class="toc-backref" href="#id39">Aware datetime instances</a><a class="headerlink" href="#aware-datetime-instances" title="Permalink to this headline">¶</a></h4>
+<p>Users of pre-PEP implementations of <code class="docutils literal notranslate"><span class="pre">tzinfo</span></code> will not see any
+changes in the behavior of their aware datetime instances.  Two such
+instances that differ only by the value of the <code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute will
+not be distinguishable by any means other than an explicit access to
+the <code class="docutils literal notranslate"><span class="pre">fold</span></code> value.  (This is because these pre-PEP implementations
+are not using the <code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute.)</p>
+<p>On the other hand, if an object’s <code class="docutils literal notranslate"><span class="pre">tzinfo</span></code> is set to a fold-aware
+implementation, then in a fold or gap the value of <code class="docutils literal notranslate"><span class="pre">fold</span></code> will
+affect the result of several methods:
+<code class="docutils literal notranslate"><span class="pre">utcoffset()</span></code>, <code class="docutils literal notranslate"><span class="pre">dst()</span></code>, <code class="docutils literal notranslate"><span class="pre">tzname()</span></code>, <code class="docutils literal notranslate"><span class="pre">astimezone()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">strftime()</span></code> (if the “%Z” or “%z” directive is used in the format
+specification), <code class="docutils literal notranslate"><span class="pre">isoformat()</span></code>, and <code class="docutils literal notranslate"><span class="pre">timetuple()</span></code>.</p>
+</section>
+<section id="combining-and-splitting-date-and-time">
+<h4><a class="toc-backref" href="#id40">Combining and splitting date and time</a><a class="headerlink" href="#combining-and-splitting-date-and-time" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">datetime.datetime.combine()</span></code> method will copy the value of the
+<code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute to the resulting <code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> instance.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">datetime.datetime.time()</span></code> method will copy the value of the
+<code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute to the resulting <code class="docutils literal notranslate"><span class="pre">datetime.time</span></code> instance.</p>
+</section>
+<section id="pickles">
+<h4><a class="toc-backref" href="#id41">Pickles</a><a class="headerlink" href="#pickles" title="Permalink to this headline">¶</a></h4>
+<p>The value of the fold attribute will only be saved in pickles created
+with protocol version 4 (introduced in Python 3.4) or greater.</p>
+<p>Pickle sizes for the <code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> and <code class="docutils literal notranslate"><span class="pre">datetime.time</span></code>
+objects will not change.  The <code class="docutils literal notranslate"><span class="pre">fold</span></code> value will be encoded in the
+first bit of the 3rd byte of the <code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code>
+pickle payload; and in the first bit of the 1st byte of the
+<code class="docutils literal notranslate"><span class="pre">datetime.time</span></code> payload.  In the <a class="reference external" href="https://hg.python.org/cpython/file/v3.5.0/Include/datetime.h#l10">current implementation</a> <a class="footnote-reference brackets" href="#id16" id="id17">8</a>
+these bytes are used to store the month (1-12) and hour (0-23) values
+and the first bit is always 0.  We picked these bytes because they are
+the only bytes that are checked by the current unpickle code.  Thus
+loading post-PEP <code class="docutils literal notranslate"><span class="pre">fold=1</span></code> pickles in a pre-PEP Python will result in
+an exception rather than an instance with out of range components.</p>
+</section>
+</section>
+</section>
+<section id="implementations-of-tzinfo-in-the-standard-library">
+<h2><a class="toc-backref" href="#id42">Implementations of tzinfo in the Standard Library</a><a class="headerlink" href="#implementations-of-tzinfo-in-the-standard-library" title="Permalink to this headline">¶</a></h2>
+<p>No new implementations of <code class="docutils literal notranslate"><span class="pre">datetime.tzinfo</span></code> abstract class are
+proposed in this PEP.  The existing (fixed offset) timezones do
+not introduce ambiguous local times and their <code class="docutils literal notranslate"><span class="pre">utcoffset()</span></code>
+implementation will return the same constant value as they do now
+regardless of the value of <code class="docutils literal notranslate"><span class="pre">fold</span></code>.</p>
+<p>The basic implementation of <code class="docutils literal notranslate"><span class="pre">fromutc()</span></code> in the abstract
+<code class="docutils literal notranslate"><span class="pre">datetime.tzinfo</span></code> class will not change.  It is currently not used
+anywhere in the stdlib because the only included <code class="docutils literal notranslate"><span class="pre">tzinfo</span></code>
+implementation (the <code class="docutils literal notranslate"><span class="pre">datetime.timezone</span></code> class implementing fixed
+offset timezones) overrides <code class="docutils literal notranslate"><span class="pre">fromutc()</span></code>.  Keeping the default
+implementation unchanged has the benefit that pre-PEP 3rd party
+implementations that inherit the default <code class="docutils literal notranslate"><span class="pre">fromutc()</span></code> are not
+accidentally affected.</p>
+</section>
+<section id="guidelines-for-new-tzinfo-implementations">
+<h2><a class="toc-backref" href="#id43">Guidelines for New tzinfo Implementations</a><a class="headerlink" href="#guidelines-for-new-tzinfo-implementations" title="Permalink to this headline">¶</a></h2>
+<p>Implementors of concrete <code class="docutils literal notranslate"><span class="pre">datetime.tzinfo</span></code> subclasses who want to
+support variable UTC offsets (due to DST and other causes) should follow
+these guidelines.</p>
+<section id="ignorance-is-bliss">
+<h3><a class="toc-backref" href="#id44">Ignorance is Bliss</a><a class="headerlink" href="#ignorance-is-bliss" title="Permalink to this headline">¶</a></h3>
+<p>New implementations of <code class="docutils literal notranslate"><span class="pre">utcoffset()</span></code>, <code class="docutils literal notranslate"><span class="pre">tzname()</span></code> and <code class="docutils literal notranslate"><span class="pre">dst()</span></code>
+methods should ignore the value of <code class="docutils literal notranslate"><span class="pre">fold</span></code> unless they are called on
+the ambiguous or missing times.</p>
+</section>
+<section id="in-the-fold">
+<h3><a class="toc-backref" href="#id45">In the Fold</a><a class="headerlink" href="#in-the-fold" title="Permalink to this headline">¶</a></h3>
+<p>New subclasses should override the base-class <code class="docutils literal notranslate"><span class="pre">fromutc()</span></code> method and
+implement it so that in all cases where two different UTC times <code class="docutils literal notranslate"><span class="pre">u0</span></code> and
+<code class="docutils literal notranslate"><span class="pre">u1</span></code> (<code class="docutils literal notranslate"><span class="pre">u0</span></code> &lt;<code class="docutils literal notranslate"><span class="pre">u1</span></code>) correspond to the same local time <code class="docutils literal notranslate"><span class="pre">t</span></code>,
+<code class="docutils literal notranslate"><span class="pre">fromutc(u0)</span></code> will return an instance with <code class="docutils literal notranslate"><span class="pre">fold=0</span></code> and
+<code class="docutils literal notranslate"><span class="pre">fromutc(u1)</span></code> will return an instance with <code class="docutils literal notranslate"><span class="pre">fold=1</span></code>.  In all
+other cases the returned instance should have <code class="docutils literal notranslate"><span class="pre">fold=0</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">utcoffset()</span></code>, <code class="docutils literal notranslate"><span class="pre">tzname()</span></code> and <code class="docutils literal notranslate"><span class="pre">dst()</span></code> methods should use the
+value of the fold attribute to determine whether an otherwise
+ambiguous time <code class="docutils literal notranslate"><span class="pre">t</span></code> corresponds to the time before or after the
+transition.  By definition, <code class="docutils literal notranslate"><span class="pre">utcoffset()</span></code> is greater before and
+smaller after any transition that creates a fold.  The values returned
+by <code class="docutils literal notranslate"><span class="pre">tzname()</span></code> and <code class="docutils literal notranslate"><span class="pre">dst()</span></code> may or may not depend on the value of
+the <code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute depending on the kind of the transition.</p>
+<a class="reference internal image-reference" href="../_images/pep-0495-fold-2.png"><img alt="../_images/pep-0495-fold-2.png" class="align-center" src="../_images/pep-0495-fold-2.png" style="width: 60%;" /></a>
+<p>The sketch above illustrates the relationship between the UTC and
+local time around a fall-back transition.  The zig-zag line is a graph
+of the function implemented by <code class="docutils literal notranslate"><span class="pre">fromutc()</span></code>.  Two intervals on the
+UTC axis adjacent to the transition point and having the size of the
+time shift at the transition are mapped to the same interval on the
+local axis.  New implementations of <code class="docutils literal notranslate"><span class="pre">fromutc()</span></code> method should set
+the fold attribute to 1 when <code class="docutils literal notranslate"><span class="pre">self</span></code> is in the region marked in
+yellow on the UTC axis.  (All intervals should be treated as closed on
+the left and open on the right.)</p>
+</section>
+<section id="mind-the-gap">
+<h3><a class="toc-backref" href="#id46">Mind the Gap</a><a class="headerlink" href="#mind-the-gap" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">fromutc()</span></code> method should never produce a time in the gap.</p>
+<p>If the <code class="docutils literal notranslate"><span class="pre">utcoffset()</span></code>, <code class="docutils literal notranslate"><span class="pre">tzname()</span></code> or <code class="docutils literal notranslate"><span class="pre">dst()</span></code> method is called on a
+local time that falls in a gap, the rules in effect before the
+transition should be used if <code class="docutils literal notranslate"><span class="pre">fold=0</span></code>.  Otherwise, the rules in
+effect after the transition should be used.</p>
+<a class="reference internal image-reference" href="../_images/pep-0495-gap.png"><img alt="../_images/pep-0495-gap.png" class="align-center" src="../_images/pep-0495-gap.png" style="width: 60%;" /></a>
+<p>The sketch above illustrates the relationship between the UTC and
+local time around a spring-forward transition.  At the transition, the
+local clock is advanced skipping the times in the gap.  For the
+purposes of determining the values of <code class="docutils literal notranslate"><span class="pre">utcoffset()</span></code>, <code class="docutils literal notranslate"><span class="pre">tzname()</span></code>
+and <code class="docutils literal notranslate"><span class="pre">dst()</span></code>, the line before the transition is extended forward to
+find the UTC time corresponding to the time in the gap with <code class="docutils literal notranslate"><span class="pre">fold=0</span></code>
+and for instances with <code class="docutils literal notranslate"><span class="pre">fold=1</span></code>, the line after the transition is
+extended back.</p>
+</section>
+<section id="summary-of-rules-at-a-transition">
+<h3><a class="toc-backref" href="#id47">Summary of Rules at a Transition</a><a class="headerlink" href="#summary-of-rules-at-a-transition" title="Permalink to this headline">¶</a></h3>
+<p>On ambiguous/missing times <code class="docutils literal notranslate"><span class="pre">utcoffset()</span></code> should return values
+according to the following table:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 26%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>fold=0</p></th>
+<th class="head"><p>fold=1</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Fold</p></td>
+<td><p>oldoff</p></td>
+<td><p>newoff = oldoff - delta</p></td>
+</tr>
+<tr class="row-odd"><td><p>Gap</p></td>
+<td><p>oldoff</p></td>
+<td><p>newoff = oldoff + delta</p></td>
+</tr>
+</tbody>
+</table>
+<p>where <code class="docutils literal notranslate"><span class="pre">oldoff</span></code> (<code class="docutils literal notranslate"><span class="pre">newoff</span></code>) is the UTC offset before (after) the
+transition and <code class="docutils literal notranslate"><span class="pre">delta</span></code> is the absolute size of the fold or the gap.</p>
+<p>Note that the interpretation of the fold attribute is consistent in
+the fold and gap cases.  In both cases, <code class="docutils literal notranslate"><span class="pre">fold=0</span></code> (<code class="docutils literal notranslate"><span class="pre">fold=1</span></code>) means
+use <code class="docutils literal notranslate"><span class="pre">fromutc()</span></code> line before (after) the transition to find the UTC
+time.  Only in the “Fold” case, the UTC times <code class="docutils literal notranslate"><span class="pre">u0</span></code> and <code class="docutils literal notranslate"><span class="pre">u1</span></code> are
+“real” solutions for the equation <code class="docutils literal notranslate"><span class="pre">fromutc(u)</span> <span class="pre">==</span> <span class="pre">t</span></code>, while in the
+“Gap” case they are “imaginary” solutions.</p>
+</section>
+<section id="the-dst-transitions">
+<h3><a class="toc-backref" href="#id48">The DST Transitions</a><a class="headerlink" href="#the-dst-transitions" title="Permalink to this headline">¶</a></h3>
+<p>On a missing time introduced at the start of DST, the values returned
+by <code class="docutils literal notranslate"><span class="pre">utcoffset()</span></code> and <code class="docutils literal notranslate"><span class="pre">dst()</span></code> methods should be as follows</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 31%" />
+<col style="width: 35%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>fold=0</p></th>
+<th class="head"><p>fold=1</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>utcoffset()</p></td>
+<td><p>stdoff</p></td>
+<td><p>stdoff + dstoff</p></td>
+</tr>
+<tr class="row-odd"><td><p>dst()</p></td>
+<td><p>zero</p></td>
+<td><p>dstoff</p></td>
+</tr>
+</tbody>
+</table>
+<p>On an ambiguous time introduced at the end of DST, the values returned
+by <code class="docutils literal notranslate"><span class="pre">utcoffset()</span></code> and <code class="docutils literal notranslate"><span class="pre">dst()</span></code> methods should be as follows</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 31%" />
+<col style="width: 35%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>fold=0</p></th>
+<th class="head"><p>fold=1</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>utcoffset()</p></td>
+<td><p>stdoff + dstoff</p></td>
+<td><p>stdoff</p></td>
+</tr>
+<tr class="row-odd"><td><p>dst()</p></td>
+<td><p>dstoff</p></td>
+<td><p>zero</p></td>
+</tr>
+</tbody>
+</table>
+<p>where <code class="docutils literal notranslate"><span class="pre">stdoff</span></code> is the standard (non-DST) offset, <code class="docutils literal notranslate"><span class="pre">dstoff</span></code> is the
+DST correction (typically <code class="docutils literal notranslate"><span class="pre">dstoff</span> <span class="pre">=</span> <span class="pre">timedelta(hours=1)</span></code>) and <code class="docutils literal notranslate"><span class="pre">zero</span>
+<span class="pre">=</span> <span class="pre">timedelta(0)</span></code>.</p>
+</section>
+</section>
+<section id="temporal-arithmetic-and-comparison-operators">
+<h2><a class="toc-backref" href="#id49">Temporal Arithmetic and Comparison Operators</a><a class="headerlink" href="#temporal-arithmetic-and-comparison-operators" title="Permalink to this headline">¶</a></h2>
+<blockquote class="epigraph">
+<div><div class="line-block">
+<div class="line">In <em>mathematicks</em> he was greater</div>
+<div class="line">Than Tycho Brahe, or Erra Pater:</div>
+<div class="line">For he, by geometric scale,</div>
+<div class="line">Could take the size of pots of ale;</div>
+<div class="line">Resolve, by sines and tangents straight,</div>
+<div class="line">If bread or butter wanted weight,</div>
+<div class="line">And wisely tell what hour o’ th’ day</div>
+<div class="line">The clock does strike by algebra.</div>
+</div>
+<blockquote>
+<div><p>– “Hudibras” by Samuel Butler</p>
+</div></blockquote>
+</div></blockquote>
+<p>The value of the <code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute will be ignored in all operations
+with naive datetime instances.  As a consequence, naive
+<code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> or <code class="docutils literal notranslate"><span class="pre">datetime.time</span></code> instances that differ only
+by the value of <code class="docutils literal notranslate"><span class="pre">fold</span></code> will compare as equal.  Applications that
+need to differentiate between such instances should check the value of
+<code class="docutils literal notranslate"><span class="pre">fold</span></code> explicitly or convert those instances to a timezone that does
+not have ambiguous times (such as UTC).</p>
+<p>The value of <code class="docutils literal notranslate"><span class="pre">fold</span></code> will also be ignored whenever a timedelta is
+added to or subtracted from a datetime instance which may be either
+aware or naive.  The result of addition (subtraction) of a timedelta
+to (from) a datetime will always have <code class="docutils literal notranslate"><span class="pre">fold</span></code> set to 0 even if the
+original datetime instance had <code class="docutils literal notranslate"><span class="pre">fold=1</span></code>.</p>
+<p>No changes are proposed to the way the difference <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">-</span> <span class="pre">s</span></code> is
+computed for datetime instances <code class="docutils literal notranslate"><span class="pre">t</span></code> and <code class="docutils literal notranslate"><span class="pre">s</span></code>.  If both instances
+are naive or <code class="docutils literal notranslate"><span class="pre">t.tzinfo</span></code> is the same instance as <code class="docutils literal notranslate"><span class="pre">s.tzinfo</span></code>
+(<code class="docutils literal notranslate"><span class="pre">t.tzinfo</span> <span class="pre">is</span> <span class="pre">s.tzinfo</span></code> evaluates to <code class="docutils literal notranslate"><span class="pre">True</span></code>) then <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">-</span> <span class="pre">s</span></code> is a
+timedelta <code class="docutils literal notranslate"><span class="pre">d</span></code> such that <code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">+</span> <span class="pre">d</span> <span class="pre">==</span> <span class="pre">t</span></code>.  As explained in the
+previous paragraph, timedelta addition ignores both <code class="docutils literal notranslate"><span class="pre">fold</span></code> and
+<code class="docutils literal notranslate"><span class="pre">tzinfo</span></code> attributes and so does intra-zone or naive datetime
+subtraction.</p>
+<p>Naive and intra-zone comparisons will ignore the value of <code class="docutils literal notranslate"><span class="pre">fold</span></code> and
+return the same results as they do now.  (This is the only way to
+preserve backward compatibility.  If you need an aware intra-zone
+comparison that uses the fold, convert both sides to UTC first.)</p>
+<p>The inter-zone subtraction will be defined as it is now: <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">-</span> <span class="pre">s</span></code> is
+computed as <code class="docutils literal notranslate"><span class="pre">(t</span> <span class="pre">-</span> <span class="pre">t.utcoffset())</span> <span class="pre">-</span> <span class="pre">(s</span> <span class="pre">-</span>
+<span class="pre">s.utcoffset()).replace(tzinfo=t.tzinfo)</span></code>, but the result will
+depend on the values of <code class="docutils literal notranslate"><span class="pre">t.fold</span></code> and <code class="docutils literal notranslate"><span class="pre">s.fold</span></code> when either
+<code class="docutils literal notranslate"><span class="pre">t.tzinfo</span></code> or <code class="docutils literal notranslate"><span class="pre">s.tzinfo</span></code> is post-PEP. <a class="footnote-reference brackets" href="#id10" id="id9">5</a></p>
+<dl class="footnote brackets">
+<dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id9">5</a></span></dt>
+<dd><p>Note that the new rules may result in a paradoxical situation
+when <code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">==</span> <span class="pre">t</span></code> but <code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">-</span> <span class="pre">u</span> <span class="pre">!=</span> <span class="pre">t</span> <span class="pre">-</span> <span class="pre">u</span></code>.  Such paradoxes are
+not really new and are inherent in the overloading of the minus
+operator differently for intra- and inter-zone operations.  For
+example, one can easily construct datetime instances <code class="docutils literal notranslate"><span class="pre">t</span></code> and <code class="docutils literal notranslate"><span class="pre">s</span></code>
+with some variable offset <code class="docutils literal notranslate"><span class="pre">tzinfo</span></code> and a datetime <code class="docutils literal notranslate"><span class="pre">u</span></code> with
+<code class="docutils literal notranslate"><span class="pre">tzinfo=timezone.utc</span></code> such that <code class="docutils literal notranslate"><span class="pre">(t</span> <span class="pre">-</span> <span class="pre">u)</span> <span class="pre">-</span> <span class="pre">(s</span> <span class="pre">-</span> <span class="pre">u)</span> <span class="pre">!=</span> <span class="pre">t</span> <span class="pre">-</span> <span class="pre">s</span></code>.
+The explanation for this paradox is that the minuses inside the
+parentheses and the two other minuses are really three different
+operations: inter-zone datetime subtraction, timedelta subtraction,
+and intra-zone datetime subtraction, which each have the mathematical
+properties of subtraction separately, but not when combined in a
+single expression.</p>
+</dd>
+</dl>
+<section id="aware-datetime-equality-comparison">
+<h3><a class="toc-backref" href="#id50">Aware datetime Equality Comparison</a><a class="headerlink" href="#aware-datetime-equality-comparison" title="Permalink to this headline">¶</a></h3>
+<p>The aware datetime comparison operators will work the same as they do
+now, with results indirectly affected by the value of <code class="docutils literal notranslate"><span class="pre">fold</span></code> whenever
+the <code class="docutils literal notranslate"><span class="pre">utcoffset()</span></code> value of one of the operands depends on it, with one
+exception.  Whenever one or both of the operands in inter-zone comparison is
+such that its <code class="docutils literal notranslate"><span class="pre">utcoffset()</span></code> depends on the value of its <code class="docutils literal notranslate"><span class="pre">fold</span></code>
+fold attribute, the result is <code class="docutils literal notranslate"><span class="pre">False</span></code>. <a class="footnote-reference brackets" href="#id12" id="id11">6</a></p>
+<dl class="footnote brackets">
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id11">6</a></span></dt>
+<dd><p>This exception is designed to preserve the hash and equivalence
+invariants in the face of paradoxes of inter-zone arithmetic.</p>
+</dd>
+</dl>
+<p>Formally, <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">==</span> <span class="pre">s</span></code> when <code class="docutils literal notranslate"><span class="pre">t.tzinfo</span> <span class="pre">is</span> <span class="pre">s.tzinfo</span></code> evaluates to
+<code class="docutils literal notranslate"><span class="pre">False</span></code> can be defined as follows.  Let <code class="docutils literal notranslate"><span class="pre">toutc(t,</span> <span class="pre">fold)</span></code> be a
+function that takes an aware datetime instance <code class="docutils literal notranslate"><span class="pre">t</span></code> and returns a
+naive instance representing the same time in UTC assuming a given
+value of <code class="docutils literal notranslate"><span class="pre">fold</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">toutc</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">fold</span><span class="p">):</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">t</span> <span class="o">-</span> <span class="n">t</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">fold</span><span class="o">=</span><span class="n">fold</span><span class="p">)</span><span class="o">.</span><span class="n">utcoffset</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">==</span> <span class="pre">s</span></code> is equivalent to</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">toutc</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">fold</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="n">toutc</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">fold</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="n">toutc</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">fold</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="n">toutc</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">fold</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="backward-and-forward-compatibility">
+<h2><a class="toc-backref" href="#id51">Backward and Forward Compatibility</a><a class="headerlink" href="#backward-and-forward-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>This proposal will have little effect on the programs that do not read
+the <code class="docutils literal notranslate"><span class="pre">fold</span></code> flag explicitly or use tzinfo implementations that do.
+The only visible change for such programs will be that conversions to
+and from POSIX timestamps will now round-trip correctly (up to
+floating point rounding).  Programs that implemented a work-around to
+the old incorrect behavior may need to be modified.</p>
+<p>Pickles produced by older programs will remain fully forward
+compatible.  Only datetime/time instances with <code class="docutils literal notranslate"><span class="pre">fold=1</span></code> pickled
+in the new versions will become unreadable by the older Python
+versions.  Pickles of instances with <code class="docutils literal notranslate"><span class="pre">fold=0</span></code> (which is the
+default) will remain unchanged.</p>
+</section>
+<section id="questions-and-answers">
+<h2><a class="toc-backref" href="#id52">Questions and Answers</a><a class="headerlink" href="#questions-and-answers" title="Permalink to this headline">¶</a></h2>
+<section id="why-not-call-the-new-flag-isdst">
+<h3><a class="toc-backref" href="#id53">Why not call the new flag “isdst”?</a><a class="headerlink" href="#why-not-call-the-new-flag-isdst" title="Permalink to this headline">¶</a></h3>
+<section id="a-non-technical-answer">
+<h4><a class="toc-backref" href="#id54">A non-technical answer</a><a class="headerlink" href="#a-non-technical-answer" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p>Alice: Bob - let’s have a stargazing party at 01:30 AM tomorrow!</p></li>
+<li><p>Bob: Should I presume initially that Daylight Saving Time is or is
+not in effect for the specified time?</p></li>
+<li><p>Alice: Huh?</p></li>
+</ul>
+<hr class="docutils" />
+<ul class="simple">
+<li><p>Bob: Alice - let’s have a stargazing party at 01:30 AM tomorrow!</p></li>
+<li><p>Alice: You know, Bob, 01:30 AM will happen twice tomorrow. Which time do you have in mind?</p></li>
+<li><p>Bob:  I did not think about it, but let’s pick the first.</p></li>
+</ul>
+<hr class="docutils" />
+<p>(same characters, an hour later)</p>
+<hr class="docutils" />
+<ul class="simple">
+<li><p>Bob: Alice - this Py-O-Clock gadget of mine asks me to choose
+between fold=0 and fold=1 when I set it for tomorrow 01:30 AM.
+What should I do?</p></li>
+<li><p>Alice: I’ve never hear of a Py-O-Clock, but I guess fold=0 is
+the first 01:30 AM and fold=1 is the second.</p></li>
+</ul>
+</section>
+<section id="a-technical-reason">
+<h4><a class="toc-backref" href="#id55">A technical reason</a><a class="headerlink" href="#a-technical-reason" title="Permalink to this headline">¶</a></h4>
+<p>While the <code class="docutils literal notranslate"><span class="pre">tm_isdst</span></code> field of the <code class="docutils literal notranslate"><span class="pre">time.struct_time</span></code> object can be
+used to disambiguate local times in the fold, the semantics of such
+disambiguation are completely different from the proposal in this PEP.</p>
+<p>The main problem with the <code class="docutils literal notranslate"><span class="pre">tm_isdst</span></code> field is that it is impossible
+to know what value is appropriate for <code class="docutils literal notranslate"><span class="pre">tm_isdst</span></code> without knowing the
+details about the time zone that are only available to the <code class="docutils literal notranslate"><span class="pre">tzinfo</span></code>
+implementation.  Thus while <code class="docutils literal notranslate"><span class="pre">tm_isdst</span></code> is useful in the <em>output</em> of
+methods such as <code class="docutils literal notranslate"><span class="pre">time.localtime</span></code>, it is cumbersome as an <em>input</em> of
+methods such as <code class="docutils literal notranslate"><span class="pre">time.mktime</span></code>.</p>
+<p>If the programmer misspecified a non-negative value of <code class="docutils literal notranslate"><span class="pre">tm_isdst</span></code> to
+<code class="docutils literal notranslate"><span class="pre">time.mktime</span></code>, the result will be time that is 1 hour off and since
+there is rarely a way to know anything about DST <em>before</em> a call to
+<code class="docutils literal notranslate"><span class="pre">time.mktime</span></code> is made, the only sane choice is usually
+<code class="docutils literal notranslate"><span class="pre">tm_isdst=-1</span></code>.</p>
+<p>Unlike <code class="docutils literal notranslate"><span class="pre">tm_isdst</span></code>, the proposed <code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute has no effect on
+the interpretation of the datetime instance unless without that
+attribute two (or no) interpretations are possible.</p>
+<p>Since it would be very confusing to have something called <code class="docutils literal notranslate"><span class="pre">isdst</span></code>
+that does not have the same semantics as <code class="docutils literal notranslate"><span class="pre">tm_isdst</span></code>, we need a
+different name.  Moreover, the <code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> class already has
+a method called <code class="docutils literal notranslate"><span class="pre">dst()</span></code> and if we called <code class="docutils literal notranslate"><span class="pre">fold</span></code> “isdst”, we would
+necessarily have situations when “isdst” is zero but <code class="docutils literal notranslate"><span class="pre">dst()</span></code> is not
+or the other way around.</p>
+</section>
+</section>
+<section id="why-fold">
+<h3><a class="toc-backref" href="#id56">Why “fold”?</a><a class="headerlink" href="#why-fold" title="Permalink to this headline">¶</a></h3>
+<p>Suggested by Guido van Rossum and favored by one (but initially
+disfavored by another) author.  A consensus was reached after the
+allowed values for the attribute were changed from False/True to 0/1.
+The noun “fold” has correct connotations and easy mnemonic rules, but
+at the same time does not invite unbased assumptions.</p>
+</section>
+<section id="what-is-first">
+<h3><a class="toc-backref" href="#id57">What is “first”?</a><a class="headerlink" href="#what-is-first" title="Permalink to this headline">¶</a></h3>
+<p>This was a working name of the attribute chosen initially because the
+obvious alternative (“second”) conflicts with the existing attribute.
+It was rejected mostly on the grounds that it would make True a
+default value.</p>
+<p>The following alternative names have also been considered:</p>
+<dl class="simple">
+<dt><strong>later</strong></dt><dd><p>A close contender to “fold”.  One author dislikes it because
+it is confusable with equally fitting “latter,” but in the age
+of auto-completion everywhere this is a small consideration.  A
+stronger objection may be that in the case of missing time, we
+will have <code class="docutils literal notranslate"><span class="pre">later=True</span></code> instance converted to an earlier time by
+<code class="docutils literal notranslate"><span class="pre">.astimezone(timezone.utc)</span></code> that that with <code class="docutils literal notranslate"><span class="pre">later=False</span></code>.
+Yet again, this can be interpreted as a desirable indication that
+the original time is invalid.</p>
+</dd>
+<dt><strong>which</strong></dt><dd><p>The <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2015-April/139099.html">original</a> <a class="footnote-reference brackets" href="#id18" id="id19">9</a> placeholder name for the <cite>localtime</cite> function
+branch index was <a class="reference external" href="https://mail.python.org/pipermail/datetime-sig/2015-August/000479.html">independently proposed</a> <a class="footnote-reference brackets" href="#id20" id="id21">10</a> for the name of the
+disambiguation attribute and received <a class="reference external" href="https://mail.python.org/pipermail/datetime-sig/2015-August/000483.html">some support</a> <a class="footnote-reference brackets" href="#id22" id="id23">11</a>.</p>
+</dd>
+<dt><strong>repeated</strong></dt><dd><p>Did not receive any support on the mailing list.</p>
+</dd>
+<dt><strong>ltdf</strong></dt><dd><p>(Local Time Disambiguation Flag) - short and no-one will attempt
+to guess what it means without reading the docs.  (This abbreviation
+was used in PEP discussions with the meaning <code class="docutils literal notranslate"><span class="pre">ltdf=False</span></code> is the
+earlier by those who didn’t want to endorse any of the alternatives.)</p>
+</dd>
+</dl>
+</section>
+<section id="are-two-values-enough">
+<h3><a class="toc-backref" href="#id58">Are two values enough?</a><a class="headerlink" href="#are-two-values-enough" title="Permalink to this headline">¶</a></h3>
+<p>Several reasons have been raised to allow a <code class="docutils literal notranslate"><span class="pre">None</span></code> or -1 value for
+the <code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute: backward compatibility, analogy with <code class="docutils literal notranslate"><span class="pre">tm_isdst</span></code>
+and strict checking for invalid times.</p>
+<section id="backward-compatibility">
+<h4><a class="toc-backref" href="#id59">Backward Compatibility</a><a class="headerlink" href="#backward-compatibility" title="Permalink to this headline">¶</a></h4>
+<p>It has been suggested that backward compatibility can be improved if
+the default value of the <code class="docutils literal notranslate"><span class="pre">fold</span></code> flag was <code class="docutils literal notranslate"><span class="pre">None</span></code> which would
+signal that pre-PEP behavior is requested.  Based on the analysis
+below, we believe that the proposed changes with the <code class="docutils literal notranslate"><span class="pre">fold=0</span></code>
+default are sufficiently backward compatible.</p>
+<p>This PEP provides only three ways for a program to discover that two
+otherwise identical datetime instances have different values of
+<code class="docutils literal notranslate"><span class="pre">fold</span></code>: (1) an explicit check of the <code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute; (2) if
+the instances are naive - conversion to another timezone using the
+<code class="docutils literal notranslate"><span class="pre">astimezone()</span></code> method; and (3) conversion to <code class="docutils literal notranslate"><span class="pre">float</span></code> using the
+<code class="docutils literal notranslate"><span class="pre">timestamp()</span></code> method.</p>
+<p>Since <code class="docutils literal notranslate"><span class="pre">fold</span></code> is a new attribute, the first option is not available
+to the existing programs.  Note that option (2) only works for naive
+datetimes that happen to be in a fold or a gap in the system time
+zone.  In all other cases, the value of <code class="docutils literal notranslate"><span class="pre">fold</span></code> will be ignored in
+the conversion unless the instances use a <code class="docutils literal notranslate"><span class="pre">fold</span></code>-aware <code class="docutils literal notranslate"><span class="pre">tzinfo</span></code>
+which would not be available in a pre-PEP program.  Similarly, the
+<code class="docutils literal notranslate"><span class="pre">astimezone()</span></code> called on a naive instance will not be available in
+such program because <code class="docutils literal notranslate"><span class="pre">astimezone()</span></code> does not currently work with
+naive datetimes.</p>
+<p>This leaves us with only one situation where an existing program can
+start producing different results after the implementation of this PEP:
+when a <code class="docutils literal notranslate"><span class="pre">datetime.timestamp()</span></code> method is called on a naive datetime
+instance that happen to be in the fold or the gap.  In the current
+implementation, the result is undefined.  Depending on the system
+<code class="docutils literal notranslate"><span class="pre">mktime</span></code> implementation, the programs can see different results or
+errors in those cases.  With this PEP in place, the value of timestamp
+will be well-defined in those cases but will depend on the value of
+the <code class="docutils literal notranslate"><span class="pre">fold</span></code> flag.  We consider the change in
+<code class="docutils literal notranslate"><span class="pre">datetime.timestamp()</span></code> method behavior a bug fix enabled by this
+PEP.  The old behavior can still be emulated by the users who depend
+on it by writing <code class="docutils literal notranslate"><span class="pre">time.mktime(dt.timetuple())</span> <span class="pre">+</span> <span class="pre">1e-6*dt.microsecond</span></code>
+instead of <code class="docutils literal notranslate"><span class="pre">dt.timestamp()</span></code>.</p>
+</section>
+<section id="analogy-with-tm-isdst">
+<h4><a class="toc-backref" href="#id60">Analogy with tm_isdst</a><a class="headerlink" href="#analogy-with-tm-isdst" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">time.mktime</span></code> interface allows three values for the <code class="docutils literal notranslate"><span class="pre">tm_isdst</span></code>
+flag: -1, 0, and 1.  As we explained above, -1 (asking <code class="docutils literal notranslate"><span class="pre">mktime</span></code> to
+determine whether DST is in effect for the given time from the rest of
+the fields) is the only choice that is useful in practice.</p>
+<p>With the <code class="docutils literal notranslate"><span class="pre">fold</span></code> flag, however, <code class="docutils literal notranslate"><span class="pre">datetime.timestamp()</span></code> will return
+the same value as <code class="docutils literal notranslate"><span class="pre">mktime</span></code> with <code class="docutils literal notranslate"><span class="pre">tm_isdst=-1</span></code> in 99.98% of the
+time for most time zones with DST transitions.  Moreover,
+<code class="docutils literal notranslate"><span class="pre">tm_isdst=-1</span></code>-like behavior is specified <em>regardless</em> of the value
+of <code class="docutils literal notranslate"><span class="pre">fold</span></code>.</p>
+<p>It is only in the 0.02% cases (2 hours per year) that the
+<code class="docutils literal notranslate"><span class="pre">datetime.timestamp()</span></code> and <code class="docutils literal notranslate"><span class="pre">mktime</span></code> with <code class="docutils literal notranslate"><span class="pre">tm_isdst=-1</span></code> may
+disagree.  However, even in this case, most of the <code class="docutils literal notranslate"><span class="pre">mktime</span></code>
+implementations will return the <code class="docutils literal notranslate"><span class="pre">fold=0</span></code> or the <code class="docutils literal notranslate"><span class="pre">fold=1</span></code>
+value even though relevant standards allow <code class="docutils literal notranslate"><span class="pre">mktime</span></code> to return -1 and
+set an error code in those cases.</p>
+<p>In other words, <code class="docutils literal notranslate"><span class="pre">tm_isdst=-1</span></code> behavior is not missing from this PEP.
+To the contrary, it is the only behavior provided in two different
+well-defined flavors.  The behavior that is missing is when a given
+local hour is interpreted as a different local hour because of the
+misspecified <code class="docutils literal notranslate"><span class="pre">tm_isdst</span></code>.</p>
+<p>For example, in the DST-observing time zones in the Northern
+hemisphere (where DST is in effect in June) one can get</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">mktime</span><span class="p">,</span> <span class="n">localtime</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">mktime</span><span class="p">((</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">localtime</span><span class="p">(</span><span class="n">t</span><span class="p">)[:]</span>
+<span class="go">(2015, 6, 1, 13, 0, 0, 0, 152, 1)</span>
+</pre></div>
+</div>
+<p>Note that 12:00 was interpreted as 13:00 by <code class="docutils literal notranslate"><span class="pre">mktime</span></code>.  With the
+<code class="docutils literal notranslate"><span class="pre">datetime.timestamp</span></code>, <code class="docutils literal notranslate"><span class="pre">datetime.fromtimestamp</span></code>, it is currently
+guaranteed that</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+<span class="go">datetime.datetime(2015, 6, 1, 12, 0)</span>
+</pre></div>
+</div>
+<p>This PEP extends the same guarantee to both values of <code class="docutils literal notranslate"><span class="pre">fold</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">fold</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+<span class="go">datetime.datetime(2015, 6, 1, 12, 0)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">fold</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+<span class="go">datetime.datetime(2015, 6, 1, 12, 0)</span>
+</pre></div>
+</div>
+<p>Thus one of the suggested uses for <code class="docutils literal notranslate"><span class="pre">fold=-1</span></code> – to match the legacy
+behavior – is not needed.  Either choice of <code class="docutils literal notranslate"><span class="pre">fold</span></code> will match the
+old behavior except in the few cases where the old behavior was
+undefined.</p>
+</section>
+<section id="strict-invalid-time-checking">
+<h4><a class="toc-backref" href="#id61">Strict Invalid Time Checking</a><a class="headerlink" href="#strict-invalid-time-checking" title="Permalink to this headline">¶</a></h4>
+<p>Another suggestion was to use <code class="docutils literal notranslate"><span class="pre">fold=-1</span></code> or <code class="docutils literal notranslate"><span class="pre">fold=None</span></code> to
+indicate that the program truly has no means to deal with the folds
+and gaps and <code class="docutils literal notranslate"><span class="pre">dt.utcoffset()</span></code> should raise an error whenever <code class="docutils literal notranslate"><span class="pre">dt</span></code>
+represents an ambiguous or missing local time.</p>
+<p>The main problem with this proposal, is that <code class="docutils literal notranslate"><span class="pre">dt.utcoffset()</span></code> is
+used internally in situations where raising an error is not an option:
+for example, in dictionary lookups or list/set membership checks.  So
+strict gap/fold checking behavior would need to be controlled by a
+separate flag, say <code class="docutils literal notranslate"><span class="pre">dt.utcoffset(raise_on_gap=True,</span>
+<span class="pre">raise_on_fold=False)</span></code>.  However, this functionality can be easily
+implemented in user code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">utcoffset</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">raise_on_gap</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">raise_on_fold</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">utcoffset</span><span class="p">()</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">fold</span><span class="o">=</span><span class="ow">not</span> <span class="n">dt</span><span class="o">.</span><span class="n">fold</span><span class="p">)</span><span class="o">.</span><span class="n">utcoffset</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">u</span> <span class="o">==</span> <span class="n">v</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">u</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">u</span> <span class="o">&lt;</span> <span class="n">v</span><span class="p">)</span> <span class="o">==</span> <span class="n">dt</span><span class="o">.</span><span class="n">fold</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">raise_on_fold</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AmbiguousTimeError</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">raise_on_gap</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MissingTimeError</span>
+    <span class="k">return</span> <span class="n">u</span>
+</pre></div>
+</div>
+<p>Moreover, raising an error in the problem cases is only one of many
+possible solutions.  An interactive program can ask the user for
+additional input, while a server process may log a warning and take an
+appropriate default action.  We cannot possibly provide functions for
+all possible user requirements, but this PEP provides the means to
+implement any desired behavior in a few lines of code.</p>
+</section>
+</section>
+</section>
+<section id="implementation">
+<h2><a class="toc-backref" href="#id62">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Github fork: <a class="reference external" href="https://github.com/abalkin/cpython/tree/issue24773-s3">https://github.com/abalkin/cpython/tree/issue24773-s3</a></p></li>
+<li><p>Tracker issue: <a class="reference external" href="http://bugs.python.org/issue24773">http://bugs.python.org/issue24773</a></p></li>
+</ul>
+</section>
+<section id="id13">
+<h2><a class="toc-backref" href="#id63">References</a><a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id15">7</a></span></dt>
+<dd><p><a class="reference external" href="http://www.open-std.org/jtc1/sc22/wg14/docs/rr/dr_136.html">http://www.open-std.org/jtc1/sc22/wg14/docs/rr/dr_136.html</a></p>
+</dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id17">8</a></span></dt>
+<dd><p><a class="reference external" href="https://hg.python.org/cpython/file/v3.5.0/Include/datetime.h#l10">https://hg.python.org/cpython/file/v3.5.0/Include/datetime.h#l10</a></p>
+</dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id19">9</a></span></dt>
+<dd><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2015-April/139099.html">https://mail.python.org/pipermail/python-dev/2015-April/139099.html</a></p>
+</dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id21">10</a></span></dt>
+<dd><p><a class="reference external" href="https://mail.python.org/pipermail/datetime-sig/2015-August/000479.html">https://mail.python.org/pipermail/datetime-sig/2015-August/000479.html</a></p>
+</dd>
+<dt class="label" id="id22"><span class="brackets"><a class="fn-backref" href="#id23">11</a></span></dt>
+<dd><p><a class="reference external" href="https://mail.python.org/pipermail/datetime-sig/2015-August/000483.html">https://mail.python.org/pipermail/datetime-sig/2015-August/000483.html</a></p>
+</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#id64">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+<section id="picture-credit">
+<h2><a class="toc-backref" href="#id65">Picture Credit</a><a class="headerlink" href="#picture-credit" title="Permalink to this headline">¶</a></h2>
+<p>This image is a work of a U.S. military or Department of Defense
+employee, taken or made as part of that person’s official duties. As a
+work of the U.S. federal government, the image is in the public
+domain.</p>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0495.txt">https://github.com/python/peps/blob/master/pep-0495.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0495.txt">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0001/">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0100/">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0101/">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0374/">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0391/">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0423/">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0451/">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0471/">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0479/">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0558/">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0570/">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0584/">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0586/">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0594/">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3118/">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-0494/" title="previous chapter">PEP 494 – Python 3.6 Release Schedule</a></li>
+      <li>Next: <a href="../pep-0496/" title="next chapter">PEP 496 – Environment Markers</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-0495.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

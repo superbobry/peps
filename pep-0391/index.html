@@ -1,0 +1,1330 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 391 – Dictionary-Based Configuration For Logging &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 392 – Python 3.2 Release Schedule" href="../pep-0392/" />
+    <link rel="prev" title="PEP 390 – Static metadata for Distutils" href="../pep-0390/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pep-391-dictionary-based-configuration-for-logging">
+<h1 class="page-title">PEP 391 – Dictionary-Based Configuration For Logging<a class="headerlink" href="#pep-391-dictionary-based-configuration-for-logging" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>391</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>Dictionary-Based Configuration For Logging</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Vinay Sajip &lt;vinay_sajip at red-dove.com&gt;</p>
+</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even"><p>Final</p>
+</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Standards Track</p>
+</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even"><p>15-Oct-2009</p>
+</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd"><p>2.7, 3.2</p>
+</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#abstract" id="id3">Abstract</a></p></li>
+<li><p><a class="reference internal" href="#rationale" id="id4">Rationale</a></p></li>
+<li><p><a class="reference internal" href="#specification" id="id5">Specification</a></p>
+<ul>
+<li><p><a class="reference internal" href="#naming" id="id6">Naming</a></p></li>
+<li><p><a class="reference internal" href="#api" id="id7">API</a></p></li>
+<li><p><a class="reference internal" href="#dictionary-schema-overview" id="id8">Dictionary Schema - Overview</a></p>
+<ul>
+<li><p><a class="reference internal" href="#object-connections" id="id9">Object connections</a></p></li>
+<li><p><a class="reference internal" href="#user-defined-objects" id="id10">User-defined objects</a></p></li>
+<li><p><a class="reference internal" href="#access-to-external-objects" id="id11">Access to external objects</a></p></li>
+<li><p><a class="reference internal" href="#access-to-internal-objects" id="id12">Access to internal objects</a></p></li>
+<li><p><a class="reference internal" href="#handler-ids" id="id13">Handler Ids</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#dictionary-schema-detail" id="id14">Dictionary Schema - Detail</a></p></li>
+<li><p><a class="reference internal" href="#a-working-example" id="id15">A Working Example</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#incremental-configuration" id="id16">Incremental Configuration</a></p></li>
+<li><p><a class="reference internal" href="#api-customization" id="id17">API Customization</a></p></li>
+<li><p><a class="reference internal" href="#change-to-socket-listener-implementation" id="id18">Change to Socket Listener Implementation</a></p></li>
+<li><p><a class="reference internal" href="#configuration-errors" id="id19">Configuration Errors</a></p></li>
+<li><p><a class="reference internal" href="#discussion-in-the-community" id="id20">Discussion in the community</a></p></li>
+<li><p><a class="reference internal" href="#reference-implementation" id="id21">Reference implementation</a></p></li>
+<li><p><a class="reference internal" href="#references" id="id22">References</a></p></li>
+<li><p><a class="reference internal" href="#copyright" id="id23">Copyright</a></p></li>
+</ul>
+</div>
+<section id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes a new way of configuring logging using a dictionary
+to hold configuration information.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#id4">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The present means for configuring Python’s logging package is either
+by using the logging API to configure logging programmatically, or
+else by means of ConfigParser-based configuration files.</p>
+<p>Programmatic configuration, while offering maximal control, fixes the
+configuration in Python code.  This does not facilitate changing it
+easily at runtime, and, as a result, the ability to flexibly turn the
+verbosity of logging up and down for different parts of a using
+application is lost.  This limits the usability of logging as an aid
+to diagnosing problems - and sometimes, logging is the only diagnostic
+aid available in production environments.</p>
+<p>The ConfigParser-based configuration system is usable, but does not
+allow its users to configure all aspects of the logging package.  For
+example, Filters cannot be configured using this system.  Furthermore,
+the ConfigParser format appears to engender dislike (sometimes strong
+dislike) in some quarters.  Though it was chosen because it was the
+only configuration format supported in the Python standard at that
+time, many people regard it (or perhaps just the particular schema
+chosen for logging’s configuration) as ‘crufty’ or ‘ugly’, in some
+cases apparently on purely aesthetic grounds.</p>
+<p>Recent versions of Python include JSON support in the standard
+library, and this is also usable as a configuration format.  In other
+environments, such as Google App Engine, YAML is used to configure
+applications, and usually the configuration of logging would be
+considered an integral part of the application configuration.
+Although the standard library does not contain YAML support at
+present, support for both JSON and YAML can be provided in a common
+way because both of these serialization formats allow deserialization
+to Python dictionaries.</p>
+<p>By providing a way to configure logging by passing the configuration
+in a dictionary, logging will be easier to configure not only for
+users of JSON and/or YAML, but also for users of custom configuration
+methods, by providing a common format in which to describe the desired
+configuration.</p>
+<p>Another drawback of the current ConfigParser-based configuration
+system is that it does not support incremental configuration: a new
+configuration completely replaces the existing configuration.
+Although full flexibility for incremental configuration is difficult
+to provide in a multi-threaded environment, the new configuration
+mechanism will allow the provision of limited support for incremental
+configuration.</p>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#id5">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The specification consists of two parts: the API and the format of the
+dictionary used to convey configuration information (i.e. the schema
+to which it must conform).</p>
+<section id="naming">
+<h3><a class="toc-backref" href="#id6">Naming</a><a class="headerlink" href="#naming" title="Permalink to this headline">¶</a></h3>
+<p>Historically, the logging package has not been <a class="reference external" href="pep-0008.html">PEP 8</a> conformant <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.
+At some future time, this will be corrected by changing method and
+function names in the package in order to conform with <a class="reference external" href="pep-0008.html">PEP 8</a>.
+However, in the interests of uniformity, the proposed additions to the
+API use a naming scheme which is consistent with the present scheme
+used by logging.</p>
+</section>
+<section id="api">
+<h3><a class="toc-backref" href="#id7">API</a><a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h3>
+<p>The logging.config module will have the following addition:</p>
+<ul class="simple">
+<li><p>A function, called <code class="docutils literal notranslate"><span class="pre">dictConfig()</span></code>, which takes a single argument
+- the dictionary holding the configuration.  Exceptions will be
+raised if there are errors while processing the dictionary.</p></li>
+</ul>
+<p>It will be possible to customize this API - see the section on <a class="reference internal" href="#api-customization">API
+Customization</a>.  <a class="reference internal" href="#incremental-configuration">Incremental configuration</a> is covered in its own
+section.</p>
+</section>
+<section id="dictionary-schema-overview">
+<h3><a class="toc-backref" href="#id8">Dictionary Schema - Overview</a><a class="headerlink" href="#dictionary-schema-overview" title="Permalink to this headline">¶</a></h3>
+<p>Before describing the schema in detail, it is worth saying a few words
+about object connections, support for user-defined objects and access
+to external and internal objects.</p>
+<section id="object-connections">
+<h4><a class="toc-backref" href="#id9">Object connections</a><a class="headerlink" href="#object-connections" title="Permalink to this headline">¶</a></h4>
+<p>The schema is intended to describe a set of logging objects - loggers,
+handlers, formatters, filters - which are connected to each other in
+an object graph.  Thus, the schema needs to represent connections
+between the objects.  For example, say that, once configured, a
+particular logger has attached to it a particular handler.  For the
+purposes of this discussion, we can say that the logger represents the
+source, and the handler the destination, of a connection between the
+two.  Of course in the configured objects this is represented by the
+logger holding a reference to the handler.  In the configuration dict,
+this is done by giving each destination object an id which identifies
+it unambiguously, and then using the id in the source object’s
+configuration to indicate that a connection exists between the source
+and the destination object with that id.</p>
+<p>So, for example, consider the following YAML snippet:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">formatters</span><span class="p">:</span>
+  <span class="n">brief</span><span class="p">:</span>
+    <span class="c1"># configuration for formatter with id &#39;brief&#39; goes here</span>
+  <span class="n">precise</span><span class="p">:</span>
+    <span class="c1"># configuration for formatter with id &#39;precise&#39; goes here</span>
+<span class="n">handlers</span><span class="p">:</span>
+  <span class="n">h1</span><span class="p">:</span> <span class="c1">#This is an id</span>
+   <span class="c1"># configuration of handler with id &#39;h1&#39; goes here</span>
+   <span class="n">formatter</span><span class="p">:</span> <span class="n">brief</span>
+  <span class="n">h2</span><span class="p">:</span> <span class="c1">#This is another id</span>
+   <span class="c1"># configuration of handler with id &#39;h2&#39; goes here</span>
+   <span class="n">formatter</span><span class="p">:</span> <span class="n">precise</span>
+<span class="n">loggers</span><span class="p">:</span>
+  <span class="n">foo</span><span class="o">.</span><span class="n">bar</span><span class="o">.</span><span class="n">baz</span><span class="p">:</span>
+    <span class="c1"># other configuration for logger &#39;foo.bar.baz&#39;</span>
+    <span class="n">handlers</span><span class="p">:</span> <span class="p">[</span><span class="n">h1</span><span class="p">,</span> <span class="n">h2</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>(Note: YAML will be used in this document as it is a little more
+readable than the equivalent Python source form for the dictionary.)</p>
+<p>The ids for loggers are the logger names which would be used
+programmatically to obtain a reference to those loggers, e.g.
+<code class="docutils literal notranslate"><span class="pre">foo.bar.baz</span></code>.  The ids for Formatters and Filters can be any string
+value (such as <code class="docutils literal notranslate"><span class="pre">brief</span></code>, <code class="docutils literal notranslate"><span class="pre">precise</span></code> above) and they are transient,
+in that they are only meaningful for processing the configuration
+dictionary and used to determine connections between objects, and are
+not persisted anywhere when the configuration call is complete.</p>
+<p>Handler ids are treated specially, see the section on
+<a class="reference internal" href="#handler-ids">Handler Ids</a>, below.</p>
+<p>The above snippet indicates that logger named <code class="docutils literal notranslate"><span class="pre">foo.bar.baz</span></code> should
+have two handlers attached to it, which are described by the handler
+ids <code class="docutils literal notranslate"><span class="pre">h1</span></code> and <code class="docutils literal notranslate"><span class="pre">h2</span></code>. The formatter for <code class="docutils literal notranslate"><span class="pre">h1</span></code> is that described by id
+<code class="docutils literal notranslate"><span class="pre">brief</span></code>, and the formatter for <code class="docutils literal notranslate"><span class="pre">h2</span></code> is that described by id
+<code class="docutils literal notranslate"><span class="pre">precise</span></code>.</p>
+</section>
+<section id="user-defined-objects">
+<h4><a class="toc-backref" href="#id10">User-defined objects</a><a class="headerlink" href="#user-defined-objects" title="Permalink to this headline">¶</a></h4>
+<p>The schema should support user-defined objects for handlers, filters
+and formatters.  (Loggers do not need to have different types for
+different instances, so there is no support - in the configuration -
+for user-defined logger classes.)</p>
+<p>Objects to be configured will typically be described by dictionaries
+which detail their configuration.  In some places, the logging system
+will be able to infer from the context how an object is to be
+instantiated, but when a user-defined object is to be instantiated,
+the system will not know how to do this.  In order to provide complete
+flexibility for user-defined object instantiation, the user will need
+to provide a ‘factory’ - a callable which is called with a
+configuration dictionary and which returns the instantiated object.
+This will be signalled by an absolute import path to the factory being
+made available under the special key <code class="docutils literal notranslate"><span class="pre">'()'</span></code>.  Here’s a concrete
+example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">formatters</span><span class="p">:</span>
+  <span class="n">brief</span><span class="p">:</span>
+    <span class="nb">format</span><span class="p">:</span> <span class="s1">&#39;</span><span class="si">%(message)s</span><span class="s1">&#39;</span>
+  <span class="n">default</span><span class="p">:</span>
+    <span class="nb">format</span><span class="p">:</span> <span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(levelname)-8s</span><span class="s1"> </span><span class="si">%(name)-15s</span><span class="s1"> </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
+    <span class="n">datefmt</span><span class="p">:</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span>
+  <span class="n">custom</span><span class="p">:</span>
+      <span class="p">():</span> <span class="n">my</span><span class="o">.</span><span class="n">package</span><span class="o">.</span><span class="n">customFormatterFactory</span>
+      <span class="n">bar</span><span class="p">:</span> <span class="n">baz</span>
+      <span class="n">spam</span><span class="p">:</span> <span class="mf">99.9</span>
+      <span class="n">answer</span><span class="p">:</span> <span class="mi">42</span>
+</pre></div>
+</div>
+<p>The above YAML snippet defines three formatters.  The first, with id
+<code class="docutils literal notranslate"><span class="pre">brief</span></code>, is a standard <code class="docutils literal notranslate"><span class="pre">logging.Formatter</span></code> instance with the
+specified format string.  The second, with id <code class="docutils literal notranslate"><span class="pre">default</span></code>, has a
+longer format and also defines the time format explicitly, and will
+result in a <code class="docutils literal notranslate"><span class="pre">logging.Formatter</span></code> initialized with those two format
+strings.  Shown in Python source form, the <code class="docutils literal notranslate"><span class="pre">brief</span></code> and <code class="docutils literal notranslate"><span class="pre">default</span></code>
+formatters have configuration sub-dictionaries:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s1">&#39;format&#39;</span> <span class="p">:</span> <span class="s1">&#39;</span><span class="si">%(message)s</span><span class="s1">&#39;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>and:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s1">&#39;format&#39;</span> <span class="p">:</span> <span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(levelname)-8s</span><span class="s1"> </span><span class="si">%(name)-15s</span><span class="s1"> </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;datefmt&#39;</span> <span class="p">:</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>respectively, and as these dictionaries do not contain the special key
+<code class="docutils literal notranslate"><span class="pre">'()'</span></code>, the instantiation is inferred from the context: as a result,
+standard <code class="docutils literal notranslate"><span class="pre">logging.Formatter</span></code> instances are created.  The
+configuration sub-dictionary for the third formatter, with id
+<code class="docutils literal notranslate"><span class="pre">custom</span></code>, is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s1">&#39;()&#39;</span> <span class="p">:</span> <span class="s1">&#39;my.package.customFormatterFactory&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;bar&#39;</span> <span class="p">:</span> <span class="s1">&#39;baz&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;spam&#39;</span> <span class="p">:</span> <span class="mf">99.9</span><span class="p">,</span>
+  <span class="s1">&#39;answer&#39;</span> <span class="p">:</span> <span class="mi">42</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>and this contains the special key <code class="docutils literal notranslate"><span class="pre">'()'</span></code>, which means that
+user-defined instantiation is wanted.  In this case, the specified
+factory callable will be used. If it is an actual callable it will be
+used directly - otherwise, if you specify a string (as in the example)
+the actual callable will be located using normal import mechanisms.
+The callable will be called with the <em>remaining</em> items in the
+configuration sub-dictionary as keyword arguments.  In the above
+example, the formatter with id <code class="docutils literal notranslate"><span class="pre">custom</span></code> will be assumed to be
+returned by the call:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">my</span><span class="o">.</span><span class="n">package</span><span class="o">.</span><span class="n">customFormatterFactory</span><span class="p">(</span><span class="n">bar</span><span class="o">=</span><span class="s1">&#39;baz&#39;</span><span class="p">,</span> <span class="n">spam</span><span class="o">=</span><span class="mf">99.9</span><span class="p">,</span> <span class="n">answer</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The key <code class="docutils literal notranslate"><span class="pre">'()'</span></code> has been used as the special key because it is not a
+valid keyword parameter name, and so will not clash with the names of
+the keyword arguments used in the call.  The <code class="docutils literal notranslate"><span class="pre">'()'</span></code> also serves as a
+mnemonic that the corresponding value is a callable.</p>
+</section>
+<section id="access-to-external-objects">
+<h4><a class="toc-backref" href="#id11">Access to external objects</a><a class="headerlink" href="#access-to-external-objects" title="Permalink to this headline">¶</a></h4>
+<p>There are times where a configuration will need to refer to objects
+external to the configuration, for example <code class="docutils literal notranslate"><span class="pre">sys.stderr</span></code>.  If the
+configuration dict is constructed using Python code then this is
+straightforward, but a problem arises when the configuration is
+provided via a text file (e.g. JSON, YAML).  In a text file, there is
+no standard way to distinguish <code class="docutils literal notranslate"><span class="pre">sys.stderr</span></code> from the literal string
+<code class="docutils literal notranslate"><span class="pre">'sys.stderr'</span></code>.  To facilitate this distinction, the configuration
+system will look for certain special prefixes in string values and
+treat them specially.  For example, if the literal string
+<code class="docutils literal notranslate"><span class="pre">'ext://sys.stderr'</span></code> is provided as a value in the configuration,
+then the <code class="docutils literal notranslate"><span class="pre">ext://</span></code> will be stripped off and the remainder of the
+value processed using normal import mechanisms.</p>
+<p>The handling of such prefixes will be done in a way analogous to
+protocol handling: there will be a generic mechanism to look for
+prefixes which match the regular expression
+<code class="docutils literal notranslate"><span class="pre">^(?P&lt;prefix&gt;[a-z]+)://(?P&lt;suffix&gt;.*)$</span></code> whereby, if the <code class="docutils literal notranslate"><span class="pre">prefix</span></code>
+is recognised, the <code class="docutils literal notranslate"><span class="pre">suffix</span></code> is processed in a prefix-dependent
+manner and the result of the processing replaces the string value.  If
+the prefix is not recognised, then the string value will be left
+as-is.</p>
+<p>The implementation will provide for a set of standard prefixes such as
+<code class="docutils literal notranslate"><span class="pre">ext://</span></code> but it will be possible to disable the mechanism completely
+or provide additional or different prefixes for special handling.</p>
+</section>
+<section id="access-to-internal-objects">
+<h4><a class="toc-backref" href="#id12">Access to internal objects</a><a class="headerlink" href="#access-to-internal-objects" title="Permalink to this headline">¶</a></h4>
+<p>As well as external objects, there is sometimes also a need to refer
+to objects in the configuration.  This will be done implicitly by the
+configuration system for things that it knows about.  For example, the
+string value <code class="docutils literal notranslate"><span class="pre">'DEBUG'</span></code> for a <code class="docutils literal notranslate"><span class="pre">level</span></code> in a logger or handler will
+automatically be converted to the value <code class="docutils literal notranslate"><span class="pre">logging.DEBUG</span></code>, and the
+<code class="docutils literal notranslate"><span class="pre">handlers</span></code>, <code class="docutils literal notranslate"><span class="pre">filters</span></code> and <code class="docutils literal notranslate"><span class="pre">formatter</span></code> entries will take an
+object id and resolve to the appropriate destination object.</p>
+<p>However, a more generic mechanism needs to be provided for the case
+of user-defined objects which are not known to logging.  For example,
+take the instance of <code class="docutils literal notranslate"><span class="pre">logging.handlers.MemoryHandler</span></code>, which takes
+a <code class="docutils literal notranslate"><span class="pre">target</span></code> which is another handler to delegate to. Since the system
+already knows about this class, then in the configuration, the given
+<code class="docutils literal notranslate"><span class="pre">target</span></code> just needs to be the object id of the relevant target
+handler, and the system will resolve to the handler from the id.  If,
+however, a user defines a <code class="docutils literal notranslate"><span class="pre">my.package.MyHandler</span></code> which has a
+<code class="docutils literal notranslate"><span class="pre">alternate</span></code> handler, the configuration system would not know that
+the <code class="docutils literal notranslate"><span class="pre">alternate</span></code> referred to a handler.  To cater for this, a
+generic resolution system will be provided which allows the user to
+specify:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">handlers</span><span class="p">:</span>
+  <span class="n">file</span><span class="p">:</span>
+    <span class="c1"># configuration of file handler goes here</span>
+
+  <span class="n">custom</span><span class="p">:</span>
+    <span class="p">():</span> <span class="n">my</span><span class="o">.</span><span class="n">package</span><span class="o">.</span><span class="n">MyHandler</span>
+    <span class="n">alternate</span><span class="p">:</span> <span class="n">cfg</span><span class="p">:</span><span class="o">//</span><span class="n">handlers</span><span class="o">.</span><span class="n">file</span>
+</pre></div>
+</div>
+<p>The literal string <code class="docutils literal notranslate"><span class="pre">'cfg://handlers.file'</span></code> will be resolved in an
+analogous way to the strings with the <code class="docutils literal notranslate"><span class="pre">ext://</span></code> prefix, but looking
+in the configuration itself rather than the import namespace.  The
+mechanism will allow access by dot or by index, in a similar way to
+that provided by <code class="docutils literal notranslate"><span class="pre">str.format</span></code>.  Thus, given the following snippet:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">handlers</span><span class="p">:</span>
+  <span class="n">email</span><span class="p">:</span>
+    <span class="n">class</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">SMTPHandler</span>
+    <span class="n">mailhost</span><span class="p">:</span> <span class="n">localhost</span>
+    <span class="n">fromaddr</span><span class="p">:</span> <span class="n">my_app</span><span class="nd">@domain</span><span class="o">.</span><span class="n">tld</span>
+    <span class="n">toaddrs</span><span class="p">:</span>
+      <span class="o">-</span> <span class="n">support_team</span><span class="nd">@domain</span><span class="o">.</span><span class="n">tld</span>
+      <span class="o">-</span> <span class="n">dev_team</span><span class="nd">@domain</span><span class="o">.</span><span class="n">tld</span>
+    <span class="n">subject</span><span class="p">:</span> <span class="n">Houston</span><span class="p">,</span> <span class="n">we</span> <span class="n">have</span> <span class="n">a</span> <span class="n">problem</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>in the configuration, the string <code class="docutils literal notranslate"><span class="pre">'cfg://handlers'</span></code> would resolve to
+the dict with key <code class="docutils literal notranslate"><span class="pre">handlers</span></code>, the string <code class="docutils literal notranslate"><span class="pre">'cfg://handlers.email</span></code>
+would resolve to the dict with key <code class="docutils literal notranslate"><span class="pre">email</span></code> in the <code class="docutils literal notranslate"><span class="pre">handlers</span></code> dict,
+and so on.  The string <code class="docutils literal notranslate"><span class="pre">'cfg://handlers.email.toaddrs[1]</span></code> would
+resolve to <code class="docutils literal notranslate"><span class="pre">'dev_team.domain.tld'</span></code> and the string
+<code class="docutils literal notranslate"><span class="pre">'cfg://handlers.email.toaddrs[0]'</span></code> would resolve to the value
+<code class="docutils literal notranslate"><span class="pre">'support_team&#64;domain.tld'</span></code>. The <code class="docutils literal notranslate"><span class="pre">subject</span></code> value could be accessed
+using either <code class="docutils literal notranslate"><span class="pre">'cfg://handlers.email.subject'</span></code> or, equivalently,
+<code class="docutils literal notranslate"><span class="pre">'cfg://handlers.email[subject]'</span></code>.  The latter form only needs to be
+used if the key contains spaces or non-alphanumeric characters.  If an
+index value consists only of decimal digits, access will be attempted
+using the corresponding integer value, falling back to the string
+value if needed.</p>
+<p>Given a string <code class="docutils literal notranslate"><span class="pre">cfg://handlers.myhandler.mykey.123</span></code>, this will
+resolve to <code class="docutils literal notranslate"><span class="pre">config_dict['handlers']['myhandler']['mykey']['123']</span></code>.
+If the string is specified as <code class="docutils literal notranslate"><span class="pre">cfg://handlers.myhandler.mykey[123]</span></code>,
+the system will attempt to retrieve the value from
+<code class="docutils literal notranslate"><span class="pre">config_dict['handlers']['myhandler']['mykey'][123]</span></code>, and fall back
+to <code class="docutils literal notranslate"><span class="pre">config_dict['handlers']['myhandler']['mykey']['123']</span></code> if that
+fails.</p>
+</section>
+<section id="handler-ids">
+<h4><a class="toc-backref" href="#id13">Handler Ids</a><a class="headerlink" href="#handler-ids" title="Permalink to this headline">¶</a></h4>
+<p>Some specific logging configurations require the use of handler levels
+to achieve the desired effect.  However, unlike loggers which can
+always be identified by their names, handlers have no persistent
+handles whereby levels can be changed via an incremental configuration
+call.</p>
+<p>Therefore, this PEP proposes to add an optional <code class="docutils literal notranslate"><span class="pre">name</span></code> property to
+handlers. If used, this will add an entry in a dictionary which maps
+the name to the handler.  (The entry will be removed when the handler
+is closed.)  When an incremental configuration call is made, handlers
+will be looked up in this dictionary to set the handler level
+according to the value in the configuration.  See the section on
+<a class="reference internal" href="#incremental-configuration">incremental configuration</a> for more details.</p>
+<p>In theory, such a “persistent name” facility could also be provided
+for Filters and Formatters.  However, there is not a strong case to be
+made for being able to configure these incrementally.  On the basis
+that practicality beats purity, only Handlers will be given this new
+<code class="docutils literal notranslate"><span class="pre">name</span></code> property.  The id of a handler in the configuration will
+become its <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p>
+<p>The handler name lookup dictionary is for configuration use only and
+will not become part of the public API for the package.</p>
+</section>
+</section>
+<section id="dictionary-schema-detail">
+<h3><a class="toc-backref" href="#id14">Dictionary Schema - Detail</a><a class="headerlink" href="#dictionary-schema-detail" title="Permalink to this headline">¶</a></h3>
+<p>The dictionary passed to <code class="docutils literal notranslate"><span class="pre">dictConfig()</span></code> must contain the following
+keys:</p>
+<ul class="simple">
+<li><p><cite>version</cite> - to be set to an integer value representing the schema
+version.  The only valid value at present is 1, but having this key
+allows the schema to evolve while still preserving backwards
+compatibility.</p></li>
+</ul>
+<p>All other keys are optional, but if present they will be interpreted
+as described below.  In all cases below where a ‘configuring dict’ is
+mentioned, it will be checked for the special <code class="docutils literal notranslate"><span class="pre">'()'</span></code> key to see if a
+custom instantiation is required.  If so, the mechanism described
+above is used to instantiate; otherwise, the context is used to
+determine how to instantiate.</p>
+<ul>
+<li><p><cite>formatters</cite> - the corresponding value will be a dict in which each
+key is a formatter id and each value is a dict describing how to
+configure the corresponding Formatter instance.</p>
+<p>The configuring dict is searched for keys <code class="docutils literal notranslate"><span class="pre">format</span></code> and <code class="docutils literal notranslate"><span class="pre">datefmt</span></code>
+(with defaults of <code class="docutils literal notranslate"><span class="pre">None</span></code>) and these are used to construct a
+<code class="docutils literal notranslate"><span class="pre">logging.Formatter</span></code> instance.</p>
+</li>
+<li><p><cite>filters</cite> - the corresponding value will be a dict in which each key
+is a filter id and each value is a dict describing how to configure
+the corresponding Filter instance.</p>
+<p>The configuring dict is searched for key <code class="docutils literal notranslate"><span class="pre">name</span></code> (defaulting to the
+empty string) and this is used to construct a <code class="docutils literal notranslate"><span class="pre">logging.Filter</span></code>
+instance.</p>
+</li>
+<li><p><cite>handlers</cite> - the corresponding value will be a dict in which each
+key is a handler id and each value is a dict describing how to
+configure the corresponding Handler instance.</p>
+<p>The configuring dict is searched for the following keys:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">class</span></code> (mandatory).  This is the fully qualified name of the
+handler class.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">level</span></code> (optional).  The level of the handler.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">formatter</span></code> (optional).  The id of the formatter for this
+handler.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">filters</span></code> (optional).  A list of ids of the filters for this
+handler.</p></li>
+</ul>
+<p>All <em>other</em> keys are passed through as keyword arguments to the
+handler’s constructor.  For example, given the snippet:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>handlers:
+  console:
+    class : logging.StreamHandler
+    formatter: brief
+    level   : INFO
+    filters: [allow_foo]
+    stream  : ext://sys.stdout
+  file:
+    class : logging.handlers.RotatingFileHandler
+    formatter: precise
+    filename: logconfig.log
+    maxBytes: 1024
+    backupCount: 3
+</pre></div>
+</div>
+<p>the handler with id <code class="docutils literal notranslate"><span class="pre">console</span></code> is instantiated as a
+<code class="docutils literal notranslate"><span class="pre">logging.StreamHandler</span></code>, using <code class="docutils literal notranslate"><span class="pre">sys.stdout</span></code> as the underlying
+stream.  The handler with id <code class="docutils literal notranslate"><span class="pre">file</span></code> is instantiated as a
+<code class="docutils literal notranslate"><span class="pre">logging.handlers.RotatingFileHandler</span></code> with the keyword arguments
+<code class="docutils literal notranslate"><span class="pre">filename='logconfig.log',</span> <span class="pre">maxBytes=1024,</span> <span class="pre">backupCount=3</span></code>.</p>
+</li>
+<li><p><cite>loggers</cite> - the corresponding value will be a dict in which each key
+is a logger name and each value is a dict describing how to
+configure the corresponding Logger instance.</p>
+<p>The configuring dict is searched for the following keys:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">level</span></code> (optional).  The level of the logger.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">propagate</span></code> (optional).  The propagation setting of the logger.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">filters</span></code> (optional).  A list of ids of the filters for this
+logger.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">handlers</span></code> (optional).  A list of ids of the handlers for this
+logger.</p></li>
+</ul>
+<p>The specified loggers will be configured according to the level,
+propagation, filters and handlers specified.</p>
+</li>
+<li><p><cite>root</cite> - this will be the configuration for the root logger.
+Processing of the configuration will be as for any logger, except
+that the <code class="docutils literal notranslate"><span class="pre">propagate</span></code> setting will not be applicable.</p></li>
+<li><p><cite>incremental</cite> - whether the configuration is to be interpreted as
+incremental to the existing configuration.  This value defaults to
+<code class="docutils literal notranslate"><span class="pre">False</span></code>, which means that the specified configuration replaces the
+existing configuration with the same semantics as used by the
+existing <code class="docutils literal notranslate"><span class="pre">fileConfig()</span></code> API.</p>
+<p>If the specified value is <code class="docutils literal notranslate"><span class="pre">True</span></code>, the configuration is processed
+as described in the section on <a class="reference internal" href="#incremental-configuration">Incremental Configuration</a>, below.</p>
+</li>
+<li><p><cite>disable_existing_loggers</cite> - whether any existing loggers are to be
+disabled. This setting mirrors the parameter of the same name in
+<code class="docutils literal notranslate"><span class="pre">fileConfig()</span></code>. If absent, this parameter defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.
+This value is ignored if <cite>incremental</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</section>
+<section id="a-working-example">
+<h3><a class="toc-backref" href="#id15">A Working Example</a><a class="headerlink" href="#a-working-example" title="Permalink to this headline">¶</a></h3>
+<p>The following is an actual working configuration in YAML format
+(except that the email addresses are bogus):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>formatters:
+  brief:
+    format: &#39;%(levelname)-8s: %(name)-15s: %(message)s&#39;
+  precise:
+    format: &#39;%(asctime)s %(name)-15s %(levelname)-8s %(message)s&#39;
+filters:
+  allow_foo:
+    name: foo
+handlers:
+  console:
+    class : logging.StreamHandler
+    formatter: brief
+    level   : INFO
+    stream  : ext://sys.stdout
+    filters: [allow_foo]
+  file:
+    class : logging.handlers.RotatingFileHandler
+    formatter: precise
+    filename: logconfig.log
+    maxBytes: 1024
+    backupCount: 3
+  debugfile:
+    class : logging.FileHandler
+    formatter: precise
+    filename: logconfig-detail.log
+    mode: a
+  email:
+    class: logging.handlers.SMTPHandler
+    mailhost: localhost
+    fromaddr: my_app@domain.tld
+    toaddrs:
+      - support_team@domain.tld
+      - dev_team@domain.tld
+    subject: Houston, we have a problem.
+loggers:
+  foo:
+    level : ERROR
+    handlers: [debugfile]
+  spam:
+    level : CRITICAL
+    handlers: [debugfile]
+    propagate: no
+  bar.baz:
+    level: WARNING
+root:
+  level     : DEBUG
+  handlers  : [console, file]
+</pre></div>
+</div>
+</section>
+</section>
+<section id="incremental-configuration">
+<h2><a class="toc-backref" href="#id16">Incremental Configuration</a><a class="headerlink" href="#incremental-configuration" title="Permalink to this headline">¶</a></h2>
+<p>It is difficult to provide complete flexibility for incremental
+configuration.  For example, because objects such as filters
+and formatters are anonymous, once a configuration is set up, it is
+not possible to refer to such anonymous objects when augmenting a
+configuration.</p>
+<p>Furthermore, there is not a compelling case for arbitrarily altering
+the object graph of loggers, handlers, filters, formatters at
+run-time, once a configuration is set up; the verbosity of loggers and
+handlers can be controlled just by setting levels (and, in the case of
+loggers, propagation flags).  Changing the object graph arbitrarily in
+a safe way is problematic in a multi-threaded environment; while not
+impossible, the benefits are not worth the complexity it adds to the
+implementation.</p>
+<p>Thus, when the <code class="docutils literal notranslate"><span class="pre">incremental</span></code> key of a configuration dict is present
+and is <code class="docutils literal notranslate"><span class="pre">True</span></code>, the system will ignore any <code class="docutils literal notranslate"><span class="pre">formatters</span></code> and
+<code class="docutils literal notranslate"><span class="pre">filters</span></code> entries completely, and process only the <code class="docutils literal notranslate"><span class="pre">level</span></code>
+settings in the <code class="docutils literal notranslate"><span class="pre">handlers</span></code> entries, and the <code class="docutils literal notranslate"><span class="pre">level</span></code> and
+<code class="docutils literal notranslate"><span class="pre">propagate</span></code> settings in the <code class="docutils literal notranslate"><span class="pre">loggers</span></code> and <code class="docutils literal notranslate"><span class="pre">root</span></code> entries.</p>
+<p>It’s certainly possible to provide incremental configuration by other
+means, for example making <code class="docutils literal notranslate"><span class="pre">dictConfig()</span></code> take an <code class="docutils literal notranslate"><span class="pre">incremental</span></code>
+keyword argument which defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>. The reason for
+suggesting that a value in the configuration dict be used is that it
+allows for configurations to be sent over the wire as pickled dicts
+to a socket listener. Thus, the logging verbosity of a long-running
+application can be altered over time with no need to stop and
+restart the application.</p>
+<p>Note: Feedback on incremental configuration needs based on your
+practical experience will be particularly welcome.</p>
+</section>
+<section id="api-customization">
+<h2><a class="toc-backref" href="#id17">API Customization</a><a class="headerlink" href="#api-customization" title="Permalink to this headline">¶</a></h2>
+<p>The bare-bones <code class="docutils literal notranslate"><span class="pre">dictConfig()</span></code> API will not be sufficient for all
+use cases.  Provision for customization of the API will be made by
+providing the following:</p>
+<ul class="simple">
+<li><p>A class, called <code class="docutils literal notranslate"><span class="pre">DictConfigurator</span></code>, whose constructor is passed
+the dictionary used for configuration, and which has a
+<code class="docutils literal notranslate"><span class="pre">configure()</span></code> method.</p></li>
+<li><p>A callable, called <code class="docutils literal notranslate"><span class="pre">dictConfigClass</span></code>, which will (by default) be
+set to <code class="docutils literal notranslate"><span class="pre">DictConfigurator</span></code>.  This is provided so that if desired,
+<code class="docutils literal notranslate"><span class="pre">DictConfigurator</span></code> can be replaced with a suitable user-defined
+implementation.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">dictConfig()</span></code> function will call <code class="docutils literal notranslate"><span class="pre">dictConfigClass</span></code> passing
+the specified dictionary, and then call the <code class="docutils literal notranslate"><span class="pre">configure()</span></code> method on
+the returned object to actually put the configuration into effect:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">dictConfig</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+    <span class="n">dictConfigClass</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">configure</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This should cater to all customization needs. For example, a subclass
+of <code class="docutils literal notranslate"><span class="pre">DictConfigurator</span></code> could call <code class="docutils literal notranslate"><span class="pre">DictConfigurator.__init__()</span></code> in
+its own <code class="docutils literal notranslate"><span class="pre">__init__()</span></code>, then set up custom prefixes which would be
+usable in the subsequent <code class="docutils literal notranslate"><span class="pre">configure()</span> <span class="pre">call</span></code>. The <code class="docutils literal notranslate"><span class="pre">dictConfigClass</span></code>
+would be bound to the subclass, and then <code class="docutils literal notranslate"><span class="pre">dictConfig()</span></code> could be
+called exactly as in the default, uncustomized state.</p>
+</section>
+<section id="change-to-socket-listener-implementation">
+<h2><a class="toc-backref" href="#id18">Change to Socket Listener Implementation</a><a class="headerlink" href="#change-to-socket-listener-implementation" title="Permalink to this headline">¶</a></h2>
+<p>The existing socket listener implementation will be modified as
+follows: when a configuration message is received, an attempt will be
+made to deserialize to a dictionary using the json module. If this
+step fails, the message will be assumed to be in the fileConfig format
+and processed as before. If deserialization is successful, then
+<code class="docutils literal notranslate"><span class="pre">dictConfig()</span></code> will be called to process the resulting dictionary.</p>
+</section>
+<section id="configuration-errors">
+<h2><a class="toc-backref" href="#id19">Configuration Errors</a><a class="headerlink" href="#configuration-errors" title="Permalink to this headline">¶</a></h2>
+<p>If an error is encountered during configuration, the system will raise
+a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>, <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>, <code class="docutils literal notranslate"><span class="pre">AttributeError</span></code> or <code class="docutils literal notranslate"><span class="pre">ImportError</span></code>
+with a suitably descriptive message.  The following is a (possibly
+incomplete) list of conditions which will raise an error:</p>
+<ul class="simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">level</span></code> which is not a string or which is a string not
+corresponding to an actual logging level</p></li>
+<li><p>A <code class="docutils literal notranslate"><span class="pre">propagate</span></code> value which is not a boolean</p></li>
+<li><p>An id which does not have a corresponding destination</p></li>
+<li><p>A non-existent handler id found during an incremental call</p></li>
+<li><p>An invalid logger name</p></li>
+<li><p>Inability to resolve to an internal or external object</p></li>
+</ul>
+</section>
+<section id="discussion-in-the-community">
+<h2><a class="toc-backref" href="#id20">Discussion in the community</a><a class="headerlink" href="#discussion-in-the-community" title="Permalink to this headline">¶</a></h2>
+<p>The PEP has been announced on python-dev and python-list. While there
+hasn’t been a huge amount of discussion, this is perhaps to be
+expected for a niche topic.</p>
+<p>Discussion threads on python-dev:</p>
+<p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2009-October/092695.html">https://mail.python.org/pipermail/python-dev/2009-October/092695.html</a>
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2009-October/092782.html">https://mail.python.org/pipermail/python-dev/2009-October/092782.html</a>
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2009-October/093062.html">https://mail.python.org/pipermail/python-dev/2009-October/093062.html</a></p>
+<p>And on python-list:</p>
+<p><a class="reference external" href="https://mail.python.org/pipermail/python-list/2009-October/1223658.html">https://mail.python.org/pipermail/python-list/2009-October/1223658.html</a>
+<a class="reference external" href="https://mail.python.org/pipermail/python-list/2009-October/1224228.html">https://mail.python.org/pipermail/python-list/2009-October/1224228.html</a></p>
+<p>There have been some comments in favour of the proposal, no
+objections to the proposal as a whole, and some questions and
+objections about specific details. These are believed by the author
+to have been addressed by making changes to the PEP.</p>
+</section>
+<section id="reference-implementation">
+<h2><a class="toc-backref" href="#id21">Reference implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>A reference implementation of the changes is available as a module
+dictconfig.py with accompanying unit tests in test_dictconfig.py, at:</p>
+<p><a class="reference external" href="http://bitbucket.org/vinay.sajip/dictconfig">http://bitbucket.org/vinay.sajip/dictconfig</a></p>
+<p>This incorporates all features other than the socket listener change.</p>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#id22">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p><a class="reference external" href="pep-0008.html">PEP 8</a>, Style Guide for Python Code, van Rossum, Warsaw
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0008">http://www.python.org/dev/peps/pep-0008</a>)</p>
+</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#id23">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0391.txt">https://github.com/python/peps/blob/master/pep-0391.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0391.txt">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0001/">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0100/">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0101/">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0374/">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0423/">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0451/">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0471/">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0479/">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0495/">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0558/">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0570/">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0584/">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0586/">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0594/">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3118/">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-0390/" title="previous chapter">PEP 390 – Static metadata for Distutils</a></li>
+      <li>Next: <a href="../pep-0392/" title="next chapter">PEP 392 – Python 3.2 Release Schedule</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-0391.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

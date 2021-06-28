@@ -1,0 +1,1304 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 479 – Change StopIteration handling inside generators &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages" href="../pep-0480/" />
+    <link rel="prev" title="PEP 478 – Python 3.5 Release Schedule" href="../pep-0478/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pep-479-change-stopiteration-handling-inside-generators">
+<h1 class="page-title">PEP 479 – Change StopIteration handling inside generators<a class="headerlink" href="#pep-479-change-stopiteration-handling-inside-generators" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>479</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>Change StopIteration handling inside generators</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Chris Angelico &lt;<a class="reference external" href="mailto:rosuav&#37;&#52;&#48;gmail&#46;com?subject=PEP%20-1">rosuav&#32;&#97;t&#32;gmail.com</a>&gt;, Guido van Rossum &lt;<a class="reference external" href="mailto:guido&#37;&#52;&#48;python&#46;org?subject=PEP%20-1">guido&#32;&#97;t&#32;python.org</a>&gt;</p>
+</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even"><p>Final</p>
+</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Standards Track</p>
+</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even"><p>15-Nov-2014</p>
+</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd"><p>3.5</p>
+</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p>15-Nov-2014, 19-Nov-2014, 5-Dec-2014</p>
+</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#abstract" id="id32">Abstract</a></p></li>
+<li><p><a class="reference internal" href="#acceptance" id="id33">Acceptance</a></p></li>
+<li><p><a class="reference internal" href="#rationale" id="id34">Rationale</a></p></li>
+<li><p><a class="reference internal" href="#background-information" id="id35">Background information</a></p></li>
+<li><p><a class="reference internal" href="#proposal" id="id36">Proposal</a></p></li>
+<li><p><a class="reference internal" href="#consequences-for-existing-code" id="id37">Consequences for existing code</a></p>
+<ul>
+<li><p><a class="reference internal" href="#writing-backwards-and-forwards-compatible-code" id="id38">Writing backwards and forwards compatible code</a></p></li>
+<li><p><a class="reference internal" href="#examples-of-breakage" id="id39">Examples of breakage</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#explanation-of-generators-iterators-and-stopiteration" id="id40">Explanation of generators, iterators, and StopIteration</a></p></li>
+<li><p><a class="reference internal" href="#transition-plan" id="id41">Transition plan</a></p></li>
+<li><p><a class="reference internal" href="#alternate-proposals" id="id42">Alternate proposals</a></p>
+<ul>
+<li><p><a class="reference internal" href="#raising-something-other-than-runtimeerror" id="id43">Raising something other than RuntimeError</a></p></li>
+<li><p><a class="reference internal" href="#supplying-a-specific-exception-to-raise-on-return" id="id44">Supplying a specific exception to raise on return</a></p></li>
+<li><p><a class="reference internal" href="#making-return-triggered-stopiterations-obvious" id="id45">Making return-triggered StopIterations obvious</a></p></li>
+<li><p><a class="reference internal" href="#converting-the-exception-inside-next" id="id46">Converting the exception inside next()</a></p></li>
+<li><p><a class="reference internal" href="#sub-proposal-decorator-to-explicitly-request-current-behaviour" id="id47">Sub-proposal: decorator to explicitly request current behaviour</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#criticism" id="id48">Criticism</a></p>
+<ul>
+<li><p><a class="reference internal" href="#why-not-fix-all-next-methods" id="id49">Why not fix all __next__() methods?</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#references" id="id50">References</a></p></li>
+<li><p><a class="reference internal" href="#copyright" id="id51">Copyright</a></p></li>
+</ul>
+</div>
+<section id="abstract">
+<h2><a class="toc-backref" href="#id32">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes a change to generators: when <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> is
+raised inside a generator, it is replaced with <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>.
+(More precisely, this happens when the exception is about to bubble
+out of the generator’s stack frame.)  Because the change is backwards
+incompatible, the feature is initially introduced using a
+<code class="docutils literal notranslate"><span class="pre">__future__</span></code> statement.</p>
+</section>
+<section id="acceptance">
+<h2><a class="toc-backref" href="#id33">Acceptance</a><a class="headerlink" href="#acceptance" title="Permalink to this headline">¶</a></h2>
+<p>This PEP was accepted by the BDFL on November 22.  Because of the
+exceptionally short period from first draft to acceptance, the main
+objections brought up after acceptance were carefully considered and
+have been reflected in the “Alternate proposals” section below.
+However, none of the discussion changed the BDFL’s mind and the PEP’s
+acceptance is now final.  (Suggestions for clarifying edits are still
+welcome – unlike IETF RFCs, the text of a PEP is not cast in stone
+after its acceptance, although the core design/plan/specification
+should not change after acceptance.)</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#id34">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The interaction of generators and <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> is currently
+somewhat surprising, and can conceal obscure bugs.  An unexpected
+exception should not result in subtly altered behaviour, but should
+cause a noisy and easily-debugged traceback.  Currently,
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> raised accidentally inside a generator function will
+be interpreted as the end of the iteration by the loop construct
+driving the generator.</p>
+<p>The main goal of the proposal is to ease debugging in the situation
+where an unguarded <code class="docutils literal notranslate"><span class="pre">next()</span></code> call (perhaps several stack frames deep)
+raises <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> and causes the iteration controlled by the
+generator to terminate silently.  (Whereas, when some other exception
+is raised, a traceback is printed pinpointing the cause of the
+problem.)</p>
+<p>This is particularly pernicious in combination with the <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code>
+construct of <a class="reference external" href="pep-0380.html">PEP 380</a> <a class="footnote-reference brackets" href="#id18" id="id1">1</a>, as it breaks the abstraction that a
+subgenerator may be factored out of a generator.  That PEP notes this
+limitation, but notes that “use cases for these [are] rare to non-
+existent”.  Unfortunately while intentional use is rare, it is easy to
+stumble on these cases by accident:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">contextlib</span>
+
+<span class="nd">@contextlib</span><span class="o">.</span><span class="n">contextmanager</span>
+<span class="k">def</span> <span class="nf">transaction</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;begin&#39;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield from</span> <span class="n">do_it</span><span class="p">()</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;rollback&#39;</span><span class="p">)</span>
+        <span class="k">raise</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;commit&#39;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">do_it</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Refactored initial setup&#39;</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="c1"># Body of with-statement is executed here</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Refactored finalization of successful transaction&#39;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">gene</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">transaction</span><span class="p">():</span>
+            <span class="k">yield</span> <span class="n">i</span>
+            <span class="c1"># return</span>
+            <span class="k">raise</span> <span class="ne">StopIteration</span>  <span class="c1"># This is wrong</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Should not be reached&#39;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">gene</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;main: i =&#39;</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here factoring out <code class="docutils literal notranslate"><span class="pre">do_it</span></code> into a subgenerator has introduced a
+subtle bug: if the wrapped block raises <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>, under the
+current behavior this exception will be swallowed by the context
+manager; and, worse, the finalization is silently skipped!  Similarly
+problematic behavior occurs when an <code class="docutils literal notranslate"><span class="pre">asyncio</span></code> coroutine raises
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>, causing it to terminate silently, or when <code class="docutils literal notranslate"><span class="pre">next</span></code>
+is used to take the first result from an iterator that unexpectedly
+turns out to be empty, for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># using the same context manager as above</span>
+<span class="kn">import</span> <span class="nn">pathlib</span>
+
+<span class="k">with</span> <span class="n">transaction</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;commit file </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="c1"># I can never remember what the README extension is</span>
+        <span class="nb">next</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s1">&#39;/some/dir&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">&#39;README*&#39;</span><span class="p">))))</span>
+</pre></div>
+</div>
+<p>In both cases, the refactoring abstraction of <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> breaks
+in the presence of bugs in client code.</p>
+<p>Additionally, the proposal reduces the difference between list
+comprehensions and generator expressions, preventing surprises such as
+the one that started this discussion <a class="footnote-reference brackets" href="#id19" id="id2">2</a>.  Henceforth, the following
+statements will produce the same result if either produces a result at
+all:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">F</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">xs</span> <span class="k">if</span> <span class="n">P</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="n">F</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">xs</span> <span class="k">if</span> <span class="n">P</span><span class="p">(</span><span class="n">x</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>With the current state of affairs, it is possible to write a function
+<code class="docutils literal notranslate"><span class="pre">F(x)</span></code> or a predicate <code class="docutils literal notranslate"><span class="pre">P(x)</span></code> that causes the first form to produce
+a (truncated) result, while the second form raises an exception
+(namely, <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>).  With the proposed change, both forms
+will raise an exception at this point (albeit <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code> in the
+first case and <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> in the second).</p>
+<p>Finally, the proposal also clears up the confusion about how to
+terminate a generator: the proper way is <code class="docutils literal notranslate"><span class="pre">return</span></code>, not
+<code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">StopIteration</span></code>.</p>
+<p>As an added bonus, the above changes bring generator functions much
+more in line with regular functions.  If you wish to take a piece of
+code presented as a generator and turn it into something else, you
+can usually do this fairly simply, by replacing every <code class="docutils literal notranslate"><span class="pre">yield</span></code> with
+a call to <code class="docutils literal notranslate"><span class="pre">print()</span></code> or <code class="docutils literal notranslate"><span class="pre">list.append()</span></code>; however, if there are any
+bare <code class="docutils literal notranslate"><span class="pre">next()</span></code> calls in the code, you have to be aware of them.  If
+the code was originally written without relying on <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>
+terminating the function, the transformation would be that much
+easier.</p>
+</section>
+<section id="background-information">
+<h2><a class="toc-backref" href="#id35">Background information</a><a class="headerlink" href="#background-information" title="Permalink to this headline">¶</a></h2>
+<p>When a generator frame is (re)started as a result of a <code class="docutils literal notranslate"><span class="pre">__next__()</span></code>
+(or <code class="docutils literal notranslate"><span class="pre">send()</span></code> or <code class="docutils literal notranslate"><span class="pre">throw()</span></code>) call, one of three outcomes can occur:</p>
+<ul class="simple">
+<li><p>A yield point is reached, and the yielded value is returned.</p></li>
+<li><p>The frame is returned from; <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> is raised.</p></li>
+<li><p>An exception is raised, which bubbles out.</p></li>
+</ul>
+<p>In the latter two cases the frame is abandoned (and the generator
+object’s <code class="docutils literal notranslate"><span class="pre">gi_frame</span></code> attribute is set to None).</p>
+</section>
+<section id="proposal">
+<h2><a class="toc-backref" href="#id36">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>If a <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> is about to bubble out of a generator frame, it
+is replaced with <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>, which causes the <code class="docutils literal notranslate"><span class="pre">next()</span></code> call
+(which invoked the generator) to fail, passing that exception out.
+From then on it’s just like any old exception. <a class="footnote-reference brackets" href="#id20" id="id3">3</a></p>
+<p>This affects the third outcome listed above, without altering any
+other effects.  Furthermore, it only affects this outcome when the
+exception raised is <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> (or a subclass thereof).</p>
+<p>Note that the proposed replacement happens at the point where the
+exception is about to bubble out of the frame, i.e. after any
+<code class="docutils literal notranslate"><span class="pre">except</span></code> or <code class="docutils literal notranslate"><span class="pre">finally</span></code> blocks that could affect it have been
+exited.  The <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> raised by returning from the frame is
+not affected (the point being that <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> means that the
+generator terminated “normally”, i.e. it did not raise an exception).</p>
+<p>A subtle issue is what will happen if the caller, having caught the
+<code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>, calls the generator object’s <code class="docutils literal notranslate"><span class="pre">__next__()</span></code> method
+again.  The answer is that from this point on it will raise
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> – the behavior is the same as when any other
+exception was raised by the generator.</p>
+<p>Another logical consequence of the proposal: if someone uses
+<code class="docutils literal notranslate"><span class="pre">g.throw(StopIteration)</span></code> to throw a <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> exception into
+a generator, if the generator doesn’t catch it (which it could do
+using a <code class="docutils literal notranslate"><span class="pre">try/except</span></code> around the <code class="docutils literal notranslate"><span class="pre">yield</span></code>), it will be transformed
+into <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>.</p>
+<p>During the transition phase, the new feature must be enabled
+per-module using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">generator_stop</span>
+</pre></div>
+</div>
+<p>Any generator function constructed under the influence of this
+directive will have the <code class="docutils literal notranslate"><span class="pre">REPLACE_STOPITERATION</span></code> flag set on its code
+object, and generators with the flag set will behave according to this
+proposal.  Once the feature becomes standard, the flag may be dropped;
+code should not inspect generators for it.</p>
+<p>A proof-of-concept patch has been created to facilitate testing. <a class="footnote-reference brackets" href="#id21" id="id4">4</a></p>
+</section>
+<section id="consequences-for-existing-code">
+<h2><a class="toc-backref" href="#id37">Consequences for existing code</a><a class="headerlink" href="#consequences-for-existing-code" title="Permalink to this headline">¶</a></h2>
+<p>This change will affect existing code that depends on
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> bubbling up.  The pure Python reference
+implementation of <code class="docutils literal notranslate"><span class="pre">groupby</span></code> <a class="footnote-reference brackets" href="#id22" id="id5">5</a> currently has comments “Exit on
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>” where it is expected that the exception will
+propagate and then be handled.  This will be unusual, but not unknown,
+and such constructs will fail.  Other examples abound, e.g. <a class="footnote-reference brackets" href="#id23" id="id6">6</a>, <a class="footnote-reference brackets" href="#id24" id="id7">7</a>.</p>
+<p>(Nick Coghlan comments: “””If you wanted to factor out a helper
+function that terminated the generator you’d have to do “return
+yield from helper()” rather than just “helper()”.”””)</p>
+<p>There are also examples of generator expressions floating around that
+rely on a <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> raised by the expression, the target or the
+predicate (rather than by the <code class="docutils literal notranslate"><span class="pre">__next__()</span></code> call implied in the <code class="docutils literal notranslate"><span class="pre">for</span></code>
+loop proper).</p>
+<section id="writing-backwards-and-forwards-compatible-code">
+<h3><a class="toc-backref" href="#id38">Writing backwards and forwards compatible code</a><a class="headerlink" href="#writing-backwards-and-forwards-compatible-code" title="Permalink to this headline">¶</a></h3>
+<p>With the exception of hacks that raise <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> to exit a
+generator expression, it is easy to write code that works equally well
+under older Python versions as under the new semantics.</p>
+<p>This is done by enclosing those places in the generator body where a
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> is expected (e.g. bare <code class="docutils literal notranslate"><span class="pre">next()</span></code> calls or in some
+cases helper functions that are expected to raise <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>)
+in a <code class="docutils literal notranslate"><span class="pre">try/except</span></code> construct that returns when <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> is
+raised.  The <code class="docutils literal notranslate"><span class="pre">try/except</span></code> construct should appear directly in the
+generator function; doing this in a helper function that is not itself
+a generator does not work.  If <code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">StopIteration</span></code> occurs directly
+in a generator, simply replace it with <code class="docutils literal notranslate"><span class="pre">return</span></code>.</p>
+</section>
+<section id="examples-of-breakage">
+<h3><a class="toc-backref" href="#id39">Examples of breakage</a><a class="headerlink" href="#examples-of-breakage" title="Permalink to this headline">¶</a></h3>
+<p>Generators which explicitly raise <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> can generally be
+changed to simply return instead.  This will be compatible with all
+existing Python versions, and will not be affected by <code class="docutils literal notranslate"><span class="pre">__future__</span></code>.
+Here are some illustrations from the standard library.</p>
+<p>Lib/ipaddress.py:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">other</span> <span class="o">==</span> <span class="bp">self</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">StopIteration</span>
+</pre></div>
+</div>
+<p>Becomes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">other</span> <span class="o">==</span> <span class="bp">self</span><span class="p">:</span>
+    <span class="k">return</span>
+</pre></div>
+</div>
+<p>In some cases, this can be combined with <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> to simplify
+the code, such as Lib/difflib.py:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">context</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="nb">next</span><span class="p">(</span><span class="n">line_pair_iterator</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Becomes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">context</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">yield from</span> <span class="n">line_pair_iterator</span>
+    <span class="k">return</span>
+</pre></div>
+</div>
+<p>(The <code class="docutils literal notranslate"><span class="pre">return</span></code> is necessary for a strictly-equivalent translation,
+though in this particular file, there is no further code, and the
+<code class="docutils literal notranslate"><span class="pre">return</span></code> can be omitted.) For compatibility with pre-3.3 versions
+of Python, this could be written with an explicit <code class="docutils literal notranslate"><span class="pre">for</span></code> loop:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">context</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">line_pair_iterator</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">line</span>
+    <span class="k">return</span>
+</pre></div>
+</div>
+<p>More complicated iteration patterns will need explicit <code class="docutils literal notranslate"><span class="pre">try/except</span></code>
+constructs.  For example, a hypothetical parser like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">parser</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">line</span> <span class="o">==</span> <span class="s2">&quot;- end -&quot;</span><span class="p">:</span> <span class="k">break</span>
+            <span class="n">data</span> <span class="o">+=</span> <span class="n">line</span>
+        <span class="k">yield</span> <span class="n">data</span>
+</pre></div>
+</div>
+<p>would need to be rewritten as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">parser</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">line</span> <span class="o">==</span> <span class="s2">&quot;- end -&quot;</span><span class="p">:</span> <span class="k">break</span>
+                <span class="n">data</span> <span class="o">+=</span> <span class="n">line</span>
+            <span class="k">yield</span> <span class="n">data</span>
+        <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+            <span class="k">return</span>
+</pre></div>
+</div>
+<p>or possibly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">parser</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">line</span> <span class="o">==</span> <span class="s2">&quot;- end -&quot;</span><span class="p">:</span> <span class="k">break</span>
+            <span class="n">data</span> <span class="o">+=</span> <span class="n">line</span>
+        <span class="k">yield</span> <span class="n">data</span>
+</pre></div>
+</div>
+<p>The latter form obscures the iteration by purporting to iterate over
+the file with a <code class="docutils literal notranslate"><span class="pre">for</span></code> loop, but then also fetches more data from
+the same iterator during the loop body.  It does, however, clearly
+differentiate between a “normal” termination (<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>
+instead of the initial line) and an “abnormal” termination (failing
+to find the end marker in the inner loop, which will now raise
+<code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>).</p>
+<p>This effect of <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> has been used to cut a generator
+expression short, creating a form of <code class="docutils literal notranslate"><span class="pre">takewhile</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">stop</span><span class="p">():</span>
+    <span class="k">raise</span> <span class="ne">StopIteration</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="mi">5</span> <span class="ow">or</span> <span class="n">stop</span><span class="p">()))</span>
+<span class="c1"># prints [0, 1, 2, 3, 4]</span>
+</pre></div>
+</div>
+<p>Under the current proposal, this form of non-local flow control is
+not supported, and would have to be rewritten in statement form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">gen</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">:</span> <span class="k">return</span>
+        <span class="k">yield</span> <span class="n">x</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">gen</span><span class="p">()))</span>
+<span class="c1"># prints [0, 1, 2, 3, 4]</span>
+</pre></div>
+</div>
+<p>While this is a small loss of functionality, it is functionality that
+often comes at the cost of readability, and just as <code class="docutils literal notranslate"><span class="pre">lambda</span></code> has
+restrictions compared to <code class="docutils literal notranslate"><span class="pre">def</span></code>, so does a generator expression have
+restrictions compared to a generator function. In many cases, the
+transformation to full generator function will be trivially easy, and
+may improve structural clarity.</p>
+</section>
+</section>
+<section id="explanation-of-generators-iterators-and-stopiteration">
+<h2><a class="toc-backref" href="#id40">Explanation of generators, iterators, and StopIteration</a><a class="headerlink" href="#explanation-of-generators-iterators-and-stopiteration" title="Permalink to this headline">¶</a></h2>
+<p>The proposal does not change the relationship between generators and
+iterators: a generator object is still an iterator, and not all
+iterators are generators.  Generators have additional methods that
+iterators don’t have, like <code class="docutils literal notranslate"><span class="pre">send</span></code> and <code class="docutils literal notranslate"><span class="pre">throw</span></code>.  All this is
+unchanged.  Nothing changes for generator users – only authors of
+generator functions may have to learn something new.  (This includes
+authors of generator expressions that depend on early termination of
+the iteration by a <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> raised in a condition.)</p>
+<p>An iterator is an object with a <code class="docutils literal notranslate"><span class="pre">__next__</span></code> method.  Like many other
+special methods, it may either return a value, or raise a specific
+exception - in this case, <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> - to signal that it has
+no value to return.  In this, it is similar to <code class="docutils literal notranslate"><span class="pre">__getattr__</span></code> (can
+raise <code class="docutils literal notranslate"><span class="pre">AttributeError</span></code>), <code class="docutils literal notranslate"><span class="pre">__getitem__</span></code> (can raise <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>),
+and so on.  A helper function for an iterator can be written to
+follow the same protocol; for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">helper</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="n">y</span><span class="p">:</span> <span class="k">return</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">StopIteration</span>
+
+<span class="k">def</span> <span class="fm">__next__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">:</span> <span class="k">return</span> <span class="n">helper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">helper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Both forms of signalling are carried through: a returned value is
+returned, an exception bubbles up.  The helper is written to match
+the protocol of the calling function.</p>
+<p>A generator function is one which contains a <code class="docutils literal notranslate"><span class="pre">yield</span></code> expression.
+Each time it is (re)started, it may either yield a value, or return
+(including “falling off the end”).  A helper function for a generator
+can also be written, but it must also follow generator protocol:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">helper</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="n">y</span><span class="p">:</span> <span class="k">yield</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">gen</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">:</span> <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">helper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">(</span><span class="k">yield from</span> <span class="n">helper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>In both cases, any unexpected exception will bubble up. Due to the
+nature of generators and iterators, an unexpected <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>
+inside a generator will be converted into <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>, but
+beyond that, all exceptions will propagate normally.</p>
+</section>
+<section id="transition-plan">
+<h2><a class="toc-backref" href="#id41">Transition plan</a><a class="headerlink" href="#transition-plan" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Python 3.5: Enable new semantics under <code class="docutils literal notranslate"><span class="pre">__future__</span></code> import; silent
+deprecation warning if <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> bubbles out of a generator
+not under <code class="docutils literal notranslate"><span class="pre">__future__</span></code> import.</p></li>
+<li><p>Python 3.6: Non-silent deprecation warning.</p></li>
+<li><p>Python 3.7: Enable new semantics everywhere.</p></li>
+</ul>
+</section>
+<section id="alternate-proposals">
+<h2><a class="toc-backref" href="#id42">Alternate proposals</a><a class="headerlink" href="#alternate-proposals" title="Permalink to this headline">¶</a></h2>
+<section id="raising-something-other-than-runtimeerror">
+<h3><a class="toc-backref" href="#id43">Raising something other than RuntimeError</a><a class="headerlink" href="#raising-something-other-than-runtimeerror" title="Permalink to this headline">¶</a></h3>
+<p>Rather than the generic <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>, it might make sense to raise
+a new exception type <code class="docutils literal notranslate"><span class="pre">UnexpectedStopIteration</span></code>.  This has the
+downside of implicitly encouraging that it be caught; the correct
+action is to catch the original <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>, not the chained
+exception.</p>
+</section>
+<section id="supplying-a-specific-exception-to-raise-on-return">
+<h3><a class="toc-backref" href="#id44">Supplying a specific exception to raise on return</a><a class="headerlink" href="#supplying-a-specific-exception-to-raise-on-return" title="Permalink to this headline">¶</a></h3>
+<p>Nick Coghlan suggested a means of providing a specific
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> instance to the generator; if any other instance of
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> is raised, it is an error, but if that particular
+one is raised, the generator has properly completed.  This subproposal
+has been withdrawn in favour of better options, but is retained for
+reference.</p>
+</section>
+<section id="making-return-triggered-stopiterations-obvious">
+<h3><a class="toc-backref" href="#id45">Making return-triggered StopIterations obvious</a><a class="headerlink" href="#making-return-triggered-stopiterations-obvious" title="Permalink to this headline">¶</a></h3>
+<p>For certain situations, a simpler and fully backward-compatible
+solution may be sufficient: when a generator returns, instead of
+raising <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>, it raises a specific subclass of
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> (<code class="docutils literal notranslate"><span class="pre">GeneratorReturn</span></code>) which can then be detected.
+If it is not that subclass, it is an escaping exception rather than a
+return statement.</p>
+<p>The inspiration for this alternative proposal was Nick’s observation
+<a class="footnote-reference brackets" href="#id25" id="id8">8</a> that if an <code class="docutils literal notranslate"><span class="pre">asyncio</span></code> coroutine <a class="footnote-reference brackets" href="#id26" id="id9">9</a> accidentally raises
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>, it currently terminates silently, which may present
+a hard-to-debug mystery to the developer.  The main proposal turns
+such accidents into clearly distinguishable <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code> exceptions,
+but if that is rejected, this alternate proposal would enable
+<code class="docutils literal notranslate"><span class="pre">asyncio</span></code> to distinguish between a <code class="docutils literal notranslate"><span class="pre">return</span></code> statement and an
+accidentally-raised <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> exception.</p>
+<p>Of the three outcomes listed above, two change:</p>
+<ul class="simple">
+<li><p>If a yield point is reached, the value, obviously, would still be
+returned.</p></li>
+<li><p>If the frame is returned from, <code class="docutils literal notranslate"><span class="pre">GeneratorReturn</span></code> (rather than
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>) is raised.</p></li>
+<li><p>If an instance of <code class="docutils literal notranslate"><span class="pre">GeneratorReturn</span></code> would be raised, instead an
+instance of <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> would be raised. Any other exception
+bubbles up normally.</p></li>
+</ul>
+<p>In the third case, the <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> would have the <code class="docutils literal notranslate"><span class="pre">value</span></code> of
+the original <code class="docutils literal notranslate"><span class="pre">GeneratorReturn</span></code>, and would reference the original
+exception in its <code class="docutils literal notranslate"><span class="pre">__cause__</span></code>.  If uncaught, this would clearly show
+the chaining of exceptions.</p>
+<p>This alternative does <em>not</em> affect the discrepancy between generator
+expressions and list comprehensions, but allows generator-aware code
+(such as the <code class="docutils literal notranslate"><span class="pre">contextlib</span></code> and <code class="docutils literal notranslate"><span class="pre">asyncio</span></code> modules) to reliably
+differentiate between the second and third outcomes listed above.</p>
+<p>However, once code exists that depends on this distinction between
+<code class="docutils literal notranslate"><span class="pre">GeneratorReturn</span></code> and <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>, a generator that invokes
+another generator and relies on the latter’s <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> to
+bubble out would still be potentially wrong, depending on the use made
+of the distinction between the two exception types.</p>
+</section>
+<section id="converting-the-exception-inside-next">
+<h3><a class="toc-backref" href="#id46">Converting the exception inside next()</a><a class="headerlink" href="#converting-the-exception-inside-next" title="Permalink to this headline">¶</a></h3>
+<p>Mark Shannon suggested <a class="footnote-reference brackets" href="#id27" id="id10">10</a> that the problem could be solved in
+<code class="docutils literal notranslate"><span class="pre">next()</span></code> rather than at the boundary of generator functions.  By
+having <code class="docutils literal notranslate"><span class="pre">next()</span></code> catch <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> and raise instead
+<code class="docutils literal notranslate"><span class="pre">ValueError</span></code>, all unexpected <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> bubbling would be
+prevented; however, the backward-incompatibility concerns are far
+more serious than for the current proposal, as every <code class="docutils literal notranslate"><span class="pre">next()</span></code> call
+now needs to be rewritten to guard against <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> instead of
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> - not to mention that there is no way to write one
+block of code which reliably works on multiple versions of Python.
+(Using a dedicated exception type, perhaps subclassing <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>,
+would help this; however, all code would still need to be rewritten.)</p>
+<p>Note that calling <code class="docutils literal notranslate"><span class="pre">next(it,</span> <span class="pre">default)</span></code> catches <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> and
+substitutes the given default value; this feature is often useful to
+avoid a <code class="docutils literal notranslate"><span class="pre">try/except</span></code> block.</p>
+</section>
+<section id="sub-proposal-decorator-to-explicitly-request-current-behaviour">
+<h3><a class="toc-backref" href="#id47">Sub-proposal: decorator to explicitly request current behaviour</a><a class="headerlink" href="#sub-proposal-decorator-to-explicitly-request-current-behaviour" title="Permalink to this headline">¶</a></h3>
+<p>Nick Coghlan suggested <a class="footnote-reference brackets" href="#id28" id="id11">11</a> that the situations where the current
+behaviour is desired could be supported by means of a decorator:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">allow_implicit_stop</span>
+
+<span class="nd">@allow_implicit_stop</span>
+<span class="k">def</span> <span class="nf">my_generator</span><span class="p">():</span>
+    <span class="o">...</span>
+    <span class="k">yield</span> <span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>Which would be semantically equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_generator</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="o">...</span>
+        <span class="k">yield</span> <span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+        <span class="o">...</span>
+    <span class="k">except</span> <span class="ne">StopIteration</span>
+        <span class="k">return</span>
+</pre></div>
+</div>
+<p>but be faster, as it could be implemented by simply permitting the
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> to bubble up directly.</p>
+<p>Single-source Python 2/3 code would also benefit in a 3.7+ world,
+since libraries like six and python-future could just define their own
+version of “allow_implicit_stop” that referred to the new builtin in
+3.5+, and was implemented as an identity function in other versions.</p>
+<p>However, due to the implementation complexities required, the ongoing
+compatibility issues created, the subtlety of the decorator’s effect,
+and the fact that it would encourage the “quick-fix” solution of just
+slapping the decorator onto all generators instead of properly fixing
+the code in question, this sub-proposal has been rejected. <a class="footnote-reference brackets" href="#id29" id="id12">12</a></p>
+</section>
+</section>
+<section id="criticism">
+<h2><a class="toc-backref" href="#id48">Criticism</a><a class="headerlink" href="#criticism" title="Permalink to this headline">¶</a></h2>
+<p>Unofficial and apocryphal statistics suggest that this is seldom, if
+ever, a problem. <a class="footnote-reference brackets" href="#id30" id="id13">13</a>  Code does exist which relies on the current
+behaviour (e.g. <a class="footnote-reference brackets" href="#id20" id="id14">3</a>, <a class="footnote-reference brackets" href="#id23" id="id15">6</a>, <a class="footnote-reference brackets" href="#id24" id="id16">7</a>), and there is the concern that this
+would be unnecessary code churn to achieve little or no gain.</p>
+<p>Steven D’Aprano started an informal survey on comp.lang.python <a class="footnote-reference brackets" href="#id31" id="id17">14</a>;
+at the time of writing only two responses have been received: one was
+in favor of changing list comprehensions to match generator
+expressions (!), the other was in favor of this PEP’s main proposal.</p>
+<p>The existing model has been compared to the perfectly-acceptable
+issues inherent to every other case where an exception has special
+meaning.  For instance, an unexpected <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> inside a
+<code class="docutils literal notranslate"><span class="pre">__getitem__</span></code> method will be interpreted as failure, rather than
+permitted to bubble up.  However, there is a difference.  Special
+methods use <code class="docutils literal notranslate"><span class="pre">return</span></code> to indicate normality, and <code class="docutils literal notranslate"><span class="pre">raise</span></code> to signal
+abnormality; generators <code class="docutils literal notranslate"><span class="pre">yield</span></code> to indicate data, and <code class="docutils literal notranslate"><span class="pre">return</span></code> to
+signal the abnormal state.  This makes explicitly raising
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> entirely redundant, and potentially surprising.  If
+other special methods had dedicated keywords to distinguish between
+their return paths, they too could turn unexpected exceptions into
+<code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>; the fact that they cannot should not preclude
+generators from doing so.</p>
+<section id="why-not-fix-all-next-methods">
+<h3><a class="toc-backref" href="#id49">Why not fix all __next__() methods?</a><a class="headerlink" href="#why-not-fix-all-next-methods" title="Permalink to this headline">¶</a></h3>
+<p>When implementing a regular <code class="docutils literal notranslate"><span class="pre">__next__()</span></code> method, the only way to
+indicate the end of the iteration is to raise <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>.  So
+catching <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> here and converting it to <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>
+would defeat the purpose.  This is a reminder of the special status of
+generator functions: in a generator function, raising
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> is redundant since the iteration can be terminated
+by a simple <code class="docutils literal notranslate"><span class="pre">return</span></code>.</p>
+</section>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#id50">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p><a class="reference external" href="pep-0380.html">PEP 380</a> - Syntax for Delegating to a Subgenerator
+(<a class="reference external" href="https://www.python.org/dev/peps/pep-0380">https://www.python.org/dev/peps/pep-0380</a>)</p>
+</dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><p>Initial mailing list comment
+(<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2014-November/029906.html">https://mail.python.org/pipermail/python-ideas/2014-November/029906.html</a>)</p>
+</dd>
+<dt class="label" id="id20"><span class="brackets">3</span><span class="fn-backref">(<a href="#id3">1</a>,<a href="#id14">2</a>)</span></dt>
+<dd><p>Proposal by GvR
+(<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2014-November/029953.html">https://mail.python.org/pipermail/python-ideas/2014-November/029953.html</a>)</p>
+</dd>
+<dt class="label" id="id21"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd><p>Tracker issue with Proof-of-Concept patch
+(<a class="reference external" href="http://bugs.python.org/issue22906">http://bugs.python.org/issue22906</a>)</p>
+</dd>
+<dt class="label" id="id22"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd><p>Pure Python implementation of groupby
+(<a class="reference external" href="https://docs.python.org/3/library/itertools.html#itertools.groupby">https://docs.python.org/3/library/itertools.html#itertools.groupby</a>)</p>
+</dd>
+<dt class="label" id="id23"><span class="brackets">6</span><span class="fn-backref">(<a href="#id6">1</a>,<a href="#id15">2</a>)</span></dt>
+<dd><p>Split a sequence or generator using a predicate
+(<a class="reference external" href="http://code.activestate.com/recipes/578416-split-a-sequence-or-generator-using-a-predicate/">http://code.activestate.com/recipes/578416-split-a-sequence-or-generator-using-a-predicate/</a>)</p>
+</dd>
+<dt class="label" id="id24"><span class="brackets">7</span><span class="fn-backref">(<a href="#id7">1</a>,<a href="#id16">2</a>)</span></dt>
+<dd><p>wrap unbounded generator to restrict its output
+(<a class="reference external" href="http://code.activestate.com/recipes/66427-wrap-unbounded-generator-to-restrict-its-output/">http://code.activestate.com/recipes/66427-wrap-unbounded-generator-to-restrict-its-output/</a>)</p>
+</dd>
+<dt class="label" id="id25"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd><p>Post from Nick Coghlan mentioning asyncio
+(<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2014-November/029961.html">https://mail.python.org/pipermail/python-ideas/2014-November/029961.html</a>)</p>
+</dd>
+<dt class="label" id="id26"><span class="brackets"><a class="fn-backref" href="#id9">9</a></span></dt>
+<dd><p>Coroutines in asyncio
+(<a class="reference external" href="https://docs.python.org/3/library/asyncio-task.html#coroutines">https://docs.python.org/3/library/asyncio-task.html#coroutines</a>)</p>
+</dd>
+<dt class="label" id="id27"><span class="brackets"><a class="fn-backref" href="#id10">10</a></span></dt>
+<dd><p>Post from Mark Shannon with alternate proposal
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-November/137129.html">https://mail.python.org/pipermail/python-dev/2014-November/137129.html</a>)</p>
+</dd>
+<dt class="label" id="id28"><span class="brackets"><a class="fn-backref" href="#id11">11</a></span></dt>
+<dd><p>Idea from Nick Coghlan
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-November/137201.html">https://mail.python.org/pipermail/python-dev/2014-November/137201.html</a>)</p>
+</dd>
+<dt class="label" id="id29"><span class="brackets"><a class="fn-backref" href="#id12">12</a></span></dt>
+<dd><p>Rejection of above idea by GvR
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-November/137243.html">https://mail.python.org/pipermail/python-dev/2014-November/137243.html</a>)</p>
+</dd>
+<dt class="label" id="id30"><span class="brackets"><a class="fn-backref" href="#id13">13</a></span></dt>
+<dd><p>Response by Steven D’Aprano
+(<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2014-November/029994.html">https://mail.python.org/pipermail/python-ideas/2014-November/029994.html</a>)</p>
+</dd>
+<dt class="label" id="id31"><span class="brackets"><a class="fn-backref" href="#id17">14</a></span></dt>
+<dd><p>Thread on comp.lang.python started by Steven D’Aprano
+(<a class="reference external" href="https://mail.python.org/pipermail/python-list/2014-November/680757.html">https://mail.python.org/pipermail/python-list/2014-November/680757.html</a>)</p>
+</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#id51">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0479.txt">https://github.com/python/peps/blob/master/pep-0479.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0479.txt">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0001/">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0100/">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0101/">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0374/">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0391/">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0423/">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0451/">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0471/">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0495/">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0558/">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0570/">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0584/">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0586/">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0594/">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3118/">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-0478/" title="previous chapter">PEP 478 – Python 3.5 Release Schedule</a></li>
+      <li>Next: <a href="../pep-0480/" title="next chapter">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-0479.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

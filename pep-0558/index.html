@@ -1,0 +1,1510 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 558 – Defined semantics for locals() &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 559 – Built-in noop()" href="../pep-0559/" />
+    <link rel="prev" title="PEP 557 – Data Classes" href="../pep-0557/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pep-558-defined-semantics-for-locals">
+<h1 class="page-title">PEP 558 – Defined semantics for locals()<a class="headerlink" href="#pep-558-defined-semantics-for-locals" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>558</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>Defined semantics for locals()</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Nick Coghlan &lt;<a class="reference external" href="mailto:ncoghlan&#37;&#52;&#48;gmail&#46;com?subject=PEP%20-1">ncoghlan&#32;&#97;t&#32;gmail.com</a>&gt;</p>
+</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even"><p>Nathaniel J. Smith</p>
+</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://discuss.python.org/t/pep-558-defined-semantics-for-locals/2936">https://discuss.python.org/t/pep-558-defined-semantics-for-locals/2936</a></p>
+</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even"><p>Draft</p>
+</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Standards Track</p>
+</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even"><p>08-Sep-2017</p>
+</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd"><p>3.11</p>
+</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p>2017-09-08, 2019-05-22, 2019-05-30, 2019-12-30</p>
+</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#abstract" id="id26">Abstract</a></p></li>
+<li><p><a class="reference internal" href="#rationale" id="id27">Rationale</a></p></li>
+<li><p><a class="reference internal" href="#proposal" id="id28">Proposal</a></p>
+<ul>
+<li><p><a class="reference internal" href="#new-locals-documentation" id="id29">New <code class="docutils literal notranslate"><span class="pre">locals()</span></code> documentation</a></p></li>
+<li><p><a class="reference internal" href="#module-scope" id="id30">Module scope</a></p></li>
+<li><p><a class="reference internal" href="#class-scope" id="id31">Class scope</a></p></li>
+<li><p><a class="reference internal" href="#function-scope" id="id32">Function scope</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#cpython-implementation-changes" id="id33">CPython Implementation Changes</a></p>
+<ul>
+<li><p><a class="reference internal" href="#summary-of-proposed-implementation-specific-changes" id="id34">Summary of proposed implementation-specific changes</a></p></li>
+<li><p><a class="reference internal" href="#providing-the-updated-python-level-semantics" id="id35">Providing the updated Python level semantics</a></p></li>
+<li><p><a class="reference internal" href="#resolving-the-issues-with-tracing-mode-behaviour" id="id36">Resolving the issues with tracing mode behaviour</a></p></li>
+<li><p><a class="reference internal" href="#changes-to-the-stable-c-api-abi" id="id37">Changes to the stable C API/ABI</a></p></li>
+<li><p><a class="reference internal" href="#changes-to-the-public-cpython-c-api" id="id38">Changes to the public CPython C API</a></p></li>
+<li><p><a class="reference internal" href="#reducing-the-runtime-overhead-of-trace-hooks" id="id39">Reducing the runtime overhead of trace hooks</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#design-discussion" id="id40">Design Discussion</a></p>
+<ul>
+<li><p><a class="reference internal" href="#changing-locals-to-return-independent-snapshots-at-function-scope" id="id41">Changing <code class="docutils literal notranslate"><span class="pre">locals()</span></code> to return independent snapshots at function scope</a></p></li>
+<li><p><a class="reference internal" href="#keeping-locals-as-a-snapshot-at-function-scope" id="id42">Keeping <code class="docutils literal notranslate"><span class="pre">locals()</span></code> as a snapshot at function scope</a></p></li>
+<li><p><a class="reference internal" href="#what-happens-with-the-default-args-for-eval-and-exec" id="id43">What happens with the default args for <code class="docutils literal notranslate"><span class="pre">eval()</span></code> and <code class="docutils literal notranslate"><span class="pre">exec()</span></code>?</a></p></li>
+<li><p><a class="reference internal" href="#changing-the-frame-api-semantics-in-regular-operation" id="id44">Changing the frame API semantics in regular operation</a></p></li>
+<li><p><a class="reference internal" href="#dropping-support-for-storing-additional-data-on-optimised-frames" id="id45">Dropping support for storing additional data on optimised frames</a></p></li>
+<li><p><a class="reference internal" href="#historical-semantics-at-function-scope" id="id46">Historical semantics at function scope</a></p></li>
+<li><p><a class="reference internal" href="#proposing-several-additions-to-the-stable-c-api-abi" id="id47">Proposing several additions to the stable C API/ABI</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#implementation" id="id48">Implementation</a></p></li>
+<li><p><a class="reference internal" href="#acknowledgements" id="id49">Acknowledgements</a></p></li>
+<li><p><a class="reference internal" href="#references" id="id50">References</a></p></li>
+<li><p><a class="reference internal" href="#copyright" id="id51">Copyright</a></p></li>
+</ul>
+</div>
+<section id="abstract">
+<h2><a class="toc-backref" href="#id26">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>The semantics of the <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin have historically been underspecified
+and hence implementation dependent.</p>
+<p>This PEP proposes formally standardising on the behaviour of the CPython 3.10
+reference implementation for most execution scopes, with some adjustments to the
+behaviour at function scope to make it more predictable and independent of the
+presence or absence of tracing functions.</p>
+<p>In addition, it proposes that the following functions be added to the stable
+Python C API/ABI:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyLocals_Get</span><span class="p">();</span>
+<span class="nb">int</span> <span class="n">PyLocals_GetReturnsCopy</span><span class="p">();</span>
+<span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyLocals_GetCopy</span><span class="p">();</span>
+<span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyLocals_GetView</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>It also proposes the addition of several supporting functions and type
+definitions to the CPython C API.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#id27">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>While the precise semantics of the <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin are nominally undefined,
+in practice, many Python programs depend on it behaving exactly as it behaves in
+CPython (at least when no tracing functions are installed).</p>
+<p>Other implementations such as PyPy are currently replicating that behaviour,
+up to and including replication of local variable mutation bugs that
+can arise when a trace hook is installed <a class="footnote-reference brackets" href="#id17" id="id1">1</a>.</p>
+<p>While this PEP considers CPython’s current behaviour when no trace hooks are
+installed to be largely acceptable, it considers the current
+behaviour when trace hooks are installed to be problematic, as it causes bugs
+like <a class="footnote-reference brackets" href="#id17" id="id2">1</a> <em>without</em> even reliably enabling the desired functionality of allowing
+debuggers like <code class="docutils literal notranslate"><span class="pre">pdb</span></code> to mutate local variables <a class="footnote-reference brackets" href="#id19" id="id3">3</a>.</p>
+<p>Review of the initial PEP and the draft implementation then identified an
+opportunity for simplification of both the documentation and implementation
+of the function level <code class="docutils literal notranslate"><span class="pre">locals()</span></code> behaviour by updating it to return an
+independent snapshot of the function locals and closure variables on each
+call, rather than continuing to return the semi-dynamic intermittently updated
+shared copy that it has historically returned in CPython.</p>
+</section>
+<section id="proposal">
+<h2><a class="toc-backref" href="#id28">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>The expected semantics of the <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin change based on the current
+execution scope. For this purpose, the defined scopes of execution are:</p>
+<ul class="simple">
+<li><p>module scope: top-level module code, as well as any other code executed using
+<code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with a single namespace</p></li>
+<li><p>class scope: code in the body of a <code class="docutils literal notranslate"><span class="pre">class</span></code> statement, as well as any other
+code executed using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with separate local and global
+namespaces</p></li>
+<li><p>function scope: code in the body of a <code class="docutils literal notranslate"><span class="pre">def</span></code> or <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">def</span></code> statement,
+or any other construct that creates an optimized code block in CPython (e.g.
+comprehensions, lambda functions)</p></li>
+</ul>
+<p>This PEP proposes elevating most of the current behaviour of the CPython
+reference implementation to become part of the language specification, <em>except</em>
+that each call to <code class="docutils literal notranslate"><span class="pre">locals()</span></code> at function scope will create a new dictionary
+object, rather than caching a common dict instance in the frame object that
+each invocation will update and return.</p>
+<p>This PEP also proposes to largely eliminate the concept of a separate “tracing”
+mode from the CPython reference implementation. In releases up to and including
+Python 3.10, the CPython interpreter behaves differently when a trace hook has
+been registered in one or more threads via an implementation dependent mechanism
+like <code class="docutils literal notranslate"><span class="pre">sys.settrace</span></code> (<a class="footnote-reference brackets" href="#id20" id="id4">4</a>) in CPython’s <code class="docutils literal notranslate"><span class="pre">sys</span></code> module or
+<code class="docutils literal notranslate"><span class="pre">PyEval_SetTrace</span></code> (<a class="footnote-reference brackets" href="#id21" id="id5">5</a>) in CPython’s C API.</p>
+<p>This PEP proposes changes to CPython’s behaviour at function scope that make
+the <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin semantics when a trace hook is registered identical to
+those used when no trace hook is registered, while also making the related frame
+API semantics clearer and easier for interactive debuggers to rely on.</p>
+<p>The proposed elimination of tracing mode affects the semantics of frame object
+references obtained through other means, such as via a traceback, or via the
+<code class="docutils literal notranslate"><span class="pre">sys._getframe()</span></code> API, as the write-through semantics needed for trace hook
+support are always provided by the <code class="docutils literal notranslate"><span class="pre">f_locals</span></code> attribute on frame objects,
+rather than being runtime state dependent.</p>
+<section id="new-locals-documentation">
+<h3><a class="toc-backref" href="#id29">New <code class="docutils literal notranslate"><span class="pre">locals()</span></code> documentation</a><a class="headerlink" href="#new-locals-documentation" title="Permalink to this headline">¶</a></h3>
+<p>The heart of this proposal is to revise the documentation for the <code class="docutils literal notranslate"><span class="pre">locals()</span></code>
+builtin to read as follows:</p>
+<blockquote>
+<div><p>Return a mapping object representing the current local symbol table, with
+variable names as the keys, and their currently bound references as the
+values.</p>
+<p>At module scope, as well as when using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with a
+single namespace, this function returns the same namespace as <code class="docutils literal notranslate"><span class="pre">globals()</span></code>.</p>
+<p>At class scope, it returns the namespace that will be passed to the
+metaclass constructor.</p>
+<p>When using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with separate local and global
+namespaces, it returns the local namespace passed in to the function call.</p>
+<p>In all of the above cases, each call to <code class="docutils literal notranslate"><span class="pre">locals()</span></code> in a given frame of
+execution will return the <em>same</em> mapping object. Changes made through
+the mapping object returned from <code class="docutils literal notranslate"><span class="pre">locals()</span></code> will be visible as bound,
+rebound, or deleted local variables, and binding, rebinding, or deleting
+local variables will immediately affect the contents of the returned mapping
+object.</p>
+<p>At function scope (including for generators and coroutines), each call to
+<code class="docutils literal notranslate"><span class="pre">locals()</span></code> instead returns a fresh dictionary containing the current
+bindings of the function’s local variables and any nonlocal cell references.
+In this case, name binding changes made via the returned dict are <em>not</em>
+written back to the corresponding local variables or nonlocal cell
+references, and binding, rebinding, or deleting local variables and nonlocal
+cell references does <em>not</em> affect the contents of previously returned
+dictionaries.</p>
+</div></blockquote>
+<p>There would also be a versionchanged note for the release making this change:</p>
+<blockquote>
+<div><p>In prior versions, the semantics of mutating the mapping object returned
+from <code class="docutils literal notranslate"><span class="pre">locals()</span></code> were formally undefined. In CPython specifically,
+the mapping returned at function scope could be implicitly refreshed by
+other operations, such as calling <code class="docutils literal notranslate"><span class="pre">locals()</span></code> again, or the interpreter
+implicitly invoking a Python level trace function. Obtaining the legacy
+CPython behaviour now requires explicit calls to update the initially
+returned dictionary with the results of subsequent calls to <code class="docutils literal notranslate"><span class="pre">locals()</span></code>.</p>
+</div></blockquote>
+<p>For reference, the current documentation of this builtin reads as follows:</p>
+<blockquote>
+<div><p>Update and return a dictionary representing the current local symbol table.
+Free variables are returned by locals() when it is called in function
+blocks, but not in class blocks.</p>
+<p>Note: The contents of this dictionary should not be modified; changes may
+not affect the values of local and free variables used by the interpreter.</p>
+</div></blockquote>
+<p>(In other words: the status quo is that the semantics and behaviour of
+<code class="docutils literal notranslate"><span class="pre">locals()</span></code> are formally implementation defined, whereas the proposed
+state after this PEP is that the only implementation defined behaviour will be
+that associated with whether or not the implementation emulates the CPython
+frame API, with the behaviour in all other cases being defined by the language
+and library references)</p>
+</section>
+<section id="module-scope">
+<h3><a class="toc-backref" href="#id30">Module scope</a><a class="headerlink" href="#module-scope" title="Permalink to this headline">¶</a></h3>
+<p>At module scope, as well as when using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with a
+single namespace, <code class="docutils literal notranslate"><span class="pre">locals()</span></code> must return the same object as <code class="docutils literal notranslate"><span class="pre">globals()</span></code>,
+which must be the actual execution namespace (available as
+<code class="docutils literal notranslate"><span class="pre">inspect.currentframe().f_locals</span></code> in implementations that provide access
+to frame objects).</p>
+<p>Variable assignments during subsequent code execution in the same scope must
+dynamically change the contents of the returned mapping, and changes to the
+returned mapping must change the values bound to local variable names in the
+execution environment.</p>
+<p>To capture this expectation as part of the language specification, the following
+paragraph will be added to the documentation for <code class="docutils literal notranslate"><span class="pre">locals()</span></code>:</p>
+<blockquote>
+<div><p>At module scope, as well as when using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with a
+single namespace, this function returns the same namespace as <code class="docutils literal notranslate"><span class="pre">globals()</span></code>.</p>
+</div></blockquote>
+<p>This part of the proposal does not require any changes to the reference
+implementation - it is standardisation of the current behaviour.</p>
+</section>
+<section id="class-scope">
+<h3><a class="toc-backref" href="#id31">Class scope</a><a class="headerlink" href="#class-scope" title="Permalink to this headline">¶</a></h3>
+<p>At class scope, as well as when using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with separate
+global and local namespaces, <code class="docutils literal notranslate"><span class="pre">locals()</span></code> must return the specified local
+namespace (which may be supplied by the metaclass <code class="docutils literal notranslate"><span class="pre">__prepare__</span></code> method
+in the case of classes). As for module scope, this must be a direct reference
+to the actual execution namespace (available as
+<code class="docutils literal notranslate"><span class="pre">inspect.currentframe().f_locals</span></code> in implementations that provide access
+to frame objects).</p>
+<p>Variable assignments during subsequent code execution in the same scope must
+change the contents of the returned mapping, and changes to the returned mapping
+must change the values bound to local variable names in the
+execution environment.</p>
+<p>The mapping returned by <code class="docutils literal notranslate"><span class="pre">locals()</span></code> will <em>not</em> be used as the actual class
+namespace underlying the defined class (the class creation process will copy
+the contents to a fresh dictionary that is only accessible by going through the
+class machinery).</p>
+<p>For nested classes defined inside a function, any nonlocal cells referenced from
+the class scope are <em>not</em> included in the <code class="docutils literal notranslate"><span class="pre">locals()</span></code> mapping.</p>
+<p>To capture this expectation as part of the language specification, the following
+two paragraphs will be added to the documentation for <code class="docutils literal notranslate"><span class="pre">locals()</span></code>:</p>
+<blockquote>
+<div><p>When using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with separate local and global
+namespaces, [this function] returns the given local namespace.</p>
+<p>At class scope, it returns the namespace that will be passed to the metaclass
+constructor.</p>
+</div></blockquote>
+<p>This part of the proposal does not require any changes to the reference
+implementation - it is standardisation of the current behaviour.</p>
+</section>
+<section id="function-scope">
+<h3><a class="toc-backref" href="#id32">Function scope</a><a class="headerlink" href="#function-scope" title="Permalink to this headline">¶</a></h3>
+<p>At function scope, interpreter implementations are granted significant freedom
+to optimise local variable access, and hence are NOT required to permit
+arbitrary modification of local and nonlocal variable bindings through the
+mapping returned from <code class="docutils literal notranslate"><span class="pre">locals()</span></code>.</p>
+<p>Historically, this leniency has been described in the language specification
+with the words “The contents of this dictionary should not be modified; changes
+may not affect the values of local and free variables used by the interpreter.”</p>
+<p>This PEP proposes to change that text to instead say:</p>
+<blockquote>
+<div><p>At function scope (including for generators and coroutines), each call to
+<code class="docutils literal notranslate"><span class="pre">locals()</span></code> instead returns a fresh dictionary containing the current
+bindings of the function’s local variables and any nonlocal cell references.
+In this case, name binding changes made via the returned dict are <em>not</em>
+written back to the corresponding local variables or nonlocal cell
+references, and binding, rebinding, or deleting local variables and nonlocal
+cell references does <em>not</em> affect the contents of previously returned
+dictionaries.</p>
+</div></blockquote>
+<p>This part of the proposal <em>does</em> require changes to the CPython reference
+implementation, as CPython currently returns a shared mapping object that may
+be implicitly refreshed by additional calls to <code class="docutils literal notranslate"><span class="pre">locals()</span></code>, and the
+“write back” strategy currently used to support namespace changes
+from trace functions also doesn’t comply with it (and causes the quirky
+behavioural problems mentioned in the Rationale).</p>
+</section>
+</section>
+<section id="cpython-implementation-changes">
+<h2><a class="toc-backref" href="#id33">CPython Implementation Changes</a><a class="headerlink" href="#cpython-implementation-changes" title="Permalink to this headline">¶</a></h2>
+<section id="summary-of-proposed-implementation-specific-changes">
+<h3><a class="toc-backref" href="#id34">Summary of proposed implementation-specific changes</a><a class="headerlink" href="#summary-of-proposed-implementation-specific-changes" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p>Changes are made as neccessary to provide the updated Python level semantics</p></li>
+<li><p>Two new functions are added to the stable ABI to replicate the updated
+behaviour of the Python <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyLocals_Get</span><span class="p">();</span>
+<span class="nb">int</span> <span class="n">PyLocals_GetReturnsCopy</span><span class="p">();</span>
+</pre></div>
+</div>
+</li>
+<li><p>One new function is added to the stable ABI to efficiently get a snapshot of
+the local namespace in the running frame:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyLocals_GetCopy</span><span class="p">();</span>
+</pre></div>
+</div>
+</li>
+<li><p>One new function is added to the stable ABI to get a read-only view of the
+local namespace in the running frame:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyLocals_GetView</span><span class="p">();</span>
+</pre></div>
+</div>
+</li>
+<li><p>Corresponding frame accessor functions for these new public APIs are added to
+the CPython frame C API</p></li>
+<li><p>On optimised frames, the Python level <code class="docutils literal notranslate"><span class="pre">f_locals</span></code> API will become a direct
+read/write proxy for the frame’s local and closure variable storage, and hence
+no longer support storing additional data that doesn’t correspond to a local
+or closure variable on the underyling frame object</p></li>
+<li><p>No C API function is added to get access to a mutable mapping for the local
+namespace. Instead, <code class="docutils literal notranslate"><span class="pre">PyObject_GetAttrString(frame,</span> <span class="pre">&quot;f_locals&quot;)</span></code> is used, the
+same API as is used in Python code.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> remains supported and does not emit a programmatic
+warning, but will be deprecated in the documentation in favour of the new
+APIs</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PyFrame_FastToLocals()</span></code> and <code class="docutils literal notranslate"><span class="pre">PyFrame_FastToLocalsWithError()</span></code> remain
+supported and do not emit a programmatic warning, but will be deprecated in
+the documentation in favour of the new APIs</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PyFrame_LocalsToFast()</span></code> always raises <code class="docutils literal notranslate"><span class="pre">RuntimeError()</span></code>, indicating that
+<code class="docutils literal notranslate"><span class="pre">PyObject_GetAttrString(frame,</span> <span class="pre">&quot;f_locals&quot;)</span></code> should be used to obtain a
+mutable read/write mapping for the local variables.</p></li>
+<li><p>The trace hook implementation will no longer call <code class="docutils literal notranslate"><span class="pre">PyFrame_FastToLocals()</span></code>
+implicitly. The version porting guide will recommend migrating to
+<code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsView()</span></code> for read-only access and
+<code class="docutils literal notranslate"><span class="pre">PyObject_GetAttrString(frame,</span> <span class="pre">&quot;f_locals&quot;)</span></code> for read/write access.</p></li>
+</ul>
+</section>
+<section id="providing-the-updated-python-level-semantics">
+<h3><a class="toc-backref" href="#id35">Providing the updated Python level semantics</a><a class="headerlink" href="#providing-the-updated-python-level-semantics" title="Permalink to this headline">¶</a></h3>
+<p>The implementation of the <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin is modified to return a distinct
+copy of the local namespace rather than a direct reference to the internal
+dynamically updated snapshot returned by <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code>.</p>
+<p>At least for now, this copied snapshot will continue to include any extra
+key/value pairs injected via the <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> API, but that could
+potentially change in a future release if that API is ever fully deprecated.</p>
+</section>
+<section id="resolving-the-issues-with-tracing-mode-behaviour">
+<h3><a class="toc-backref" href="#id36">Resolving the issues with tracing mode behaviour</a><a class="headerlink" href="#resolving-the-issues-with-tracing-mode-behaviour" title="Permalink to this headline">¶</a></h3>
+<p>The current cause of CPython’s tracing mode quirks (both the side effects from
+simply installing a tracing function and the fact that writing values back to
+function locals only works for the specific function being traced) is the way
+that locals mutation support for trace hooks is currently implemented: the
+<code class="docutils literal notranslate"><span class="pre">PyFrame_LocalsToFast</span></code> function.</p>
+<p>When a trace function is installed, CPython currently does the following for
+function frames (those where the code object uses “fast locals” semantics):</p>
+<ol class="arabic simple">
+<li><p>Calls <code class="docutils literal notranslate"><span class="pre">PyFrame_FastToLocals</span></code> to update the dynamic snapshot</p></li>
+<li><p>Calls the trace hook (with tracing of the hook itself disabled)</p></li>
+<li><p>Calls <code class="docutils literal notranslate"><span class="pre">PyFrame_LocalsToFast</span></code> to capture any changes made to the dynamic
+snapshot</p></li>
+</ol>
+<p>This approach is problematic for a few different reasons:</p>
+<ul class="simple">
+<li><p>Even if the trace function doesn’t mutate the snapshot, the final step resets
+any cell references back to the state they were in before the trace function
+was called (this is the root cause of the bug report in <a class="footnote-reference brackets" href="#id17" id="id6">1</a>)</p></li>
+<li><p>If the trace function <em>does</em> mutate the snapshot, but then does something
+that causes the snapshot to be refreshed, those changes are lost (this is
+one aspect of the bug report in <a class="footnote-reference brackets" href="#id19" id="id7">3</a>)</p></li>
+<li><p>If the trace function attempts to mutate the local variables of a frame other
+than the one being traced (e.g. <code class="docutils literal notranslate"><span class="pre">frame.f_back.f_locals</span></code>), those changes
+will almost certainly be lost (this is another aspect of the bug report in
+<a class="footnote-reference brackets" href="#id19" id="id8">3</a>)</p></li>
+<li><p>If a <code class="docutils literal notranslate"><span class="pre">locals()</span></code> reference is passed to another function, and <em>that</em>
+function mutates the snapshot namespace, then those changes <em>may</em> be written
+back to the execution frame <em>if</em> a trace hook is installed</p></li>
+</ul>
+<p>The proposed resolution to this problem is to take advantage of the fact that
+whereas functions typically access their <em>own</em> namespace using the language
+defined <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin, trace functions necessarily use the implementation
+dependent <code class="docutils literal notranslate"><span class="pre">frame.f_locals</span></code> interface, as a frame reference is what gets
+passed to hook implementations.</p>
+<p>Instead of being a direct reference to the internal dynamic snapshot used to
+populate the independent snapshots returned by <code class="docutils literal notranslate"><span class="pre">locals()</span></code>, the Python level
+<code class="docutils literal notranslate"><span class="pre">frame.f_locals</span></code> will be updated to instead return a dedicated proxy type
+that has two internal attributes not exposed as part of the Python runtime
+API:</p>
+<ul class="simple">
+<li><p><em>frame</em>: the underlying frame that the snapshot is for</p></li>
+<li><p><em>fast_refs</em>: a mapping from variable names to either fast local storage
+offsets (for local variables) or to closure cells (for closure variables).
+This mapping is lazily initialized on the first access to the mapping, rather
+being eagerly populated as soon as the proxy is created.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">__getitem__</span></code> operations on the proxy will populate the <code class="docutils literal notranslate"><span class="pre">fast_refs</span></code> mapping
+(if it is not already populated), and then either return the relevant value
+(if the key is found in the <code class="docutils literal notranslate"><span class="pre">fast_refs</span></code> mapping), or else raise <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>.</p>
+<p>As the frame storage is always accessed directly, the proxy will automatically
+pick up name binding operations that take place as the function executes.</p>
+<p>Similarly, <code class="docutils literal notranslate"><span class="pre">__setitem__</span></code> and <code class="docutils literal notranslate"><span class="pre">__delitem__</span></code> operations on the proxy will
+directly affect the corresponding fast local or cell reference on the underlying
+frame, ensuring that changes are immediately visible to the running Python code,
+rather than needing to be written back to the runtime storage at some later time.</p>
+<p>Unlike the existing <code class="docutils literal notranslate"><span class="pre">f_locals</span></code> implementation on optimised frames, the frame
+locals proxy will raise <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> for attempts to write to keys that aren’t
+defined as local or closure variables on the underyling frame.</p>
+<p>Other <code class="docutils literal notranslate"><span class="pre">Mapping</span></code> and <code class="docutils literal notranslate"><span class="pre">MutableMapping</span></code> methods will behave as expected for a
+mapping with these essential method semantics.</p>
+<p>For backwards compatibility with the existing <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> C API, the
+C level <code class="docutils literal notranslate"><span class="pre">f_locals</span></code> struct field does <em>not</em> store an instance of the new proxy
+type. In most cases the C level <code class="docutils literal notranslate"><span class="pre">f_locals</span></code> struct field will be <code class="docutils literal notranslate"><span class="pre">NULL</span></code> on an
+optimised frame, but if <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> is called, or
+<code class="docutils literal notranslate"><span class="pre">PyFrame_LocalsToFast()</span></code> or <code class="docutils literal notranslate"><span class="pre">PyFrame_FastToLocalsWithError</span></code> are called for
+any other reason (e.g. to resolve a Python level <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin call),
+then the field will be populated with an implicitly updated snapshot of the
+local variables and closure references for the frame, just as it is today.</p>
+<p>This internal dynamic snapshot will preserve the existing semantics where keys
+that are added but do not correspond to a local or closure variable on the frame
+will be left alone by future snapshot updates.</p>
+<p>Storing only the optional dynamic snapshot on the frame rather than storing an
+instance of the proxy type also avoids creating a reference cycle from the frame
+back to itself, so the frame will only be kept alive if another object retains a
+reference to a proxy instance.</p>
+</section>
+<section id="changes-to-the-stable-c-api-abi">
+<h3><a class="toc-backref" href="#id37">Changes to the stable C API/ABI</a><a class="headerlink" href="#changes-to-the-stable-c-api-abi" title="Permalink to this headline">¶</a></h3>
+<p>Unlike Python code, extension module functions that call in to the Python C API
+can be called from any kind of Python scope. This means it isn’t obvious from
+the context whether <code class="docutils literal notranslate"><span class="pre">locals()</span></code> will return a snapshot or not, as it depends
+on the scope of the calling Python code, not the C code itself.</p>
+<p>This means it is desirable to offer C APIs that give predictable, scope
+independent, behaviour. However, it is also desirable to allow C code to
+exactly mimic the behaviour of Python code at the same scope.</p>
+<p>To enable mimicking the behaviour of Python code, the stable C ABI would gain
+the following new functions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyLocals_Get</span><span class="p">();</span>
+<span class="nb">int</span> <span class="n">PyLocals_GetReturnsCopy</span><span class="p">();</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code> is directly equivalent to the Python <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin.
+It returns a new reference to the local namespace mapping for the active
+Python frame at module and class scope, and when using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code>.
+It returns a shallow copy of the active namespace at
+function/coroutine/generator scope.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyLocals_GetReturnsCopy()</span></code> returns zero if <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code> returns a
+direct reference to the local namespace mapping, and a non-zero value if it
+returns a shallow copy. This allows extension module code to determine the
+potential impact of mutating the mapping returned by <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code> without
+needing access to the details of the running frame object.</p>
+<p>To allow extension module code to behave consistently regardless of the active
+Python scope, the stable C ABI would gain the following new functions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyLocals_GetCopy</span><span class="p">();</span>
+<span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyLocals_GetView</span><span class="p">();</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">PyLocals_GetCopy()</span></code> returns a new dict instance populated from the current
+locals namespace. Roughly equivalent to <code class="docutils literal notranslate"><span class="pre">dict(locals())</span></code> in Python code, but
+avoids the double-copy in the case where <code class="docutils literal notranslate"><span class="pre">locals()</span></code> already returns a shallow
+copy.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyLocals_GetView()</span></code> returns a new read-only mapping proxy instance for the
+current locals namespace. This view immediately reflects all local variable
+changes, independently of whether the running frame is optimised or not.</p>
+<p>The existing <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> API will retain its existing behaviour in
+CPython (mutable locals at class and module scope, shared dynamic snapshot
+otherwise). However, its documentation will be updated to note that the
+conditions under which the shared dynamic snapshot get updated have changed.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> documentation will also be updated to recommend
+replacing usage of this API with whichever of the new APIs is most appropriate
+for the use case:</p>
+<ul class="simple">
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">PyLocals_GetView()</span></code> for read-only access to the current locals
+namespace.</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">PyLocals_GetCopy()</span></code> for a regular mutable dict that contains a copy of
+the current locals namespace, but has no ongoing connection to the active
+frame.</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code> to exactly match the semantics of the Python level
+<code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin.</p></li>
+<li><p>Query <code class="docutils literal notranslate"><span class="pre">PyLocals_GetReturnsCopy()</span></code> explicitly to implement custom handling
+(e.g. raising a meaningful exception) for scopes where <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code>
+would return a shallow copy rather than granting read/write access to the
+locals namespace.</p></li>
+<li><p>Use implementation specific APIs (e.g. <code class="docutils literal notranslate"><span class="pre">PyObject_GetAttrString(frame,</span> <span class="pre">&quot;f_locals&quot;)</span></code>)
+if read/write access to the frame is required and <code class="docutils literal notranslate"><span class="pre">PyLocals_GetReturnsCopy()</span></code>
+is true.</p></li>
+</ul>
+</section>
+<section id="changes-to-the-public-cpython-c-api">
+<h3><a class="toc-backref" href="#id38">Changes to the public CPython C API</a><a class="headerlink" href="#changes-to-the-public-cpython-c-api" title="Permalink to this headline">¶</a></h3>
+<p>The existing <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> API returns a borrowed reference, which
+means it cannot be updated to return the new shallow copies at function
+scope. Instead, it will continue to return a borrowed reference to an internal
+dynamic snapshot stored on the frame object. This shared mapping will behave
+similarly to the existing shared mapping in Python 3.10 and earlier, but the exact
+conditions under which it gets refreshed will be different. Specifically, it
+will be updated only in the following circumstance:</p>
+<ul class="simple">
+<li><p>any call to <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code>, <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code>, <code class="docutils literal notranslate"><span class="pre">PyLocals_GetCopy()</span></code>,
+or the Python <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin while the frame is running</p></li>
+<li><p>any call to <code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocals()</span></code>, <code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsCopy()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">_PyFrame_BorrowLocals()</span></code>, <code class="docutils literal notranslate"><span class="pre">PyFrame_FastToLocals()</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">PyFrame_FastToLocalsWithError()</span></code> for the frame</p></li>
+</ul>
+<p>Accessing the frame “view” APIs will <em>not</em> implicitly update the shared dynamic
+snapshot, and the CPython trace hook handling will no longer implicitly update
+it either.</p>
+<p>(Note: even though <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> is part of the stable C API/ABI, the
+specifics of when the namespace it returns gets refreshed are still an
+interpreter implementation detail)</p>
+<p>The additions to the public CPython C API are the frame level enhancements
+needed to support the stable C API/ABI updates:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyFrame_GetLocals</span><span class="p">(</span><span class="n">frame</span><span class="p">);</span>
+<span class="nb">int</span> <span class="n">PyFrame_GetLocalsReturnsCopy</span><span class="p">(</span><span class="n">frame</span><span class="p">);</span>
+<span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyFrame_GetLocalsCopy</span><span class="p">(</span><span class="n">frame</span><span class="p">);</span>
+<span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyFrame_GetLocalsView</span><span class="p">(</span><span class="n">frame</span><span class="p">);</span>
+<span class="n">PyObject</span> <span class="o">*</span> <span class="n">_PyFrame_BorrowLocals</span><span class="p">(</span><span class="n">frame</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocals(frame)</span></code> is the underlying API for <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsReturnsCopy(frame)</span></code> is the underlying API for
+<code class="docutils literal notranslate"><span class="pre">PyLocals_GetReturnsCopy()</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsCopy(frame)</span></code> is the underlying API for
+<code class="docutils literal notranslate"><span class="pre">PyLocals_GetCopy()</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsView(frame)</span></code> is the underlying API for <code class="docutils literal notranslate"><span class="pre">PyLocals_GetView()</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">_PyFrame_BorrowLocals(frame)</span></code> is the underlying API for
+<code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code>. The underscore prefix is intended to discourage use and
+to indicate that code using it is unlikely to be portable across
+implementations. However, it is documented and visible to the linker in order
+to avoid having to access the internals of the frame struct from the
+<code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> implementation.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">PyFrame_LocalsToFast()</span></code> function will be changed to always emit
+<code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>, explaining that it is no longer a supported operation, and
+affected code should be updated to use <code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocals(frame)</span></code>,
+<code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsCopy(frame)</span></code>, <code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsView(frame)</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">PyObject_GetAttrString(frame,</span> <span class="pre">&quot;f_locals&quot;)</span></code> instead.</p>
+<p>In addition to the above documented interfaces, the draft reference
+implementation also exposes the following undocumented interfaces:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyTypeObject</span> <span class="n">_PyFastLocalsProxy_Type</span><span class="p">;</span>
+<span class="c1">#define _PyFastLocalsProxy_CheckExact(self) \</span>
+    <span class="p">(</span><span class="n">Py_TYPE</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="o">&amp;</span><span class="n">_PyFastLocalsProxy_Type</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This type is what the reference implementation actually returns from
+<code class="docutils literal notranslate"><span class="pre">PyObject_GetAttrString(frame,</span> <span class="pre">&quot;f_locals&quot;)</span></code> for optimized frames (i.e.
+when <code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsReturnsCopy()</span></code> returns true).</p>
+</section>
+<section id="reducing-the-runtime-overhead-of-trace-hooks">
+<h3><a class="toc-backref" href="#id39">Reducing the runtime overhead of trace hooks</a><a class="headerlink" href="#reducing-the-runtime-overhead-of-trace-hooks" title="Permalink to this headline">¶</a></h3>
+<p>As noted in <a class="footnote-reference brackets" href="#id25" id="id9">9</a>, the implicit call to <code class="docutils literal notranslate"><span class="pre">PyFrame_FastToLocals()</span></code> in the
+Python trace hook support isn’t free, and could be rendered unnecessary if
+the frame proxy read values directly from the frame instead of getting them
+from the mapping.</p>
+<p>As the new frame locals proxy type doesn’t require separate data refresh steps,
+this PEP incorporate’s Victor Stinner’s proposal to no longer implicitly call
+<code class="docutils literal notranslate"><span class="pre">PyFrame_FastToLocalsWithError()</span></code> before calling trace hooks implemented in
+Python.</p>
+<p>Code using the new frame view APIs won’t need the dynamic locals snapshot
+refreshed, while code using the <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> API will implicitly
+refresh it when making that call.</p>
+<p>The PEP necessarily also drops the implicit call to <code class="docutils literal notranslate"><span class="pre">PyFrame_LocalsToFast()</span></code>
+when returning from a trace hook, as that API now always raises an exception.</p>
+</section>
+</section>
+<section id="design-discussion">
+<h2><a class="toc-backref" href="#id40">Design Discussion</a><a class="headerlink" href="#design-discussion" title="Permalink to this headline">¶</a></h2>
+<section id="changing-locals-to-return-independent-snapshots-at-function-scope">
+<h3><a class="toc-backref" href="#id41">Changing <code class="docutils literal notranslate"><span class="pre">locals()</span></code> to return independent snapshots at function scope</a><a class="headerlink" href="#changing-locals-to-return-independent-snapshots-at-function-scope" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin is a required part of the language, and in the
+reference implementation it has historically returned a mutable mapping with
+the following characteristics:</p>
+<ul class="simple">
+<li><p>each call to <code class="docutils literal notranslate"><span class="pre">locals()</span></code> returns the <em>same</em> mapping object</p></li>
+<li><p>for namespaces where <code class="docutils literal notranslate"><span class="pre">locals()</span></code> returns a reference to something other than
+the actual local execution namespace, each call to <code class="docutils literal notranslate"><span class="pre">locals()</span></code> updates the
+mapping object with the current state of the local variables and any referenced
+nonlocal cells</p></li>
+<li><p>changes to the returned mapping <em>usually</em> aren’t written back to the
+local variable bindings or the nonlocal cell references, but write backs
+can be triggered by doing one of the following:</p>
+<ul>
+<li><p>installing a Python level trace hook (write backs then happen whenever
+the trace hook is called)</p></li>
+<li><p>running a function level wildcard import (requires bytecode injection in Py3)</p></li>
+<li><p>running an <code class="docutils literal notranslate"><span class="pre">exec</span></code> statement in the function’s scope (Py2 only, since
+<code class="docutils literal notranslate"><span class="pre">exec</span></code> became an ordinary builtin in Python 3)</p></li>
+</ul>
+</li>
+</ul>
+<p>Originally this PEP proposed to retain the first two of these properties,
+while changing the third in order to address the outright behaviour bugs that
+it can cause.</p>
+<p>In <a class="footnote-reference brackets" href="#id23" id="id10">7</a> Nathaniel Smith made a persuasive case that we could make the behaviour
+of <code class="docutils literal notranslate"><span class="pre">locals()</span></code> at function scope substantially less confusing by retaining only
+the second property and having each call to <code class="docutils literal notranslate"><span class="pre">locals()</span></code> at function scope
+return an <em>independent</em> snapshot of the local variables and closure references
+rather than updating an implicitly shared snapshot.</p>
+<p>As this revised design also made the implementation markedly easier to follow,
+the PEP was updated to propose this change in behaviour, rather than retaining
+the historical shared snapshot.</p>
+</section>
+<section id="keeping-locals-as-a-snapshot-at-function-scope">
+<h3><a class="toc-backref" href="#id42">Keeping <code class="docutils literal notranslate"><span class="pre">locals()</span></code> as a snapshot at function scope</a><a class="headerlink" href="#keeping-locals-as-a-snapshot-at-function-scope" title="Permalink to this headline">¶</a></h3>
+<p>As discussed in <a class="footnote-reference brackets" href="#id23" id="id11">7</a>, it would theoretically be possible to change the semantics
+of the <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin to return the write-through proxy at function scope,
+rather than switching it to return independent snapshots.</p>
+<p>This PEP doesn’t (and won’t) propose this as it’s a backwards incompatible
+change in practice, even though code that relies on the current behaviour is
+technically operating in an undefined area of the language specification.</p>
+<p>Consider the following code snippet:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">example</span><span class="p">():</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="nb">locals</span><span class="p">()[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Even with a trace hook installed, that function will consistently print <code class="docutils literal notranslate"><span class="pre">1</span></code>
+on the current reference interpreter implementation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">example</span><span class="p">()</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">basic_hook</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="n">basic_hook</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sys</span><span class="o">.</span><span class="n">settrace</span><span class="p">(</span><span class="n">basic_hook</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">example</span><span class="p">()</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<p>Similarly, <code class="docutils literal notranslate"><span class="pre">locals()</span></code> can be passed to the <code class="docutils literal notranslate"><span class="pre">exec()</span></code> and <code class="docutils literal notranslate"><span class="pre">eval()</span></code> builtins
+at function scope (either explicitly or implicitly) without risking unexpected
+rebinding of local variables or closure references.</p>
+<p>Provoking the reference interpreter into incorrectly mutating the local variable
+state requires a more complex setup where a nested function closes over a
+variable being rebound in the outer function, and due to the use of either
+threads, generators, or coroutines, it’s possible for a trace function to start
+running for the nested function before the rebinding operation in the outer
+function, but finish running after the rebinding operation has taken place (in
+which case the rebinding will be reverted, which is the bug reported in <a class="footnote-reference brackets" href="#id17" id="id12">1</a>).</p>
+<p>In addition to preserving the de facto semantics which have been in place since
+<a class="reference external" href="pep-0227.html">PEP 227</a> introduced nested scopes in Python 2.1, the other benefit of restricting
+the write-through proxy support to the implementation-defined frame object API
+is that it means that only interpreter implementations which emulate the full
+frame API need to offer the write-through capability at all, and that
+JIT-compiled implementations only need to enable it when a frame introspection
+API is invoked, or a trace hook is installed, not whenever <code class="docutils literal notranslate"><span class="pre">locals()</span></code> is
+accessed at function scope.</p>
+<p>Returning snapshots from <code class="docutils literal notranslate"><span class="pre">locals()</span></code> at function scope also means that static
+analysis for function level code will be more reliable, as only access to the
+frame machinery will allow rebinding of local and nonlocal variable
+references in a way that is hidden from static analysis.</p>
+</section>
+<section id="what-happens-with-the-default-args-for-eval-and-exec">
+<h3><a class="toc-backref" href="#id43">What happens with the default args for <code class="docutils literal notranslate"><span class="pre">eval()</span></code> and <code class="docutils literal notranslate"><span class="pre">exec()</span></code>?</a><a class="headerlink" href="#what-happens-with-the-default-args-for-eval-and-exec" title="Permalink to this headline">¶</a></h3>
+<p>These are formally defined as inheriting <code class="docutils literal notranslate"><span class="pre">globals()</span></code> and <code class="docutils literal notranslate"><span class="pre">locals()</span></code> from
+the calling scope by default.</p>
+<p>There isn’t any need for the PEP to change these defaults, so it doesn’t, and
+<code class="docutils literal notranslate"><span class="pre">exec()</span></code> and <code class="docutils literal notranslate"><span class="pre">eval()</span></code> will start running in a shallow copy of the local
+namespace when that is what <code class="docutils literal notranslate"><span class="pre">locals()</span></code> returns.</p>
+<p>This behaviour will have potential performance implications, especially
+for functions with large numbers of local variables (e.g. if these functions
+are called in a loop, calling <code class="docutils literal notranslate"><span class="pre">gloabls()</span></code> and <code class="docutils literal notranslate"><span class="pre">locals()</span></code> once before the
+loop and then passing the namespace into the function explicitly will give the
+same semantics and performance characteristics as the status quo, whereas
+relying on the implicit default would create a new shallow copy of the local
+namespace on each iteration).</p>
+<p>(Note: the reference implementation draft PR has updated the <code class="docutils literal notranslate"><span class="pre">locals()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">vars()</span></code>, <code class="docutils literal notranslate"><span class="pre">eval()</span></code>, and <code class="docutils literal notranslate"><span class="pre">exec()</span></code> builtins to use <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code>. The
+<code class="docutils literal notranslate"><span class="pre">dir()</span></code> builtin still uses <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code>, since it’s only using it
+to make a list from the keys).</p>
+</section>
+<section id="changing-the-frame-api-semantics-in-regular-operation">
+<h3><a class="toc-backref" href="#id44">Changing the frame API semantics in regular operation</a><a class="headerlink" href="#changing-the-frame-api-semantics-in-regular-operation" title="Permalink to this headline">¶</a></h3>
+<p>Earlier versions of this PEP proposed having the semantics of the frame
+<code class="docutils literal notranslate"><span class="pre">f_locals</span></code> attribute depend on whether or not a tracing hook was currently
+installed - only providing the write-through proxy behaviour when a tracing hook
+was active, and otherwise behaving the same as the historical <code class="docutils literal notranslate"><span class="pre">locals()</span></code>
+builtin.</p>
+<p>That was adopted as the original design proposal for a couple of key reasons,
+one pragmatic and one more philosophical:</p>
+<ul class="simple">
+<li><p>Object allocations and method wrappers aren’t free, and tracing functions
+aren’t the only operations that access frame locals from outside the function.
+Restricting the changes to tracing mode meant that the additional memory and
+execution time overhead of these changes would be as close to zero in regular
+operation as we can possibly make them.</p></li>
+<li><p>“Don’t change what isn’t broken”: the current tracing mode problems are caused
+by a requirement that’s specific to tracing mode (support for external
+rebinding of function local variable references), so it made sense to also
+restrict any related fixes to tracing mode</p></li>
+</ul>
+<p>However, actually attempting to implement and document that dynamic approach
+highlighted the fact that it makes for a really subtle runtime state dependent
+behaviour distinction in how <code class="docutils literal notranslate"><span class="pre">frame.f_locals</span></code> works, and creates several
+new edge cases around how <code class="docutils literal notranslate"><span class="pre">f_locals</span></code> behaves as trace functions are added
+and removed.</p>
+<p>Accordingly, the design was switched to the current one, where
+<code class="docutils literal notranslate"><span class="pre">frame.f_locals</span></code> is always a write-through proxy, and <code class="docutils literal notranslate"><span class="pre">locals()</span></code> is always
+a snapshot, which is both simpler to implement and easier to explain.</p>
+<p>Regardless of how the CPython reference implementation chooses to handle this,
+optimising compilers and interpreters also remain free to impose additional
+restrictions on debuggers, such as making local variable mutation through frame
+objects an opt-in behaviour that may disable some optimisations (just as the
+emulation of CPython’s frame API is already an opt-in flag in some Python
+implementations).</p>
+</section>
+<section id="dropping-support-for-storing-additional-data-on-optimised-frames">
+<h3><a class="toc-backref" href="#id45">Dropping support for storing additional data on optimised frames</a><a class="headerlink" href="#dropping-support-for-storing-additional-data-on-optimised-frames" title="Permalink to this headline">¶</a></h3>
+<p>Earlier iterations of this PEP proposed preserving the ability to store
+additional data on optimised frames by writing to <code class="docutils literal notranslate"><span class="pre">frame.f_locals</span></code> keys that
+didn’t correspond to local or closure variable names on the underlying frame.</p>
+<p>While that property has been retained for the historical <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code>
+C API, it has been dropped from the new fast locals proxy proposal in order to
+simplify the semantics and implementation.</p>
+<p>Note: if this change proves problematic in practice, it would be reasonably
+straightforward to amend the implementation to store unknown keys in the C level
+<code class="docutils literal notranslate"><span class="pre">f_locals</span></code> mapping, the same way <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> allows. However,
+starting the new API with it disallowed offers the best chance of potentially
+being able to deprecate and remove the behaviour entirely in the future.</p>
+</section>
+<section id="historical-semantics-at-function-scope">
+<h3><a class="toc-backref" href="#id46">Historical semantics at function scope</a><a class="headerlink" href="#historical-semantics-at-function-scope" title="Permalink to this headline">¶</a></h3>
+<p>The current semantics of mutating <code class="docutils literal notranslate"><span class="pre">locals()</span></code> and <code class="docutils literal notranslate"><span class="pre">frame.f_locals</span></code> in CPython
+are rather quirky due to historical implementation details:</p>
+<ul class="simple">
+<li><p>actual execution uses the fast locals array for local variable bindings and
+cell references for nonlocal variables</p></li>
+<li><p>there’s a <code class="docutils literal notranslate"><span class="pre">PyFrame_FastToLocals</span></code> operation that populates the frame’s
+<code class="docutils literal notranslate"><span class="pre">f_locals</span></code> attribute based on the current state of the fast locals array
+and any referenced cells. This exists for three reasons:</p>
+<ul>
+<li><p>allowing trace functions to read the state of local variables</p></li>
+<li><p>allowing traceback processors to read the state of local variables</p></li>
+<li><p>allowing <code class="docutils literal notranslate"><span class="pre">locals()</span></code> to read the state of local variables</p></li>
+</ul>
+</li>
+<li><p>a direct reference to <code class="docutils literal notranslate"><span class="pre">frame.f_locals</span></code> is returned from <code class="docutils literal notranslate"><span class="pre">locals()</span></code>, so if
+you hand out multiple concurrent references, then all those references will be
+to the exact same dictionary</p></li>
+<li><p>the two common calls to the reverse operation, <code class="docutils literal notranslate"><span class="pre">PyFrame_LocalsToFast</span></code>, were
+removed in the migration to Python 3: <code class="docutils literal notranslate"><span class="pre">exec</span></code> is no longer a statement (and
+hence can no longer affect function local namespaces), and the compiler now
+disallows the use of <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">module</span> <span class="pre">import</span> <span class="pre">*</span></code> operations at function scope</p></li>
+<li><p>however, two obscure calling paths remain: <code class="docutils literal notranslate"><span class="pre">PyFrame_LocalsToFast</span></code> is called
+as part of returning from a trace function (which allows debuggers to make
+changes to the local variable state), and you can also still inject the
+<code class="docutils literal notranslate"><span class="pre">IMPORT_STAR</span></code> opcode when creating a function directly from a code object
+rather than via the compiler</p></li>
+</ul>
+<p>This proposal deliberately <em>doesn’t</em> formalise these semantics as is, since they
+only make sense in terms of the historical evolution of the language and the
+reference implementation, rather than being deliberately designed.</p>
+</section>
+<section id="proposing-several-additions-to-the-stable-c-api-abi">
+<h3><a class="toc-backref" href="#id47">Proposing several additions to the stable C API/ABI</a><a class="headerlink" href="#proposing-several-additions-to-the-stable-c-api-abi" title="Permalink to this headline">¶</a></h3>
+<p>Historically, the CPython C API (and subsequently, the stable ABI) has
+exposed only a single API function related to the Python <code class="docutils literal notranslate"><span class="pre">locals</span></code> builtin:
+<code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code>. However, as it returns a borrowed reference, it is
+not possible to adapt that interface directly to supporting the new <code class="docutils literal notranslate"><span class="pre">locals()</span></code>
+semantics proposed in this PEP.</p>
+<p>An earlier iteration of this PEP proposed a minimalist adaptation to the new
+semantics: one C API function that behaved like the Python <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin,
+and another that behaved like the <code class="docutils literal notranslate"><span class="pre">frame.f_locals</span></code> descriptor (creating and
+returning the write-through proxy if necessary).</p>
+<p>The feedback <a class="footnote-reference brackets" href="#id24" id="id13">8</a> on that version of the C API was that it was too heavily based
+on how the Python level semantics were implemented, and didn’t account for the
+behaviours that authors of C extensions were likely to <em>need</em>.</p>
+<p>The broader API now being proposed came from grouping the potential reasons for
+wanting to access the Python <code class="docutils literal notranslate"><span class="pre">locals()</span></code> namespace from an extension module
+into the following cases:</p>
+<ul class="simple">
+<li><p>needing to exactly replicate the semantics of the Python level <code class="docutils literal notranslate"><span class="pre">locals()</span></code>
+operation. This is the <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code> API.</p></li>
+<li><p>needing to behave differently depending on whether writes to the result of
+<code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code> will be visible to Python code or not. This is handled by
+the <code class="docutils literal notranslate"><span class="pre">PyLocals_GetReturnsCopy()</span></code> query API.</p></li>
+<li><p>always wanting a mutable namespace that has been pre-populated from the
+current Python <code class="docutils literal notranslate"><span class="pre">locals()</span></code> namespace, but <em>not</em> wanting any changes to
+be visible to Python code. This is the <code class="docutils literal notranslate"><span class="pre">PyLocals_GetCopy()</span></code> API.</p></li>
+<li><p>always wanting a read-only view of the current locals namespace, without
+incurring the runtime overhead of making a full copy each time. This is the
+<code class="docutils literal notranslate"><span class="pre">PyLocals_GetView()</span></code> and <code class="docutils literal notranslate"><span class="pre">PyLocals_RefreshViews()</span></code> APIs.</p></li>
+</ul>
+<p>Historically, these kinds of checks and operations would only have been
+possible if a Python implementation emulated the full CPython frame API. With
+the proposed API, extension modules can instead ask more clearly for the
+semantics that they actually need, giving Python implementations more
+flexibility in how they provide those capabilities.</p>
+</section>
+</section>
+<section id="implementation">
+<h2><a class="toc-backref" href="#id48">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>The reference implementation update is in development as a draft pull
+request on GitHub (<a class="footnote-reference brackets" href="#id22" id="id14">6</a>).</p>
+</section>
+<section id="acknowledgements">
+<h2><a class="toc-backref" href="#id49">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>Thanks to Nathaniel J. Smith for proposing the write-through proxy idea in
+<a class="footnote-reference brackets" href="#id17" id="id15">1</a> and pointing out some critical design flaws in earlier iterations of the
+PEP that attempted to avoid introducing such a proxy.</p>
+<p>Thanks to Steve Dower and Petr Viktorin for asking that more attention be paid
+to the developer experience of the proposed C API additions <a class="footnote-reference brackets" href="#id24" id="id16">8</a>.</p>
+<p>Thanks to Mark Shannon for pushing for further simplification of the C level
+API and semantics (and restarting discussion on the PEP in early 2021 after a
+few years of inactivity).</p>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#id50">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id17"><span class="brackets">1</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id2">2</a>,<a href="#id6">3</a>,<a href="#id12">4</a>,<a href="#id15">5</a>)</span></dt>
+<dd><p>Broken local variable assignment given threads + trace hook + closure
+(<a class="reference external" href="https://bugs.python.org/issue30744">https://bugs.python.org/issue30744</a>)</p>
+</dd>
+<dt class="label" id="id18"><span class="brackets">2</span></dt>
+<dd><p>Clarify the required behaviour of <code class="docutils literal notranslate"><span class="pre">locals()</span></code>
+(<a class="reference external" href="https://bugs.python.org/issue17960">https://bugs.python.org/issue17960</a>)</p>
+</dd>
+<dt class="label" id="id19"><span class="brackets">3</span><span class="fn-backref">(<a href="#id3">1</a>,<a href="#id7">2</a>,<a href="#id8">3</a>)</span></dt>
+<dd><p>Updating function local variables from pdb is unreliable
+(<a class="reference external" href="https://bugs.python.org/issue9633">https://bugs.python.org/issue9633</a>)</p>
+</dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd><p>CPython’s Python API for installing trace hooks
+(<a class="reference external" href="https://docs.python.org/dev/library/sys.html#sys.settrace">https://docs.python.org/dev/library/sys.html#sys.settrace</a>)</p>
+</dd>
+<dt class="label" id="id21"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd><p>CPython’s C API for installing trace hooks
+(<a class="reference external" href="https://docs.python.org/3/c-api/init.html#c.PyEval_SetTrace">https://docs.python.org/3/c-api/init.html#c.PyEval_SetTrace</a>)</p>
+</dd>
+<dt class="label" id="id22"><span class="brackets"><a class="fn-backref" href="#id14">6</a></span></dt>
+<dd><p><a class="reference external" href="pep-0558.html">PEP 558</a> reference implementation
+(<a class="reference external" href="https://github.com/python/cpython/pull/3640/files">https://github.com/python/cpython/pull/3640/files</a>)</p>
+</dd>
+<dt class="label" id="id23"><span class="brackets">7</span><span class="fn-backref">(<a href="#id10">1</a>,<a href="#id11">2</a>)</span></dt>
+<dd><p>Nathaniel’s review of possible function level semantics for locals()
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2019-May/157738.html">https://mail.python.org/pipermail/python-dev/2019-May/157738.html</a>)</p>
+</dd>
+<dt class="label" id="id24"><span class="brackets">8</span><span class="fn-backref">(<a href="#id13">1</a>,<a href="#id16">2</a>)</span></dt>
+<dd><p>Discussion of more intentionally designed C API enhancements
+(<a class="reference external" href="https://discuss.python.org/t/pep-558-defined-semantics-for-locals/2936/3">https://discuss.python.org/t/pep-558-defined-semantics-for-locals/2936/3</a>)</p>
+</dd>
+<dt class="label" id="id25"><span class="brackets"><a class="fn-backref" href="#id9">9</a></span></dt>
+<dd><p>Disable automatic update of frame locals during tracing
+(<a class="reference external" href="https://bugs.python.org/issue42197">https://bugs.python.org/issue42197</a>)</p>
+</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#id51">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0558.rst">https://github.com/python/peps/blob/master/pep-0558.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0558.rst">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0001/">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0100/">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0101/">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0374/">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0391/">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0423/">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0451/">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0471/">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0479/">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0495/">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0570/">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0584/">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0586/">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0594/">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3118/">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-0557/" title="previous chapter">PEP 557 – Data Classes</a></li>
+      <li>Next: <a href="../pep-0559/" title="next chapter">PEP 559 – Built-in noop()</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-0558.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

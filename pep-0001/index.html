@@ -1,0 +1,1414 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 1 – PEP Purpose and Guidelines &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 2 – Procedure for Adding New Modules" href="../pep-0002/" />
+    <link rel="prev" title="PEP 0 – Index of Python Enhancement Proposals (PEPs)" href="../pep-0000/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pep-1-pep-purpose-and-guidelines">
+<h1 class="page-title">PEP 1 – PEP Purpose and Guidelines<a class="headerlink" href="#pep-1-pep-purpose-and-guidelines" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>1</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>PEP Purpose and Guidelines</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Barry Warsaw, Jeremy Hylton, David Goodger, Nick Coghlan</p>
+</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even"><p>Active</p>
+</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Process</p>
+</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even"><p>13-Jun-2000</p>
+</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p>21-Mar-2001, 29-Jul-2002, 03-May-2003, 05-May-2012,
+07-Apr-2013</p>
+</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#what-is-a-pep" id="id38">What is a PEP?</a></p></li>
+<li><p><a class="reference internal" href="#pep-audience" id="id39">PEP Audience</a></p></li>
+<li><p><a class="reference internal" href="#pep-types" id="id40">PEP Types</a></p></li>
+<li><p><a class="reference internal" href="#pep-workflow" id="id41">PEP Workflow</a></p>
+<ul>
+<li><p><a class="reference internal" href="#python-s-steering-council" id="id42">Python’s Steering Council</a></p></li>
+<li><p><a class="reference internal" href="#python-s-core-developers" id="id43">Python’s Core Developers</a></p></li>
+<li><p><a class="reference internal" href="#python-s-bdfl" id="id44">Python’s BDFL</a></p></li>
+<li><p><a class="reference internal" href="#pep-editors" id="id45">PEP Editors</a></p></li>
+<li><p><a class="reference internal" href="#start-with-an-idea-for-python" id="id46">Start with an idea for Python</a></p></li>
+<li><p><a class="reference internal" href="#submitting-a-pep" id="id47">Submitting a PEP</a></p></li>
+<li><p><a class="reference internal" href="#pep-review-resolution" id="id48">PEP Review &amp; Resolution</a></p></li>
+<li><p><a class="reference internal" href="#pep-maintenance" id="id49">PEP Maintenance</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#what-belongs-in-a-successful-pep" id="id50">What belongs in a successful PEP?</a></p></li>
+<li><p><a class="reference internal" href="#pep-formats-and-templates" id="id51">PEP Formats and Templates</a></p></li>
+<li><p><a class="reference internal" href="#pep-header-preamble" id="id52">PEP Header Preamble</a></p></li>
+<li><p><a class="reference internal" href="#auxiliary-files" id="id53">Auxiliary Files</a></p></li>
+<li><p><a class="reference internal" href="#reporting-pep-bugs-or-submitting-pep-updates" id="id54">Reporting PEP Bugs, or Submitting PEP Updates</a></p></li>
+<li><p><a class="reference internal" href="#transferring-pep-ownership" id="id55">Transferring PEP Ownership</a></p></li>
+<li><p><a class="reference internal" href="#pep-editor-responsibilities-workflow" id="id56">PEP Editor Responsibilities &amp; Workflow</a></p></li>
+<li><p><a class="reference internal" href="#references-and-footnotes" id="id57">References and Footnotes</a></p></li>
+<li><p><a class="reference internal" href="#copyright" id="id58">Copyright</a></p></li>
+</ul>
+</div>
+<section id="what-is-a-pep">
+<h2><a class="toc-backref" href="#id38">What is a PEP?</a><a class="headerlink" href="#what-is-a-pep" title="Permalink to this headline">¶</a></h2>
+<p>PEP stands for Python Enhancement Proposal.  A PEP is a design
+document providing information to the Python community, or describing
+a new feature for Python or its processes or environment.  The PEP
+should provide a concise technical specification of the feature and a
+rationale for the feature.</p>
+<p>We intend PEPs to be the primary mechanisms for proposing major new
+features, for collecting community input on an issue, and for
+documenting the design decisions that have gone into Python.  The PEP
+author is responsible for building consensus within the community and
+documenting dissenting opinions.</p>
+<p>Because the PEPs are maintained as text files in a versioned
+repository, their revision history is the historical record of the
+feature proposal <a class="footnote-reference brackets" href="#id11" id="id1">1</a>.</p>
+</section>
+<section id="pep-audience">
+<h2><a class="toc-backref" href="#id39">PEP Audience</a><a class="headerlink" href="#pep-audience" title="Permalink to this headline">¶</a></h2>
+<p>The typical primary audience for PEPs are the core developers of the CPython
+reference interpreter and their elected Steering Council, as well as developers
+of other implementations of the Python language specification.</p>
+<p>However, other parts of the Python community may also choose to use the process
+(particularly for Informational PEPs) to document expected API conventions and
+to manage complex design coordination problems that require collaboration across
+multiple projects.</p>
+</section>
+<section id="pep-types">
+<h2><a class="toc-backref" href="#id40">PEP Types</a><a class="headerlink" href="#pep-types" title="Permalink to this headline">¶</a></h2>
+<p>There are three kinds of PEP:</p>
+<ol class="arabic simple">
+<li><p>A <strong>Standards Track</strong> PEP describes a new feature or implementation
+for Python. It may also describe an interoperability standard that will
+be supported outside the standard library for current Python versions
+before a subsequent PEP adds standard library support in a future
+version.</p></li>
+<li><p>An <strong>Informational</strong> PEP describes a Python design issue, or
+provides general guidelines or information to the Python community,
+but does not propose a new feature.  Informational PEPs do not
+necessarily represent a Python community consensus or
+recommendation, so users and implementers are free to ignore
+Informational PEPs or follow their advice.</p></li>
+<li><p>A <strong>Process</strong> PEP describes a process surrounding Python, or
+proposes a change to (or an event in) a process.  Process PEPs are
+like Standards Track PEPs but apply to areas other than the Python
+language itself.  They may propose an implementation, but not to
+Python’s codebase; they often require community consensus; unlike
+Informational PEPs, they are more than recommendations, and users
+are typically not free to ignore them.  Examples include
+procedures, guidelines, changes to the decision-making process, and
+changes to the tools or environment used in Python development.
+Any meta-PEP is also considered a Process PEP.</p></li>
+</ol>
+</section>
+<section id="pep-workflow">
+<h2><a class="toc-backref" href="#id41">PEP Workflow</a><a class="headerlink" href="#pep-workflow" title="Permalink to this headline">¶</a></h2>
+<section id="python-s-steering-council">
+<h3><a class="toc-backref" href="#id42">Python’s Steering Council</a><a class="headerlink" href="#python-s-steering-council" title="Permalink to this headline">¶</a></h3>
+<p>There are several references in this PEP to the “Steering Council” or “Council”.
+This refers to the current members of the elected Steering Council described
+in <a class="reference external" href="pep-0013.html">PEP 13</a> <a class="footnote-reference brackets" href="#id15" id="id2">5</a>, in their role as the final authorities on whether or not PEPs
+will be accepted or rejected.</p>
+</section>
+<section id="python-s-core-developers">
+<h3><a class="toc-backref" href="#id43">Python’s Core Developers</a><a class="headerlink" href="#python-s-core-developers" title="Permalink to this headline">¶</a></h3>
+<p>There are several references in this PEP to “core developers”. This refers to
+the currently active Python core team members described in <a class="reference external" href="pep-0013.html">PEP 13</a> <a class="footnote-reference brackets" href="#id15" id="id3">5</a>.</p>
+</section>
+<section id="python-s-bdfl">
+<h3><a class="toc-backref" href="#id44">Python’s BDFL</a><a class="headerlink" href="#python-s-bdfl" title="Permalink to this headline">¶</a></h3>
+<p>Previous versions of this PEP used the title “BDFL-Delegate” for PEP decision
+makers. This was a historical reference to Python’s previous governance model,
+where all design authority ultimately derived from Guido van Rossum, the
+original creator of the Python programming language. By contrast, the Steering
+Council’s design authority derives from their election by the currently active
+core developers. Now, PEP-Delegate is used in place of BDFL-Delegate.</p>
+</section>
+<section id="pep-editors">
+<h3><a class="toc-backref" href="#id45">PEP Editors</a><a class="headerlink" href="#pep-editors" title="Permalink to this headline">¶</a></h3>
+<p>The PEP editors are individuals responsible for managing the administrative
+and editorial aspects of the PEP workflow (e.g. assigning PEP numbers and
+changing their status).  See <a class="reference internal" href="#pep-editor-responsibilities-workflow">PEP Editor Responsibilities &amp; Workflow</a> for
+details.</p>
+<p>PEP editorship is by invitation of the current editors, and they can be
+contacted by mentioning <code class="docutils literal notranslate"><span class="pre">&#64;python/pep-editors</span></code> on GitHub.  All of the PEP
+workflow can be conducted via the GitHub <a class="reference external" href="https://github.com/python/peps">PEP repository</a> <a class="footnote-reference brackets" href="#id25" id="id26">11</a> issues and pull
+requests.</p>
+</section>
+<section id="start-with-an-idea-for-python">
+<h3><a class="toc-backref" href="#id46">Start with an idea for Python</a><a class="headerlink" href="#start-with-an-idea-for-python" title="Permalink to this headline">¶</a></h3>
+<p>The PEP process begins with a new idea for Python.  It is highly
+recommended that a single PEP contain a single key proposal or new
+idea. Small enhancements or patches often don’t need
+a PEP and can be injected into the Python development workflow with a
+patch submission to the Python <a class="reference external" href="http://bugs.python.org/">issue tracker</a> <a class="footnote-reference brackets" href="#id18" id="id19">8</a>. The more focused the
+PEP, the more successful it tends to be.  The PEP editors reserve the
+right to reject PEP proposals if they appear too unfocused or too
+broad.  If in doubt, split your PEP into several well-focused ones.</p>
+<p>Each PEP must have a champion – someone who writes the PEP using the style
+and format described below, shepherds the discussions in the appropriate
+forums, and attempts to build community consensus around the idea.  The PEP
+champion (a.k.a. Author) should first attempt to ascertain whether the idea is
+PEP-able.  Posting to the comp.lang.python newsgroup
+(a.k.a. <a class="reference external" href="mailto:python-list&#37;&#52;&#48;python&#46;org">python-list<span>&#64;</span>python<span>&#46;</span>org</a> mailing list) or the <a class="reference external" href="mailto:python-ideas&#37;&#52;&#48;python&#46;org">python-ideas<span>&#64;</span>python<span>&#46;</span>org</a>
+mailing list is the best way to go about this.</p>
+<p>Vetting an idea publicly before going as far as writing a PEP is meant
+to save the potential author time. Many ideas have been brought
+forward for changing Python that have been rejected for various
+reasons. Asking the Python community first if an idea is original
+helps prevent too much time being spent on something that is
+guaranteed to be rejected based on prior discussions (searching
+the internet does not always do the trick). It also helps to make sure
+the idea is applicable to the entire community and not just the author.
+Just because an idea sounds good to the author does not
+mean it will work for most people in most areas where Python is used.</p>
+<p>Once the champion has asked the Python community as to whether an
+idea has any chance of acceptance, a draft PEP should be presented to
+python-ideas.  This gives the author a chance to flesh out the draft
+PEP to make properly formatted, of high quality, and to address
+initial concerns about the proposal.</p>
+</section>
+<section id="submitting-a-pep">
+<h3><a class="toc-backref" href="#id47">Submitting a PEP</a><a class="headerlink" href="#submitting-a-pep" title="Permalink to this headline">¶</a></h3>
+<p>Following a discussion on python-ideas, the workflow varies based on whether
+any of the PEP’s co-authors are core developers. If one or more of the PEP’s
+co-authors are core developers, they are responsible for following the process
+outlined below. Otherwise (i.e. none of the co-authors are core developers),
+then the PEP author(s) will need to find a sponsor for the PEP.</p>
+<p>Ideally, a core developer sponsor is identified, but non-core sponsors may also
+be selected with the approval of the Steering Council.  The sponsor’s job is to
+provide guidance to the PEP author to help them through the logistics of the
+PEP process (somewhat acting like a mentor).  Being a sponsor does <strong>not</strong>
+disqualify that person from becoming a co-author or PEP-Delegate later on (but
+not both).  The sponsor of a PEP is recorded in the “Sponsor:” field of the
+header.</p>
+<p>Once the sponsor or the core developer(s) co-authoring the PEP deem the PEP
+ready for submission, the proposal should be submitted as a draft PEP via a
+<a class="reference external" href="https://github.com/python/peps/pulls">GitHub pull request</a> <a class="footnote-reference brackets" href="#id32" id="id33">12</a>.  The draft must be written in PEP style as described
+below, else it will fail review immediately (although minor errors may be
+corrected by the editors).</p>
+<p>The standard PEP workflow is:</p>
+<ul>
+<li><p>You, the PEP author, fork the <a class="reference external" href="https://github.com/python/peps">PEP repository</a> <a class="footnote-reference brackets" href="#id25" id="id27">11</a>, and create a file named
+<code class="docutils literal notranslate"><span class="pre">pep-9999.rst</span></code> that contains your new PEP.  Use “9999” as your draft PEP
+number.</p></li>
+<li><p>In the “Type:” header field, enter “Standards Track”,
+“Informational”, or “Process” as appropriate, and for the “Status:”
+field enter “Draft”.  For full details, see <a class="reference internal" href="#pep-header-preamble">PEP Header Preamble</a>.</p></li>
+<li><p>Update <cite>.github/CODEOWNERS</cite> <a class="footnote-reference brackets" href="#id17" id="id4">7</a> such that any core developer co-author(s) or
+sponsor are listed for your new file such that any future pull requests will
+be assigned to them.</p></li>
+<li><p>Push this to your GitHub fork and submit a pull request.</p></li>
+<li><p>The PEP editors review your PR for structure, formatting, and other
+errors.  For a reST-formatted PEP, <a class="reference external" href="pep-0012.html">PEP 12</a> is provided as a template.
+It also provides a complete introduction to reST markup that is used
+in PEPs.  Approval criteria are:</p>
+<ul class="simple">
+<li><p>It sound and complete.  The ideas must make technical sense.  The
+editors do not consider whether they seem likely to be accepted.</p></li>
+<li><p>The title accurately describes the content.</p></li>
+<li><p>The PEP’s language (spelling, grammar, sentence structure, etc.)
+and code style (examples should match <a class="reference external" href="pep-0008.html">PEP 8</a> &amp; <a class="reference external" href="pep-0007.html">PEP 7</a>) should be
+correct and conformant.  The PEP will be checked for formatting
+(plain text or reStructuredText) by Travis CI, and will not be
+approved until this passes.</p></li>
+</ul>
+<p>Editors are generally quite lenient about this initial review,
+expecting that problems will be corrected by the reviewing process.
+<strong>Note:</strong> Approval of the PEP is no guarantee that there are no
+embarrassing mistakes!  Correctness is the responsibility of authors
+and reviewers, not the editors.</p>
+<p>If the PEP isn’t ready for approval, an editor will send it back to
+the author for revision, with specific instructions.</p>
+</li>
+<li><p>Once approved, they will assign your PEP a number.</p></li>
+</ul>
+<p>Once the review process is complete, and the PEP editors approve it (note that
+this is <em>not</em> the same as accepting your PEP!), they will squash commit your
+pull request onto master.</p>
+<p>The PEP editors will not unreasonably deny publication of a PEP.  Reasons for
+denying PEP status include duplication of effort, being technically unsound,
+not providing proper motivation or addressing backwards compatibility, or not
+in keeping with the Python philosophy.  The Steering Council can be consulted
+during the approval phase, and are the final arbiter of a draft’s PEP-ability.</p>
+<p>Developers with git push privileges for the <a class="reference external" href="https://github.com/python/peps">PEP repository</a> <a class="footnote-reference brackets" href="#id25" id="id28">11</a> may claim PEP
+numbers directly by creating and committing a new PEP. When doing so, the
+developer must handle the tasks that would normally be taken care of by the
+PEP editors (see <a class="reference internal" href="#pep-editor-responsibilities-workflow">PEP Editor Responsibilities &amp; Workflow</a>). This includes
+ensuring the initial version meets the expected standards for submitting a
+PEP.  Alternately, even developers should submit PEPs via pull request.
+When doing so, you are generally expected to handle the process yourself;
+if you need assistance from PEP editors, mention <code class="docutils literal notranslate"><span class="pre">&#64;python/pep-editors</span></code>
+on GitHub.</p>
+<p>As updates are necessary, the PEP author can check in new versions if they
+(or a collaborating developer) have git push privileges.</p>
+<p>After a PEP number has been assigned, a draft PEP may be discussed further on
+python-ideas (getting a PEP number assigned early can be useful for ease of
+reference, especially when multiple draft PEPs are being considered at the
+same time). Eventually, all Standards Track PEPs must  be sent to the
+<a class="reference external" href="mailto:python-dev&#37;&#52;&#48;python&#46;org">python-dev list</a> for review as described
+in the next section.</p>
+<p>Standards Track PEPs consist of two parts, a design document and a
+reference implementation.  It is generally recommended that at least a
+prototype implementation be co-developed with the PEP, as ideas that sound
+good in principle sometimes turn out to be impractical when subjected to the
+test of implementation.</p>
+<p>PEP authors are responsible for collecting community feedback on a PEP
+before submitting it for review. However, wherever possible, long
+open-ended discussions on public mailing lists should be avoided.
+Strategies to keep the discussions efficient include: setting up a
+separate SIG mailing list for the topic, having the PEP author accept
+private comments in the early design phases, setting up a wiki page, etc.
+PEP authors should use their discretion here.</p>
+</section>
+<section id="pep-review-resolution">
+<h3><a class="toc-backref" href="#id48">PEP Review &amp; Resolution</a><a class="headerlink" href="#pep-review-resolution" title="Permalink to this headline">¶</a></h3>
+<p>Once the authors have completed a PEP, they may request a review for
+style and consistency from the PEP editors.</p>
+<p>However, content review and final acceptance of the PEP must be requested of the
+core developers, usually via an email to the python-dev mailing list.</p>
+<p>To expedite the process in selected cases (e.g. when a change is clearly
+beneficial and ready to be accepted, but the PEP hasn’t been formally submitted
+for review yet), the Steering Council may also initiate a PEP review, first
+notifying the PEP author(s) and giving them a chance to make revisions.</p>
+<p>The final authority for PEP approval is the Steering Council. However, whenever
+a new PEP is put forward, any core developer that believes they are suitably
+experienced to make the final decision on that PEP may offer to serve as
+the PEP-Delegate for that PEP, and they will then have the authority to approve
+(or reject) that PEP. Individuals taking on this responsibility are free to seek
+additional guidance from the Steering Council at any time, and are also expected
+to take the advice and perspectives of other core developers into account.</p>
+<p>The designated decision maker for each PEP is recorded in the “PEP-Delegate”
+header in the PEP.</p>
+<p>Such self-nominations are accepted by default, but may be explicitly declined by
+the Steering Council. Possible reasons for the Steering Council declining a
+self-nomination as PEP-Delegate include, but are not limited to, perceptions of
+a potential conflict of interest (e.g. working for the same organisation as the
+PEP submitter), or simply considering another potential PEP-Delegate to be
+more appropriate. If core developers (or other community members) have concerns
+regarding the suitability of a PEP-Delegate for any given PEP, they may ask
+the Steering Council to review the delegation.</p>
+<p>If no volunteer steps forward, then the Steering Council will approach core
+developers (and potentially other Python community members) with relevant
+expertise, in an attempt to identify a candidate that is willing to serve as
+PEP-Delegate for that PEP. If no suitable candidate can be found, then the
+PEP will be marked as Deferred until one is available.</p>
+<p>Previously appointed PEP-Delegates may choose to step down, or be asked to step
+down by the Council, in which case a new PEP-Delegate will be appointed in the
+same manner as for a new PEP (including deferral of the PEP if no suitable
+replacement can be found). In the event that a PEP-Delegate is asked to step
+down, this will overrule any prior acceptance or rejection of the PEP, and it
+will revert to Draft status.</p>
+<p>With the approval of the Steering Council, PEP review and resolution may also
+occur on a list other than python-dev (for example, distutils-sig for packaging
+related PEPs that don’t immediately affect the standard library). In these
+cases, the “Discussions-To” heading in the PEP will identify the appropriate
+alternative list where discussion, review and pronouncement on the PEP will
+occur.</p>
+<p>When such standing delegations are put in place, the Steering Council will
+maintain sufficient public records to allow subsequent Councils, the core
+developers, and the wider Python community to understand the delegations that
+currently exist, why they were put in place, and the circumstances under which
+they may no longer be needed.</p>
+<p>For a PEP to be accepted it must meet certain minimum criteria.  It
+must be a clear and complete description of the proposed enhancement.
+The enhancement must represent a net improvement.  The proposed
+implementation, if applicable, must be solid and must not complicate
+the interpreter unduly.  Finally, a proposed enhancement must be
+“pythonic” in order to be accepted by the Steering Council.  (However,
+“pythonic” is an imprecise term; it may be defined as whatever is acceptable to
+the Steering Council.  This logic is intentionally circular.)  See <a class="reference external" href="pep-0002.html">PEP 2</a> <a class="footnote-reference brackets" href="#id12" id="id5">2</a>
+for standard library module acceptance criteria.</p>
+<p>Once a PEP has been accepted, the reference implementation must be
+completed.  When the reference implementation is complete and incorporated
+into the main source code repository, the status will be changed to “Final”.</p>
+<p>To allow gathering of additional design and interface feedback before committing
+to long term stability for a language feature or standard library API, a PEP
+may also be marked as “Provisional”. This is short for “Provisionally Accepted”,
+and indicates that the proposal has been accepted for inclusion in the reference
+implementation, but additional user feedback is needed before the full design
+can be considered “Final”. Unlike regular accepted PEPs, provisionally accepted
+PEPs may still be Rejected or Withdrawn <em>even after the related changes have
+been included in a Python release</em>.</p>
+<p>Wherever possible, it is considered preferable to reduce the scope of a proposal
+to avoid the need to rely on the “Provisional” status (e.g. by deferring some
+features to later PEPs), as this status can lead to version compatibility
+challenges in the wider Python ecosystem. <a class="reference external" href="pep-0411.html">PEP 411</a> provides additional details
+on potential use cases for the Provisional status.</p>
+<p>A PEP can also be assigned the status “Deferred”.  The PEP author or an
+editor can assign the PEP this status when no progress is being made
+on the PEP.  Once a PEP is deferred, a PEP editor can reassign it
+to draft status.</p>
+<p>A PEP can also be “Rejected”.  Perhaps after all is said and done it
+was not a good idea.  It is still important to have a record of this
+fact. The “Withdrawn” status is similar - it means that the PEP author
+themselves has decided that the PEP is actually a bad idea, or has
+accepted that a competing proposal is a better alternative.</p>
+<p>When a PEP is Accepted, Rejected or Withdrawn, the PEP should be updated
+accordingly. In addition to updating the status field, at the very least
+the Resolution header should be added with a link to the relevant post
+in the python-dev mailing list archives.</p>
+<p>PEPs can also be superseded by a different PEP, rendering the original
+obsolete.  This is intended for Informational PEPs, where version 2 of
+an API can replace version 1.</p>
+<p>The possible paths of the status of PEPs are as follows:</p>
+<img alt="PEP process flow diagram" src="../_images/pep-0001-process_flow.png" />
+<p>While not shown in the diagram, “Accepted” PEPs may technically move to
+“Rejected” or “Withdrawn” even after acceptance. This will only occur if
+the implementation process reveals fundamental flaws in the design that were
+not noticed prior to acceptance of the PEP. Unlike Provisional PEPs, these
+transitions are only permitted if the accepted proposal has <em>not</em> been included
+in a Python release - released changes must instead go through the regular
+deprecation process (which may require a new PEP providing the rationale for
+the deprecation).</p>
+<p>Some Informational and Process PEPs may also have a status of “Active”
+if they are never meant to be completed.  E.g. <a class="reference external" href="pep-0001.html">PEP 1</a> (this PEP).</p>
+</section>
+<section id="pep-maintenance">
+<h3><a class="toc-backref" href="#id49">PEP Maintenance</a><a class="headerlink" href="#pep-maintenance" title="Permalink to this headline">¶</a></h3>
+<p>In general, Standards track PEPs are no longer modified after they have
+reached the Final state. Once a PEP has been completed, the Language and
+Standard Library References become the formal documentation of the expected
+behavior.</p>
+<p>If changes based on implementation experience and user feedback are made to
+Standards track PEPs while in the Accepted or Provisional State, those changes
+should be noted in the PEP, such that the PEP accurately describes the state of
+the implementation at the point where it is marked Final.</p>
+<p>Informational and Process PEPs may be updated over time to reflect changes
+to development practices and other details. The precise process followed in
+these cases will depend on the nature and purpose of the PEP being updated.</p>
+</section>
+</section>
+<section id="what-belongs-in-a-successful-pep">
+<h2><a class="toc-backref" href="#id50">What belongs in a successful PEP?</a><a class="headerlink" href="#what-belongs-in-a-successful-pep" title="Permalink to this headline">¶</a></h2>
+<p>Each PEP should have the following parts/sections:</p>
+<ol class="arabic">
+<li><p>Preamble – <a class="reference external" href="https://tools.ietf.org/html/rfc822.html">RFC 822</a> style headers containing meta-data about the
+PEP, including the PEP number, a short descriptive title (limited
+to a maximum of 44 characters), the names, and optionally the
+contact info for each author, etc.</p></li>
+<li><p>Abstract – a short (~200 word) description of the technical issue
+being addressed.</p></li>
+<li><p>Motivation – The motivation is critical for PEPs that want to
+change the Python language, library, or ecosystem.  It should
+clearly explain why the existing language specification is
+inadequate to address the problem that the PEP solves.  This can
+include collecting documented support for the PEP from important
+projects in the Python ecosystem.  PEP submissions without
+sufficient motivation may be rejected.</p></li>
+<li><p>Rationale – The rationale fleshes out the specification by
+describing why particular design decisions were made.  It should
+describe alternate designs that were considered and related work,
+e.g. how the feature is supported in other languages.</p>
+<p>The rationale should provide evidence of consensus within the
+community and discuss important objections or concerns raised
+during discussion.</p>
+</li>
+<li><p>Specification – The technical specification should describe the
+syntax and semantics of any new language feature.  The
+specification should be detailed enough to allow competing,
+interoperable implementations for at least the current major Python
+platforms (CPython, Jython, IronPython, PyPy).</p></li>
+<li><p>Backwards Compatibility – All PEPs that introduce backwards
+incompatibilities must include a section describing these
+incompatibilities and their severity.  The PEP must explain how the
+author proposes to deal with these incompatibilities.  PEP
+submissions without a sufficient backwards compatibility treatise
+may be rejected outright.</p></li>
+<li><p>Security Implications – If there are security concerns in relation
+to the PEP, those concerns should be explicitly written out to make
+sure reviewers of the PEP are aware of them.</p></li>
+<li><p>How to Teach This – For a PEP that adds new functionality or changes
+language behavior, it is helpful to include a section on how to
+teach users, new and experienced, how to apply the PEP to their
+work.</p>
+<p>This section may include key points and recommended documentation
+changes that would help users adopt a new feature or migrate their
+code to use a language change.</p>
+</li>
+<li><p>Reference Implementation – The reference implementation must be
+completed before any PEP is given status “Final”, but it need not
+be completed before the PEP is accepted.  While there is merit
+to the approach of reaching consensus on the specification and
+rationale before writing code, the principle of “rough consensus
+and running code” is still useful when it comes to resolving many
+discussions of API details.</p>
+<p>The final implementation must include test code and documentation
+appropriate for either the Python language reference or the
+standard library reference.</p>
+</li>
+<li><p>Rejected Ideas – Throughout the discussion of a PEP, various ideas
+will be proposed which are not accepted. Those rejected ideas should
+be recorded along with the reasoning as to why they were rejected.
+This both helps record the thought process behind the final version
+of the PEP as well as preventing people from bringing up the same
+rejected idea again in subsequent discussions.</p>
+<p>In a way this section can be thought of as a breakout section of the
+Rationale section that is focused specifically on why certain ideas
+were not ultimately pursued.</p>
+</li>
+<li><p>Open Issues – While a PEP is in draft, ideas can come up which
+warrant further discussion. Those ideas should be recorded so people
+know that they are being thought about but do not have a concrete
+resolution. This helps make sure all issues required for the PEP to be
+ready for consideration are complete and reduces people duplicating
+prior discussion.</p></li>
+<li><p>References – A collection of URLs used as references through the PEP.</p></li>
+<li><p>Copyright/license – Each new PEP must be placed under a dual license of
+public domain and <a class="reference external" href="https://choosealicense.com/licenses/cc0-1.0/">CC0-1.0-Universal</a> <a class="footnote-reference brackets" href="#id20" id="id21">9</a> (see this PEP for an example).</p></li>
+</ol>
+</section>
+<section id="pep-formats-and-templates">
+<h2><a class="toc-backref" href="#id51">PEP Formats and Templates</a><a class="headerlink" href="#pep-formats-and-templates" title="Permalink to this headline">¶</a></h2>
+<p>PEPs are UTF-8 encoded text files using the <a class="reference external" href="http://docutils.sourceforge.net/rst.html">reStructuredText</a> <a class="footnote-reference brackets" href="#id22" id="id23">10</a> format.
+<a class="reference external" href="http://docutils.sourceforge.net/rst.html">ReStructuredText</a> <a class="footnote-reference brackets" href="#id22" id="id24">10</a> allows for rich markup that is still quite easy to
+read, but also results in good-looking and functional HTML. <a class="reference external" href="pep-0012.html">PEP 12</a>
+contains instructions and a template <a class="footnote-reference brackets" href="#id14" id="id6">4</a> for reStructuredText PEPs.</p>
+<p>The PEP text files are automatically converted to HTML <a class="footnote-reference brackets" href="#id16" id="id7">6</a> for easier
+<a class="reference external" href="https://www.python.org/dev/peps/">online reading</a>.</p>
+</section>
+<section id="pep-header-preamble">
+<h2><a class="toc-backref" href="#id52">PEP Header Preamble</a><a class="headerlink" href="#pep-header-preamble" title="Permalink to this headline">¶</a></h2>
+<p>Each PEP must begin with an <a class="reference external" href="https://tools.ietf.org/html/rfc822.html">RFC 822</a> style header preamble.  The headers
+must appear in the following order.  Headers marked with “*” are
+optional and are described below.  All other headers are required.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="n">PEP</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">pep</span> <span class="n">number</span><span class="o">&gt;</span>
+  <span class="n">Title</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">pep</span> <span class="n">title</span><span class="o">&gt;</span>
+  <span class="n">Author</span><span class="p">:</span> <span class="o">&lt;</span><span class="nb">list</span> <span class="n">of</span> <span class="n">authors</span><span class="s1">&#39; real names and optionally, email addrs&gt;</span>
+<span class="o">*</span> <span class="n">Sponsor</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">real</span> <span class="n">name</span> <span class="n">of</span> <span class="n">sponsor</span><span class="o">&gt;</span>
+<span class="o">*</span> <span class="n">PEP</span><span class="o">-</span><span class="n">Delegate</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">PEP</span> <span class="n">delegate</span><span class="s1">&#39;s real name&gt;</span>
+<span class="o">*</span> <span class="n">Discussions</span><span class="o">-</span><span class="n">To</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">email</span> <span class="n">address</span><span class="o">&gt;</span>
+  <span class="n">Status</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">Draft</span> <span class="o">|</span> <span class="n">Active</span> <span class="o">|</span> <span class="n">Accepted</span> <span class="o">|</span> <span class="n">Provisional</span> <span class="o">|</span> <span class="n">Deferred</span> <span class="o">|</span> <span class="n">Rejected</span> <span class="o">|</span>
+           <span class="n">Withdrawn</span> <span class="o">|</span> <span class="n">Final</span> <span class="o">|</span> <span class="n">Superseded</span><span class="o">&gt;</span>
+  <span class="n">Type</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">Standards</span> <span class="n">Track</span> <span class="o">|</span> <span class="n">Informational</span> <span class="o">|</span> <span class="n">Process</span><span class="o">&gt;</span>
+<span class="o">*</span> <span class="n">Content</span><span class="o">-</span><span class="n">Type</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">text</span><span class="o">/</span><span class="n">x</span><span class="o">-</span><span class="n">rst</span> <span class="o">|</span> <span class="n">text</span><span class="o">/</span><span class="n">plain</span><span class="o">&gt;</span>
+<span class="o">*</span> <span class="n">Requires</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">pep</span> <span class="n">numbers</span><span class="o">&gt;</span>
+  <span class="n">Created</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">date</span> <span class="n">created</span> <span class="n">on</span><span class="p">,</span> <span class="ow">in</span> <span class="n">dd</span><span class="o">-</span><span class="n">mmm</span><span class="o">-</span><span class="n">yyyy</span> <span class="nb">format</span><span class="o">&gt;</span>
+<span class="o">*</span> <span class="n">Python</span><span class="o">-</span><span class="n">Version</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">version</span> <span class="n">number</span><span class="o">&gt;</span>
+  <span class="n">Post</span><span class="o">-</span><span class="n">History</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">dates</span> <span class="n">of</span> <span class="n">postings</span> <span class="n">to</span> <span class="n">python</span><span class="o">-</span><span class="n">ideas</span> <span class="ow">and</span><span class="o">/</span><span class="ow">or</span> <span class="n">python</span><span class="o">-</span><span class="n">dev</span><span class="o">&gt;</span>
+<span class="o">*</span> <span class="n">Replaces</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">pep</span> <span class="n">number</span><span class="o">&gt;</span>
+<span class="o">*</span> <span class="n">Superseded</span><span class="o">-</span><span class="n">By</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">pep</span> <span class="n">number</span><span class="o">&gt;</span>
+<span class="o">*</span> <span class="n">Resolution</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">url</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>The Author header lists the names, and optionally the email addresses
+of all the authors/owners of the PEP.  The format of the Author header
+value must be</p>
+<blockquote>
+<div><p>Random J. User &lt;<a class="reference external" href="mailto:address&#37;&#52;&#48;dom&#46;ain">address<span>&#64;</span>dom<span>&#46;</span>ain</a>&gt;</p>
+</div></blockquote>
+<p>if the email address is included, and just</p>
+<blockquote>
+<div><p>Random J. User</p>
+</div></blockquote>
+<p>if the address is not given.  For historical reasons the format
+“<a class="reference external" href="mailto:address&#37;&#52;&#48;dom&#46;ain">address<span>&#64;</span>dom<span>&#46;</span>ain</a> (Random J. User)” may appear in a PEP, however new
+PEPs must use the mandated format above, and it is acceptable to
+change to this format when PEPs are updated.</p>
+<p>If there are multiple authors, each should be on a separate line
+following <a class="reference external" href="https://tools.ietf.org/html/rfc2822.html">RFC 2822</a> continuation line conventions.  Note that personal
+email addresses in PEPs will be obscured as a defense against spam
+harvesters.</p>
+<p>The Sponsor field records which developer (core, or otherwise approved by the
+Steering Council) is sponsoring the PEP.  If one of the authors of the PEP is a
+core developer then no sponsor is necessary and thus this field should be left
+out.</p>
+<p>The PEP-Delegate field is used to record the individual appointed by the
+Steering Council to make the final decision on whether or not to approve or
+reject a PEP. (The delegate’s email address is currently omitted due to a
+limitation in the email address masking for reStructuredText PEPs)</p>
+<p><em>Note: The Resolution header is required for Standards Track PEPs
+only.  It contains a URL that should point to an email message or
+other web resource where the pronouncement about the PEP is made.</em></p>
+<p>For a PEP where final pronouncement will be made on a list other than
+python-dev, a Discussions-To header will indicate the mailing list
+or URL where the pronouncement will occur. A temporary Discussions-To header
+may also be used when a draft PEP is being discussed prior to submission for
+pronouncement. No Discussions-To header is necessary if the PEP is being
+discussed privately with the author, or on the python-list, python-ideas
+or python-dev mailing lists.  Note that email addresses in the
+Discussions-To header will not be obscured.</p>
+<p>The Type header specifies the type of PEP: Standards Track,
+Informational, or Process.</p>
+<p>The format of a PEP is specified with a Content-Type header.  The
+acceptable values are “text/plain” for plaintext PEPs (see <a class="reference external" href="pep-0009.html">PEP 9</a> <a class="footnote-reference brackets" href="#id13" id="id8">3</a>)
+and “text/x-rst” for reStructuredText PEPs (see <a class="reference external" href="pep-0012.html">PEP 12</a> <a class="footnote-reference brackets" href="#id14" id="id9">4</a>).
+reStructuredText is strongly preferred, but for backwards
+compatibility plain text is currently still the default if no
+Content-Type header is present.</p>
+<p>The Created header records the date that the PEP was assigned a
+number, while Post-History is used to record the dates of when new
+versions of the PEP are posted to python-ideas and/or python-dev.  Both
+headers should be in dd-mmm-yyyy format, e.g. 14-Aug-2001.</p>
+<p>Standards Track PEPs will typically have a Python-Version header which
+indicates the version of Python that the feature will be released with.
+Standards Track PEPs without a Python-Version header indicate
+interoperability standards that will initially be supported through
+external libraries and tools, and then potentially supplemented by a later PEP
+to add support to the standard library. Informational and Process PEPs do
+not need a Python-Version header.</p>
+<p>PEPs may have a Requires header, indicating the PEP numbers that this
+PEP depends on.</p>
+<p>PEPs may also have a Superseded-By header indicating that a PEP has
+been rendered obsolete by a later document; the value is the number of
+the PEP that replaces the current document.  The newer PEP must have a
+Replaces header containing the number of the PEP that it rendered
+obsolete.</p>
+</section>
+<section id="auxiliary-files">
+<h2><a class="toc-backref" href="#id53">Auxiliary Files</a><a class="headerlink" href="#auxiliary-files" title="Permalink to this headline">¶</a></h2>
+<p>PEPs may include auxiliary files such as diagrams.  Such files should be
+named <code class="docutils literal notranslate"><span class="pre">pep-XXXX-Y.ext</span></code>, where “XXXX” is the PEP number, “Y” is a
+serial number (starting at 1), and “ext” is replaced by the actual
+file extension (e.g. “png”).</p>
+<p>Alternatively, all support files may be placed in a subdirectory called
+<code class="docutils literal notranslate"><span class="pre">pep-XXXX</span></code>, where “XXXX” is the PEP number. When using a subdirectory, there
+are no constraints on the names used in files.</p>
+</section>
+<section id="reporting-pep-bugs-or-submitting-pep-updates">
+<h2><a class="toc-backref" href="#id54">Reporting PEP Bugs, or Submitting PEP Updates</a><a class="headerlink" href="#reporting-pep-bugs-or-submitting-pep-updates" title="Permalink to this headline">¶</a></h2>
+<p>How you report a bug, or submit a PEP update depends on several
+factors, such as the maturity of the PEP, the preferences of the PEP
+author, and the nature of your comments.  For the early draft stages
+of the PEP, it’s probably best to send your comments and changes
+directly to the PEP author.  For more mature, or finished PEPs you may
+want to submit corrections as a <a class="reference external" href="https://github.com/python/peps/issues">GitHub issue</a> <a class="footnote-reference brackets" href="#id36" id="id37">13</a> or <a class="reference external" href="https://github.com/python/peps/pulls">GitHub pull request</a> <a class="footnote-reference brackets" href="#id32" id="id34">12</a> so that
+your changes don’t get lost.</p>
+<p>When in doubt about where to send your changes, please check first
+with the PEP author and/or a PEP editor.</p>
+<p>PEP authors with git push privileges for the PEP repository can update the
+PEPs themselves by using “git push” or the GitHub PR interface to submit their
+changes.</p>
+</section>
+<section id="transferring-pep-ownership">
+<h2><a class="toc-backref" href="#id55">Transferring PEP Ownership</a><a class="headerlink" href="#transferring-pep-ownership" title="Permalink to this headline">¶</a></h2>
+<p>It occasionally becomes necessary to transfer ownership of PEPs to a
+new champion.  In general, it is preferable to retain the original author as
+a co-author of the transferred PEP, but that’s really up to the
+original author.  A good reason to transfer ownership is because the
+original author no longer has the time or interest in updating it or
+following through with the PEP process, or has fallen off the face of
+the ‘net (i.e. is unreachable or not responding to email).  A bad
+reason to transfer ownership is because the author doesn’t agree with the
+direction of the PEP.  One aim of the PEP process is to try to build
+consensus around a PEP, but if that’s not possible, an author can always
+submit a competing PEP.</p>
+<p>If you are interested in assuming ownership of a PEP, you can also do this via
+pull request.  Fork the <a class="reference external" href="https://github.com/python/peps">PEP repository</a> <a class="footnote-reference brackets" href="#id25" id="id29">11</a>, make your ownership modification,
+and submit a pull request.  You should mention both the original author and
+<code class="docutils literal notranslate"><span class="pre">&#64;python/pep-editors</span></code> in a comment on the pull request.  (If the original
+author’s GitHub username is unknown, use email.)  If the original author
+doesn’t respond in a timely manner, the PEP editors will make a
+unilateral decision (it’s not like such decisions can’t be reversed :).</p>
+</section>
+<section id="pep-editor-responsibilities-workflow">
+<h2><a class="toc-backref" href="#id56">PEP Editor Responsibilities &amp; Workflow</a><a class="headerlink" href="#pep-editor-responsibilities-workflow" title="Permalink to this headline">¶</a></h2>
+<p>A PEP editor must be added to the <code class="docutils literal notranslate"><span class="pre">&#64;python/pep-editors</span></code> group on GitHub and
+must watch the <a class="reference external" href="https://github.com/python/peps">PEP repository</a> <a class="footnote-reference brackets" href="#id25" id="id30">11</a>.</p>
+<p>Note that developers with git push privileges for the <a class="reference external" href="https://github.com/python/peps">PEP repository</a> <a class="footnote-reference brackets" href="#id25" id="id31">11</a> may
+handle the tasks that would normally be taken care of by the PEP editors.
+Alternately, even developers may request assistance from PEP editors by
+mentioning <code class="docutils literal notranslate"><span class="pre">&#64;python/pep-editors</span></code> on GitHub.</p>
+<p>For each new PEP that comes in an editor does the following:</p>
+<ul class="simple">
+<li><p>Make sure that the PEP is either co-authored by a core developer, has a core
+developer as a sponsor, or has a sponsor specifically approved for this PEP
+by the Steering Council.</p></li>
+<li><p>Read the PEP to check if it is ready: sound and complete.  The ideas
+must make technical sense, even if they don’t seem likely to be
+accepted.</p></li>
+<li><p>The title should accurately describe the content.</p></li>
+<li><p>The file name extension is correct (i.e. <code class="docutils literal notranslate"><span class="pre">.rst</span></code>).</p></li>
+<li><p>Make sure the appropriate core developer(s) is added to
+<cite>.github/CODEOWNERS</cite> <a class="footnote-reference brackets" href="#id17" id="id10">7</a>.</p></li>
+<li><p>Skim the PEP for obvious defects in language (spelling, grammar,
+sentence structure, etc.), and code style (examples should conform to
+<a class="reference external" href="pep-0008.html">PEP 8</a> &amp; <a class="reference external" href="pep-0007.html">PEP 7</a>).  Editors may correct problems themselves, but are
+not required to do so.  (Text format is checked by Travis CI.)</p></li>
+<li><p>If a project is portrayed as benefiting from or supporting the PEP, make sure
+there is some direct indication from the project included to make the support
+clear. This is to avoid a PEP accidentally portraying a project as supporting
+a PEP when in fact the support is based on conjecture.</p></li>
+</ul>
+<p>If the PEP isn’t ready, an editor will send it back to the author for
+revision, with specific instructions.  If reST formatting is a
+problem, ask the author(s) to use <a class="reference external" href="pep-0012.html">PEP 12</a> as a template and resubmit.</p>
+<p>Once the PEP is ready for the repository, a PEP editor will:</p>
+<ul>
+<li><p>Assign a PEP number (almost always just the next available number,
+but sometimes it’s a special/joke number, like 666 or 3141).
+(Clarification: For Python 3, numbers in the 3000s were used for
+Py3k-specific proposals.  But now that all new features go into
+Python 3 only, the process is back to using numbers in the 100s again.
+Remember that numbers below 100 are meta-PEPs.)</p></li>
+<li><p>Check that the author has correctly labeled the PEP’s type
+(“Standards Track”, “Informational”, or “Process”), and marked its
+status as “Draft”.</p></li>
+<li><p>Add the PEP to a local fork of the PEP repository.  For workflow
+instructions, follow <a class="reference external" href="http://docs.python.org/devguide">The Python Developers Guide</a></p>
+<p>The git repo for the peps is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">python</span><span class="o">/</span><span class="n">peps</span>
+</pre></div>
+</div>
+</li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">./genpepindex.py</span></code> and <code class="docutils literal notranslate"><span class="pre">./pep2html.py</span> <span class="pre">&lt;PEP</span> <span class="pre">Number&gt;</span></code> to ensure they
+are generated without errors. If either triggers errors, then the web site
+will not be updated to reflect the PEP changes.</p></li>
+<li><p>Commit and push the new (or updated) PEP</p></li>
+<li><p>Monitor python.org to make sure the PEP gets added to the site
+properly. If it fails to appear, running <code class="docutils literal notranslate"><span class="pre">make</span></code> will build all of the
+current PEPs. If any of these are triggering errors, they must be
+corrected before any PEP will update on the site.</p></li>
+<li><p>Send email back to the PEP author with next steps (post to
+python-list &amp; -dev).</p></li>
+</ul>
+<p>Updates to existing PEPs should be submitted as a <a class="reference external" href="https://github.com/python/peps/pulls">GitHub pull request</a> <a class="footnote-reference brackets" href="#id32" id="id35">12</a>.</p>
+<p>Many PEPs are written and maintained by developers with write access
+to the Python codebase.  The PEP editors monitor the PEP repository
+for changes, and correct any structure, grammar, spelling, or
+markup mistakes they see.</p>
+<p>PEP editors don’t pass judgment on PEPs.  They merely do the
+administrative &amp; editorial part (which is generally a low volume task).</p>
+<p>Resources:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://www.python.org/dev/peps/">Index of Python Enhancement Proposals</a></p></li>
+<li><p><a class="reference external" href="http://docs.python.org/devguide/communication.html">Following Python’s Development</a></p></li>
+<li><p><a class="reference external" href="http://docs.python.org/devguide/">Python Developer’s Guide</a></p></li>
+<li><p><a class="reference external" href="http://docs.python.org/devguide/faq.html">Frequently Asked Questions for Developers</a></p></li>
+</ul>
+</section>
+<section id="references-and-footnotes">
+<h2><a class="toc-backref" href="#id57">References and Footnotes</a><a class="headerlink" href="#references-and-footnotes" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>This historical record is available by the normal git commands
+for retrieving older revisions, and can also be browsed via HTTP here:
+<a class="reference external" href="https://github.com/python/peps">https://github.com/python/peps</a></p>
+</dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id5">2</a></span></dt>
+<dd><p><a class="reference external" href="pep-0002.html">PEP 2</a>, Procedure for Adding New Modules
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0002">http://www.python.org/dev/peps/pep-0002</a>)</p>
+</dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id8">3</a></span></dt>
+<dd><p><a class="reference external" href="pep-0009.html">PEP 9</a>, Sample Plaintext PEP Template
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0009">http://www.python.org/dev/peps/pep-0009</a>)</p>
+</dd>
+<dt class="label" id="id14"><span class="brackets">4</span><span class="fn-backref">(<a href="#id6">1</a>,<a href="#id9">2</a>)</span></dt>
+<dd><p><a class="reference external" href="pep-0012.html">PEP 12</a>, Sample reStructuredText PEP Template
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0012">http://www.python.org/dev/peps/pep-0012</a>)</p>
+</dd>
+<dt class="label" id="id15"><span class="brackets">5</span><span class="fn-backref">(<a href="#id2">1</a>,<a href="#id3">2</a>)</span></dt>
+<dd><p><a class="reference external" href="pep-0013.html">PEP 13</a>, Python Language Governance
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0013">http://www.python.org/dev/peps/pep-0013</a>)</p>
+</dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id7">6</a></span></dt>
+<dd><p>More details on the PEP rendering and publication process can be found
+in the PEPs repo README at
+<a class="reference external" href="https://github.com/python/peps/blob/master/README.rst">https://github.com/python/peps/blob/master/README.rst</a></p>
+</dd>
+<dt class="label" id="id17"><span class="brackets">7</span><span class="fn-backref">(<a href="#id4">1</a>,<a href="#id10">2</a>)</span></dt>
+<dd><p><cite>CODEOWNERS</cite> documentation
+(<a class="reference external" href="https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/about-code-owners">https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/about-code-owners</a>)</p>
+</dd>
+</dl>
+<dl class="footnote brackets">
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id19">8</a></span></dt>
+<dd><p><a class="reference external" href="http://bugs.python.org/">http://bugs.python.org/</a></p>
+</dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id21">9</a></span></dt>
+<dd><p><a class="reference external" href="https://choosealicense.com/licenses/cc0-1.0/">https://choosealicense.com/licenses/cc0-1.0/</a></p>
+</dd>
+<dt class="label" id="id22"><span class="brackets">10</span><span class="fn-backref">(<a href="#id23">1</a>,<a href="#id24">2</a>)</span></dt>
+<dd><p><a class="reference external" href="http://docutils.sourceforge.net/rst.html">http://docutils.sourceforge.net/rst.html</a></p>
+</dd>
+<dt class="label" id="id25"><span class="brackets">11</span><span class="fn-backref">(<a href="#id26">1</a>,<a href="#id27">2</a>,<a href="#id28">3</a>,<a href="#id29">4</a>,<a href="#id30">5</a>,<a href="#id31">6</a>)</span></dt>
+<dd><p><a class="reference external" href="https://github.com/python/peps">https://github.com/python/peps</a></p>
+</dd>
+<dt class="label" id="id32"><span class="brackets">12</span><span class="fn-backref">(<a href="#id33">1</a>,<a href="#id34">2</a>,<a href="#id35">3</a>)</span></dt>
+<dd><p><a class="reference external" href="https://github.com/python/peps/pulls">https://github.com/python/peps/pulls</a></p>
+</dd>
+<dt class="label" id="id36"><span class="brackets"><a class="fn-backref" href="#id37">13</a></span></dt>
+<dd><p><a class="reference external" href="https://github.com/python/peps/issues">https://github.com/python/peps/issues</a></p>
+</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#id58">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0001.txt">https://github.com/python/peps/blob/master/pep-0001.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0001.txt">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0100/">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0101/">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0374/">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0391/">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0423/">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0451/">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0471/">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0479/">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0495/">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0558/">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0570/">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0584/">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0586/">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0594/">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3118/">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-0000/" title="previous chapter">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+      <li>Next: <a href="../pep-0002/" title="next chapter">PEP 2 – Procedure for Adding New Modules</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-0001.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

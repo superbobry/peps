@@ -1,0 +1,1857 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 100 – Python Unicode Integration &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 101 – Doing Python Releases 101" href="../pep-0101/" />
+    <link rel="prev" title="PEP 42 – Feature Requests" href="../pep-0042/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pep-100-python-unicode-integration">
+<h1 class="page-title">PEP 100 – Python Unicode Integration<a class="headerlink" href="#pep-100-python-unicode-integration" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>100</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>Python Unicode Integration</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p><a class="reference external" href="mailto:mal&#37;&#52;&#48;lemburg&#46;com?subject=PEP%20-1">mal&#32;&#97;t&#32;lemburg.com</a> (Marc-André Lemburg)</p>
+</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even"><p>Final</p>
+</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Standards Track</p>
+</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even"><p>10-Mar-2000</p>
+</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd"><p>2.0</p>
+</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#historical-note" id="id18">Historical Note</a></p></li>
+<li><p><a class="reference internal" href="#introduction" id="id19">Introduction</a></p></li>
+<li><p><a class="reference internal" href="#conventions" id="id20">Conventions</a></p></li>
+<li><p><a class="reference internal" href="#general-remarks" id="id21">General Remarks</a></p></li>
+<li><p><a class="reference internal" href="#unicode-default-encoding" id="id22">Unicode Default Encoding</a></p></li>
+<li><p><a class="reference internal" href="#unicode-constructors" id="id23">Unicode Constructors</a></p></li>
+<li><p><a class="reference internal" href="#unicode-type-object" id="id24">Unicode Type Object</a></p></li>
+<li><p><a class="reference internal" href="#unicode-output" id="id25">Unicode Output</a></p></li>
+<li><p><a class="reference internal" href="#unicode-ordinals" id="id26">Unicode Ordinals</a></p></li>
+<li><p><a class="reference internal" href="#comparison-hash-value" id="id27">Comparison &amp; Hash Value</a></p></li>
+<li><p><a class="reference internal" href="#coercion" id="id28">Coercion</a></p></li>
+<li><p><a class="reference internal" href="#exceptions" id="id29">Exceptions</a></p></li>
+<li><p><a class="reference internal" href="#codecs-coder-decoders-lookup" id="id30">Codecs (Coder/Decoders) Lookup</a></p></li>
+<li><p><a class="reference internal" href="#standard-codecs" id="id31">Standard Codecs</a></p></li>
+<li><p><a class="reference internal" href="#codecs-interface-definition" id="id32">Codecs Interface Definition</a></p></li>
+<li><p><a class="reference internal" href="#whitespace" id="id33">Whitespace</a></p></li>
+<li><p><a class="reference internal" href="#case-conversion" id="id34">Case Conversion</a></p></li>
+<li><p><a class="reference internal" href="#line-breaks" id="id35">Line Breaks</a></p></li>
+<li><p><a class="reference internal" href="#unicode-character-properties" id="id36">Unicode Character Properties</a></p></li>
+<li><p><a class="reference internal" href="#private-code-point-areas" id="id37">Private Code Point Areas</a></p></li>
+<li><p><a class="reference internal" href="#internal-format" id="id38">Internal Format</a></p></li>
+<li><p><a class="reference internal" href="#buffer-interface" id="id39">Buffer Interface</a></p></li>
+<li><p><a class="reference internal" href="#pickle-marshalling" id="id40">Pickle/Marshalling</a></p></li>
+<li><p><a class="reference internal" href="#regular-expressions" id="id41">Regular Expressions</a></p></li>
+<li><p><a class="reference internal" href="#formatting-markers" id="id42">Formatting Markers</a></p></li>
+<li><p><a class="reference internal" href="#internal-argument-parsing" id="id43">Internal Argument Parsing</a></p></li>
+<li><p><a class="reference internal" href="#file-stream-output" id="id44">File/Stream Output</a></p></li>
+<li><p><a class="reference internal" href="#file-stream-input" id="id45">File/Stream Input</a></p></li>
+<li><p><a class="reference internal" href="#unicode-methods-attributes" id="id46">Unicode Methods &amp; Attributes</a></p></li>
+<li><p><a class="reference internal" href="#code-base" id="id47">Code Base</a></p></li>
+<li><p><a class="reference internal" href="#test-cases" id="id48">Test Cases</a></p></li>
+<li><p><a class="reference internal" href="#references" id="id49">References</a></p></li>
+<li><p><a class="reference internal" href="#history-of-this-proposal" id="id50">History of this Proposal</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id1" id="id51">1.7</a></p></li>
+<li><p><a class="reference internal" href="#id2" id="id52">1.6</a></p></li>
+<li><p><a class="reference internal" href="#id3" id="id53">1.5</a></p></li>
+<li><p><a class="reference internal" href="#id4" id="id54">1.4</a></p></li>
+<li><p><a class="reference internal" href="#id5" id="id55">1.3</a></p></li>
+<li><p><a class="reference internal" href="#id6" id="id56">1.2</a></p></li>
+<li><p><a class="reference internal" href="#id7" id="id57">1.1</a></p></li>
+<li><p><a class="reference internal" href="#id8" id="id58">1.0</a></p></li>
+<li><p><a class="reference internal" href="#id9" id="id59">0.9</a></p></li>
+<li><p><a class="reference internal" href="#id10" id="id60">0.8</a></p></li>
+<li><p><a class="reference internal" href="#id11" id="id61">0.7</a></p></li>
+<li><p><a class="reference internal" href="#id12" id="id62">0.6</a></p></li>
+<li><p><a class="reference internal" href="#id13" id="id63">0.5</a></p></li>
+<li><p><a class="reference internal" href="#id14" id="id64">0.4</a></p></li>
+<li><p><a class="reference internal" href="#id15" id="id65">0.3</a></p></li>
+<li><p><a class="reference internal" href="#id16" id="id66">0.2</a></p></li>
+<li><p><a class="reference internal" href="#id17" id="id67">0.1</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<section id="historical-note">
+<h2><a class="toc-backref" href="#id18">Historical Note</a><a class="headerlink" href="#historical-note" title="Permalink to this headline">¶</a></h2>
+<p>This document was first written by Marc-Andre in the pre-PEP days,
+and was originally distributed as Misc/unicode.txt in Python
+distributions up to and included Python 2.1.  The last revision of
+the proposal in that location was labeled version 1.7 (CVS
+revision 3.10).  Because the document clearly serves the purpose
+of an informational PEP in the post-PEP era, it has been moved
+here and reformatted to comply with PEP guidelines.  Future
+revisions will be made to this document, while Misc/unicode.txt
+will contain a pointer to this PEP.</p>
+<p>-Barry Warsaw, PEP editor</p>
+</section>
+<section id="introduction">
+<h2><a class="toc-backref" href="#id19">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The idea of this proposal is to add native Unicode 3.0 support to
+Python in a way that makes use of Unicode strings as simple as
+possible without introducing too many pitfalls along the way.</p>
+<p>Since this goal is not easy to achieve – strings being one of the
+most fundamental objects in Python – we expect this proposal to
+undergo some significant refinements.</p>
+<p>Note that the current version of this proposal is still a bit
+unsorted due to the many different aspects of the Unicode-Python
+integration.</p>
+<p>The latest version of this document is always available at:
+<a class="reference external" href="http://starship.python.net/~lemburg/unicode-proposal.txt">http://starship.python.net/~lemburg/unicode-proposal.txt</a></p>
+<p>Older versions are available as:
+<a class="reference external" href="http://starship.python.net/~lemburg/unicode-proposal-X.X.txt">http://starship.python.net/~lemburg/unicode-proposal-X.X.txt</a></p>
+<p>[ed. note: new revisions should be made to this PEP document,
+while the historical record previous to version 1.7 should be
+retrieved from MAL’s url, or Misc/unicode.txt]</p>
+</section>
+<section id="conventions">
+<h2><a class="toc-backref" href="#id20">Conventions</a><a class="headerlink" href="#conventions" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>In examples we use u = Unicode object and s = Python string</p></li>
+<li><p>‘XXX’ markings indicate points of discussion (PODs)</p></li>
+</ul>
+</section>
+<section id="general-remarks">
+<h2><a class="toc-backref" href="#id21">General Remarks</a><a class="headerlink" href="#general-remarks" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Unicode encoding names should be lower case on output and
+case-insensitive on input (they will be converted to lower case
+by all APIs taking an encoding name as input).</p></li>
+<li><p>Encoding names should follow the name conventions as used by the
+Unicode Consortium: spaces are converted to hyphens, e.g. ‘utf
+16’ is written as ‘utf-16’.</p></li>
+<li><p>Codec modules should use the same names, but with hyphens
+converted to underscores, e.g. <code class="docutils literal notranslate"><span class="pre">utf_8</span></code>, <code class="docutils literal notranslate"><span class="pre">utf_16</span></code>, <code class="docutils literal notranslate"><span class="pre">iso_8859_1</span></code>.</p></li>
+</ul>
+</section>
+<section id="unicode-default-encoding">
+<h2><a class="toc-backref" href="#id22">Unicode Default Encoding</a><a class="headerlink" href="#unicode-default-encoding" title="Permalink to this headline">¶</a></h2>
+<p>The Unicode implementation has to make some assumption about the
+encoding of 8-bit strings passed to it for coercion and about the
+encoding to as default for conversion of Unicode to strings when
+no specific encoding is given.  This encoding is called &lt;default
+encoding&gt; throughout this text.</p>
+<p>For this, the implementation maintains a global which can be set
+in the site.py Python startup script.  Subsequent changes are not
+possible.  The &lt;default encoding&gt; can be set and queried using the
+two sys module APIs:</p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">sys.setdefaultencoding(encoding)</span></code></dt><dd><p>Sets the &lt;default encoding&gt; used by the Unicode implementation.
+encoding has to be an encoding which is supported by the
+Python installation, otherwise, a LookupError is raised.</p>
+<p>Note: This API is only available in site.py!  It is
+removed from the sys module by site.py after usage.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">sys.getdefaultencoding()</span></code></dt><dd><p>Returns the current &lt;default encoding&gt;.</p>
+</dd>
+</dl>
+<p>If not otherwise defined or set, the &lt;default encoding&gt; defaults
+to ‘ascii’.  This encoding is also the startup default of Python
+(and in effect before site.py is executed).</p>
+<p>Note that the default site.py startup module contains disabled
+optional code which can set the &lt;default encoding&gt; according to
+the encoding defined by the current locale.  The locale module is
+used to extract the encoding from the locale default settings
+defined by the OS environment (see locale.py).  If the encoding
+cannot be determined, is unknown or unsupported, the code defaults
+to setting the &lt;default encoding&gt; to ‘ascii’.  To enable this
+code, edit the site.py file or place the appropriate code into the
+sitecustomize.py module of your Python installation.</p>
+</section>
+<section id="unicode-constructors">
+<h2><a class="toc-backref" href="#id23">Unicode Constructors</a><a class="headerlink" href="#unicode-constructors" title="Permalink to this headline">¶</a></h2>
+<p>Python should provide a built-in constructor for Unicode strings
+which is available through <code class="docutils literal notranslate"><span class="pre">__builtins__</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">u</span> <span class="o">=</span> <span class="n">unicode</span><span class="p">(</span><span class="n">encoded_string</span><span class="p">[,</span><span class="n">encoding</span><span class="o">=&lt;</span><span class="n">default</span> <span class="n">encoding</span><span class="o">&gt;</span><span class="p">][,</span><span class="n">errors</span><span class="o">=</span><span class="s2">&quot;strict&quot;</span><span class="p">])</span>
+
+<span class="n">u</span> <span class="o">=</span> <span class="sa">u</span><span class="s1">&#39;&lt;unicode-escape encoded Python string&gt;&#39;</span>
+
+<span class="n">u</span> <span class="o">=</span> <span class="n">ur</span><span class="s1">&#39;&lt;raw-unicode-escape encoded Python string&gt;&#39;</span>
+</pre></div>
+</div>
+<p>With the ‘unicode-escape’ encoding being defined as:</p>
+<ul class="simple">
+<li><p>all non-escape characters represent themselves as Unicode
+ordinal (e.g. ‘a’ -&gt; U+0061).</p></li>
+<li><p>all existing defined Python escape sequences are interpreted as
+Unicode ordinals; note that <code class="docutils literal notranslate"><span class="pre">\xXXXX</span></code> can represent all Unicode
+ordinals, and <code class="docutils literal notranslate"><span class="pre">\OOO</span></code> (octal) can represent Unicode ordinals up to
+U+01FF.</p></li>
+<li><p>a new escape sequence, <code class="docutils literal notranslate"><span class="pre">\uXXXX</span></code>, represents U+XXXX; it is a syntax
+error to have fewer than 4 digits after <code class="docutils literal notranslate"><span class="pre">\u</span></code>.</p></li>
+</ul>
+<p>For an explanation of possible values for errors see the Codec
+section below.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="sa">u</span><span class="s1">&#39;abc&#39;</span>          <span class="o">-&gt;</span> <span class="n">U</span><span class="o">+</span><span class="mi">0061</span> <span class="n">U</span><span class="o">+</span><span class="mi">0062</span> <span class="n">U</span><span class="o">+</span><span class="mi">0063</span>
+<span class="sa">u</span><span class="s1">&#39;</span><span class="se">\u1234</span><span class="s1">&#39;</span>       <span class="o">-&gt;</span> <span class="n">U</span><span class="o">+</span><span class="mi">1234</span>
+<span class="sa">u</span><span class="s1">&#39;abc</span><span class="se">\u1234\n</span><span class="s1">&#39;</span>  <span class="o">-&gt;</span> <span class="n">U</span><span class="o">+</span><span class="mi">0061</span> <span class="n">U</span><span class="o">+</span><span class="mi">0062</span> <span class="n">U</span><span class="o">+</span><span class="mi">0063</span> <span class="n">U</span><span class="o">+</span><span class="mi">1234</span> <span class="n">U</span><span class="o">+</span><span class="mi">005</span><span class="n">c</span>
+</pre></div>
+</div>
+<p>The ‘raw-unicode-escape’ encoding is defined as follows:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">\uXXXX</span></code> sequence represent the U+XXXX Unicode character if and
+only if the number of leading backslashes is odd</p></li>
+<li><p>all other characters represent themselves as Unicode ordinal
+(e.g. ‘b’ -&gt; U+0062)</p></li>
+</ul>
+<p>Note that you should provide some hint to the encoding you used to
+write your programs as pragma line in one the first few comment
+lines of the source file (e.g. ‘# source file encoding: latin-1’).
+If you only use 7-bit ASCII then everything is fine and no such
+notice is needed, but if you include Latin-1 characters not
+defined in ASCII, it may well be worthwhile including a hint since
+people in other countries will want to be able to read your source
+strings too.</p>
+</section>
+<section id="unicode-type-object">
+<h2><a class="toc-backref" href="#id24">Unicode Type Object</a><a class="headerlink" href="#unicode-type-object" title="Permalink to this headline">¶</a></h2>
+<p>Unicode objects should have the type UnicodeType with type name
+‘unicode’, made available through the standard types module.</p>
+</section>
+<section id="unicode-output">
+<h2><a class="toc-backref" href="#id25">Unicode Output</a><a class="headerlink" href="#unicode-output" title="Permalink to this headline">¶</a></h2>
+<p>Unicode objects have a method .encode([encoding=&lt;default encoding&gt;])
+which returns a Python string encoding the Unicode string using the
+given scheme (see Codecs).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span> <span class="n">u</span> <span class="o">:=</span> <span class="nb">print</span> <span class="n">u</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>   <span class="c1"># using the &lt;default encoding&gt;</span>
+
+<span class="nb">str</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>  <span class="o">:=</span> <span class="n">u</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>         <span class="c1"># using the &lt;default encoding&gt;</span>
+
+<span class="nb">repr</span><span class="p">(</span><span class="n">u</span><span class="p">)</span> <span class="o">:=</span> <span class="s2">&quot;u</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">repr</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;unicode-escape&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Also see Internal Argument Parsing and Buffer Interface for
+details on how other APIs written in C will treat Unicode objects.</p>
+</section>
+<section id="unicode-ordinals">
+<h2><a class="toc-backref" href="#id26">Unicode Ordinals</a><a class="headerlink" href="#unicode-ordinals" title="Permalink to this headline">¶</a></h2>
+<p>Since Unicode 3.0 has a 32-bit ordinal character set, the
+implementation should provide 32-bit aware ordinal conversion
+APIs:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">ord</span><span class="p">(</span><span class="n">u</span><span class="p">[:</span><span class="mi">1</span><span class="p">])</span> <span class="p">(</span><span class="n">this</span> <span class="ow">is</span> <span class="n">the</span> <span class="n">standard</span> <span class="nb">ord</span><span class="p">()</span> <span class="n">extended</span> <span class="n">to</span> <span class="n">work</span> <span class="k">with</span> <span class="n">Unicode</span>
+            <span class="n">objects</span><span class="p">)</span>
+  <span class="o">--&gt;</span> <span class="n">Unicode</span> <span class="n">ordinal</span> <span class="n">number</span> <span class="p">(</span><span class="mi">32</span><span class="o">-</span><span class="n">bit</span><span class="p">)</span>
+
+<span class="n">unichr</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="o">--&gt;</span> <span class="n">Unicode</span> <span class="nb">object</span> <span class="k">for</span> <span class="n">character</span> <span class="n">i</span> <span class="p">(</span><span class="n">provided</span> <span class="n">it</span> <span class="ow">is</span> <span class="mi">32</span><span class="o">-</span><span class="n">bit</span><span class="p">);</span>
+        <span class="ne">ValueError</span> <span class="n">otherwise</span>
+</pre></div>
+</div>
+<p>Both APIs should go into <code class="docutils literal notranslate"><span class="pre">__builtins__</span></code> just like their string
+counterparts <code class="docutils literal notranslate"><span class="pre">ord()</span></code> and <code class="docutils literal notranslate"><span class="pre">chr()</span></code>.</p>
+<p>Note that Unicode provides space for private encodings.  Usage of
+these can cause different output representations on different
+machines.  This problem is not a Python or Unicode problem, but a
+machine setup and maintenance one.</p>
+</section>
+<section id="comparison-hash-value">
+<h2><a class="toc-backref" href="#id27">Comparison &amp; Hash Value</a><a class="headerlink" href="#comparison-hash-value" title="Permalink to this headline">¶</a></h2>
+<p>Unicode objects should compare equal to other objects after these
+other objects have been coerced to Unicode.  For strings this
+means that they are interpreted as Unicode string using the
+&lt;default encoding&gt;.</p>
+<p>Unicode objects should return the same hash value as their ASCII
+equivalent strings.  Unicode strings holding non-ASCII values are
+not guaranteed to return the same hash values as the default
+encoded equivalent string representation.</p>
+<p>When compared using <code class="docutils literal notranslate"><span class="pre">cmp()</span></code> (or <code class="docutils literal notranslate"><span class="pre">PyObject_Compare()</span></code>) the
+implementation should mask <code class="docutils literal notranslate"><span class="pre">TypeErrors</span></code> raised during the conversion
+to remain in synch with the string behavior.  All other errors
+such as <code class="docutils literal notranslate"><span class="pre">ValueErrors</span></code> raised during coercion of strings to Unicode
+should not be masked and passed through to the user.</p>
+<p>In containment tests (‘a’ in u’abc’ and u’a’ in ‘abc’) both sides
+should be coerced to Unicode before applying the test.  Errors
+occurring during coercion (e.g. None in u’abc’) should not be
+masked.</p>
+</section>
+<section id="coercion">
+<h2><a class="toc-backref" href="#id28">Coercion</a><a class="headerlink" href="#coercion" title="Permalink to this headline">¶</a></h2>
+<p>Using Python strings and Unicode objects to form new objects
+should always coerce to the more precise format, i.e. Unicode
+objects.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">u</span> <span class="o">+</span> <span class="n">s</span> <span class="o">:=</span> <span class="n">u</span> <span class="o">+</span> <span class="n">unicode</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+
+<span class="n">s</span> <span class="o">+</span> <span class="n">u</span> <span class="o">:=</span> <span class="n">unicode</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">+</span> <span class="n">u</span>
+</pre></div>
+</div>
+<p>All string methods should delegate the call to an equivalent
+Unicode object method call by converting all involved strings to
+Unicode and then applying the arguments to the Unicode method of
+the same name, e.g.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">string</span><span class="o">.</span><span class="n">join</span><span class="p">((</span><span class="n">s</span><span class="p">,</span><span class="n">u</span><span class="p">),</span><span class="n">sep</span><span class="p">)</span> <span class="o">:=</span> <span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="n">sep</span><span class="p">)</span> <span class="o">+</span> <span class="n">u</span>
+
+<span class="n">sep</span><span class="o">.</span><span class="n">join</span><span class="p">((</span><span class="n">s</span><span class="p">,</span><span class="n">u</span><span class="p">))</span> <span class="o">:=</span> <span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="n">sep</span><span class="p">)</span> <span class="o">+</span> <span class="n">u</span>
+</pre></div>
+</div>
+<p>For a discussion of %-formatting w/r to Unicode objects, see
+Formatting Markers.</p>
+</section>
+<section id="exceptions">
+<h2><a class="toc-backref" href="#id29">Exceptions</a><a class="headerlink" href="#exceptions" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">UnicodeError</span></code> is defined in the exceptions module as a subclass of
+<code class="docutils literal notranslate"><span class="pre">ValueError</span></code>.  It is available at the C level via
+<code class="docutils literal notranslate"><span class="pre">PyExc_UnicodeError</span></code>.  All exceptions related to Unicode
+encoding/decoding should be subclasses of <code class="docutils literal notranslate"><span class="pre">UnicodeError</span></code>.</p>
+</section>
+<section id="codecs-coder-decoders-lookup">
+<h2><a class="toc-backref" href="#id30">Codecs (Coder/Decoders) Lookup</a><a class="headerlink" href="#codecs-coder-decoders-lookup" title="Permalink to this headline">¶</a></h2>
+<p>A Codec (see Codec Interface Definition) search registry should be
+implemented by a module “codecs”:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">codecs</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">search_function</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Search functions are expected to take one argument, the encoding
+name in all lower case letters and with hyphens and spaces
+converted to underscores, and return a tuple of functions
+(encoder, decoder, stream_reader, stream_writer) taking the
+following arguments:</p>
+<dl>
+<dt>encoder and decoder</dt><dd><p>These must be functions or methods which have the same
+interface as the <code class="docutils literal notranslate"><span class="pre">.encode</span></code>/<code class="docutils literal notranslate"><span class="pre">.decode</span></code> methods of Codec instances
+(see Codec Interface). The functions/methods are expected to
+work in a stateless mode.</p>
+</dd>
+<dt>stream_reader and stream_writer</dt><dd><p>These need to be factory functions with the following
+interface:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">factory</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="n">errors</span><span class="o">=</span><span class="s1">&#39;strict&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The factory functions must return objects providing the
+interfaces defined by <code class="docutils literal notranslate"><span class="pre">StreamWriter</span></code>/<code class="docutils literal notranslate"><span class="pre">StreamReader</span></code> resp.  (see
+Codec Interface).  Stream codecs can maintain state.</p>
+<p>Possible values for errors are defined in the Codec section
+below.</p>
+</dd>
+</dl>
+<p>In case a search function cannot find a given encoding, it should
+return None.</p>
+<p>Aliasing support for encodings is left to the search functions to
+implement.</p>
+<p>The codecs module will maintain an encoding cache for performance
+reasons.  Encodings are first looked up in the cache.  If not
+found, the list of registered search functions is scanned.  If no
+codecs tuple is found, a LookupError is raised.  Otherwise, the
+codecs tuple is stored in the cache and returned to the caller.</p>
+<p>To query the Codec instance the following API should be used:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">codecs</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">encoding</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This will either return the found codecs tuple or raise a
+<code class="docutils literal notranslate"><span class="pre">LookupError</span></code>.</p>
+</section>
+<section id="standard-codecs">
+<h2><a class="toc-backref" href="#id31">Standard Codecs</a><a class="headerlink" href="#standard-codecs" title="Permalink to this headline">¶</a></h2>
+<p>Standard codecs should live inside an encodings/ package directory
+in the Standard Python Code Library.  The <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> file of that
+directory should include a Codec Lookup compatible search function
+implementing a lazy module based codec lookup.</p>
+<p>Python should provide a few standard codecs for the most relevant
+encodings, e.g.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;utf-8&#39;</span><span class="p">:</span>              <span class="mi">8</span><span class="o">-</span><span class="n">bit</span> <span class="n">variable</span> <span class="n">length</span> <span class="n">encoding</span>
+<span class="s1">&#39;utf-16&#39;</span><span class="p">:</span>             <span class="mi">16</span><span class="o">-</span><span class="n">bit</span> <span class="n">variable</span> <span class="n">length</span> <span class="n">encoding</span> <span class="p">(</span><span class="n">little</span><span class="o">/</span><span class="n">big</span> <span class="n">endian</span><span class="p">)</span>
+<span class="s1">&#39;utf-16-le&#39;</span><span class="p">:</span>          <span class="n">utf</span><span class="o">-</span><span class="mi">16</span> <span class="n">but</span> <span class="n">explicitly</span> <span class="n">little</span> <span class="n">endian</span>
+<span class="s1">&#39;utf-16-be&#39;</span><span class="p">:</span>          <span class="n">utf</span><span class="o">-</span><span class="mi">16</span> <span class="n">but</span> <span class="n">explicitly</span> <span class="n">big</span> <span class="n">endian</span>
+<span class="s1">&#39;ascii&#39;</span><span class="p">:</span>              <span class="mi">7</span><span class="o">-</span><span class="n">bit</span> <span class="n">ASCII</span> <span class="n">codepage</span>
+<span class="s1">&#39;iso-8859-1&#39;</span><span class="p">:</span>         <span class="n">ISO</span> <span class="mi">8859</span><span class="o">-</span><span class="mi">1</span> <span class="p">(</span><span class="n">Latin</span> <span class="mi">1</span><span class="p">)</span> <span class="n">codepage</span>
+<span class="s1">&#39;unicode-escape&#39;</span><span class="p">:</span>     <span class="n">See</span> <span class="n">Unicode</span> <span class="n">Constructors</span> <span class="k">for</span> <span class="n">a</span> <span class="n">definition</span>
+<span class="s1">&#39;raw-unicode-escape&#39;</span><span class="p">:</span> <span class="n">See</span> <span class="n">Unicode</span> <span class="n">Constructors</span> <span class="k">for</span> <span class="n">a</span> <span class="n">definition</span>
+<span class="s1">&#39;native&#39;</span><span class="p">:</span>             <span class="n">Dump</span> <span class="n">of</span> <span class="n">the</span> <span class="n">Internal</span> <span class="n">Format</span> <span class="n">used</span> <span class="n">by</span> <span class="n">Python</span>
+</pre></div>
+</div>
+<p>Common aliases should also be provided per default, e.g.
+‘latin-1’ for ‘iso-8859-1’.</p>
+<p>Note: ‘utf-16’ should be implemented by using and requiring byte
+order marks (BOM) for file input/output.</p>
+<p>All other encodings such as the CJK ones to support Asian scripts
+should be implemented in separate packages which do not get
+included in the core Python distribution and are not a part of
+this proposal.</p>
+</section>
+<section id="codecs-interface-definition">
+<h2><a class="toc-backref" href="#id32">Codecs Interface Definition</a><a class="headerlink" href="#codecs-interface-definition" title="Permalink to this headline">¶</a></h2>
+<p>The following base class should be defined in the module “codecs”.
+They provide not only templates for use by encoding module
+implementors, but also define the interface which is expected by
+the Unicode implementation.</p>
+<p>Note that the Codec Interface defined here is well suitable for a
+larger range of applications.  The Unicode implementation expects
+Unicode objects on input for <code class="docutils literal notranslate"><span class="pre">.encode()</span></code> and <code class="docutils literal notranslate"><span class="pre">.write()</span></code> and character
+buffer compatible objects on input for <code class="docutils literal notranslate"><span class="pre">.decode()</span></code>.  Output of
+<code class="docutils literal notranslate"><span class="pre">.encode()</span></code> and <code class="docutils literal notranslate"><span class="pre">.read()</span></code> should be a Python string and <code class="docutils literal notranslate"><span class="pre">.decode()</span></code> must
+return an Unicode object.</p>
+<p>First, we have the stateless encoders/decoders.  These do not work
+in chunks as the stream codecs (see below) do, because all
+components are expected to be available in memory.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Codec</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;Defines the interface for stateless encoders/decoders.</span>
+
+<span class="sd">       The .encode()/.decode() methods may implement different</span>
+<span class="sd">       error handling schemes by providing the errors argument.</span>
+<span class="sd">       These string values are defined:</span>
+
+<span class="sd">         &#39;strict&#39;  - raise an error (or a subclass)</span>
+<span class="sd">         &#39;ignore&#39;  - ignore the character and continue with the next</span>
+<span class="sd">         &#39;replace&#39; - replace with a suitable replacement character;</span>
+<span class="sd">                     Python will use the official U+FFFD</span>
+<span class="sd">                     REPLACEMENT CHARACTER for the builtin Unicode</span>
+<span class="sd">                     codecs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">,</span><span class="n">errors</span><span class="o">=</span><span class="s1">&#39;strict&#39;</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;Encodes the object input and returns a tuple (output</span>
+<span class="sd">           object, length consumed).</span>
+
+<span class="sd">           errors defines the error handling to apply.  It</span>
+<span class="sd">           defaults to &#39;strict&#39; handling.</span>
+
+<span class="sd">           The method may not store state in the Codec instance.</span>
+<span class="sd">           Use StreamCodec for codecs which have to keep state in</span>
+<span class="sd">           order to make encoding/decoding efficient.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">,</span><span class="n">errors</span><span class="o">=</span><span class="s1">&#39;strict&#39;</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;Decodes the object input and returns a tuple (output</span>
+<span class="sd">           object, length consumed).</span>
+
+<span class="sd">           input must be an object which provides the</span>
+<span class="sd">           bf_getreadbuf buffer slot.  Python strings, buffer</span>
+<span class="sd">           objects and memory mapped files are examples of objects</span>
+<span class="sd">           providing this slot.</span>
+
+<span class="sd">           errors defines the error handling to apply.  It</span>
+<span class="sd">           defaults to &#39;strict&#39; handling.</span>
+
+<span class="sd">           The method may not store state in the Codec instance.</span>
+<span class="sd">           Use StreamCodec for codecs which have to keep state in</span>
+<span class="sd">           order to make encoding/decoding efficient.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">StreamWriter</span></code> and <code class="docutils literal notranslate"><span class="pre">StreamReader</span></code> define the interface for stateful
+encoders/decoders which work on streams.  These allow processing
+of the data in chunks to efficiently use memory.  If you have
+large strings in memory, you may want to wrap them with <code class="docutils literal notranslate"><span class="pre">cStringIO</span></code>
+objects and then use these codecs on them to be able to do chunk
+processing as well, e.g. to provide progress information to the
+user.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">StreamWriter</span><span class="p">(</span><span class="n">Codec</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">stream</span><span class="p">,</span><span class="n">errors</span><span class="o">=</span><span class="s1">&#39;strict&#39;</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;Creates a StreamWriter instance.</span>
+
+<span class="sd">           stream must be a file-like object open for writing</span>
+<span class="sd">           (binary) data.</span>
+
+<span class="sd">           The StreamWriter may implement different error handling</span>
+<span class="sd">           schemes by providing the errors keyword argument.</span>
+<span class="sd">           These parameters are defined:</span>
+
+<span class="sd">             &#39;strict&#39; - raise a ValueError (or a subclass)</span>
+<span class="sd">             &#39;ignore&#39; - ignore the character and continue with the next</span>
+<span class="sd">             &#39;replace&#39;- replace with a suitable replacement character</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span> <span class="o">=</span> <span class="n">stream</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="n">errors</span>
+
+    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">object</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;Writes the object&#39;s contents encoded to self.stream.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span><span class="p">,</span> <span class="n">consumed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">writelines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;Writes the concatenated list of strings to the stream</span>
+<span class="sd">           using .write().</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;Flushes and resets the codec buffers used for keeping state.</span>
+
+<span class="sd">           Calling this method should ensure that the data on the</span>
+<span class="sd">           output is put into a clean state, that allows appending</span>
+<span class="sd">           of new fresh data without having to rescan the whole</span>
+<span class="sd">           stream to recover state.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">,</span> <span class="nb">getattr</span><span class="o">=</span><span class="nb">getattr</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;Inherit all other methods from the underlying stream.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="p">,</span><span class="n">name</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">StreamReader</span><span class="p">(</span><span class="n">Codec</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">stream</span><span class="p">,</span><span class="n">errors</span><span class="o">=</span><span class="s1">&#39;strict&#39;</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;Creates a StreamReader instance.</span>
+
+<span class="sd">           stream must be a file-like object open for reading</span>
+<span class="sd">           (binary) data.</span>
+
+<span class="sd">           The StreamReader may implement different error handling</span>
+<span class="sd">           schemes by providing the errors keyword argument.</span>
+<span class="sd">           These parameters are defined:</span>
+
+<span class="sd">             &#39;strict&#39; - raise a ValueError (or a subclass)</span>
+<span class="sd">             &#39;ignore&#39; - ignore the character and continue with the next</span>
+<span class="sd">             &#39;replace&#39;- replace with a suitable replacement character;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span> <span class="o">=</span> <span class="n">stream</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="n">errors</span>
+
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">size</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;Decodes data from the stream self.stream and returns the</span>
+<span class="sd">           resulting object.</span>
+
+<span class="sd">           size indicates the approximate maximum number of bytes</span>
+<span class="sd">           to read from the stream for decoding purposes.  The</span>
+<span class="sd">           decoder can modify this setting as appropriate.  The</span>
+<span class="sd">           default value -1 indicates to read and decode as much</span>
+<span class="sd">           as possible.  size is intended to prevent having to</span>
+<span class="sd">           decode huge files in one step.</span>
+
+<span class="sd">           The method should use a greedy read strategy meaning</span>
+<span class="sd">           that it should read as much data as is allowed within</span>
+<span class="sd">           the definition of the encoding and the given size, e.g.</span>
+<span class="sd">           if optional encoding endings or state markers are</span>
+<span class="sd">           available on the stream, these should be read too.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Unsliced reading:</span>
+        <span class="k">if</span> <span class="n">size</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">read</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Sliced reading:</span>
+        <span class="n">read</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">read</span>
+        <span class="n">decode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decode</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="nb">object</span><span class="p">,</span> <span class="n">decodedbytes</span> <span class="o">=</span> <span class="n">decode</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">,</span><span class="n">why</span><span class="p">:</span>
+                <span class="c1"># This method is slow but should work under pretty</span>
+                <span class="c1"># much all conditions; at most 10 tries are made</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="n">newdata</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">newdata</span> <span class="ow">or</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
+                    <span class="k">raise</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">data</span> <span class="o">+</span> <span class="n">newdata</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">object</span>
+
+    <span class="k">def</span> <span class="nf">readline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;Read one line from the input stream and return the</span>
+<span class="sd">           decoded data.</span>
+
+<span class="sd">           Note: Unlike the .readlines() method, this method</span>
+<span class="sd">           inherits the line breaking knowledge from the</span>
+<span class="sd">           underlying stream&#39;s .readline() method -- there is</span>
+<span class="sd">           currently no support for line breaking using the codec</span>
+<span class="sd">           decoder due to lack of line buffering.  Subclasses</span>
+<span class="sd">           should however, if possible, try to implement this</span>
+<span class="sd">           method using their own knowledge of line breaking.</span>
+
+<span class="sd">           size, if given, is passed as size argument to the</span>
+<span class="sd">           stream&#39;s .readline() method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">readline</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">readlines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sizehint</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;Read all lines available on the input stream</span>
+<span class="sd">           and return them as list of lines.</span>
+
+<span class="sd">           Line breaks are implemented using the codec&#39;s decoder</span>
+<span class="sd">           method and are included in the list entries.</span>
+
+<span class="sd">           sizehint, if given, is passed as size argument to the</span>
+<span class="sd">           stream&#39;s .read() method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">sizehint</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">sizehint</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">splitlines</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;Resets the codec buffers used for keeping state.</span>
+
+<span class="sd">           Note that no stream repositioning should take place.</span>
+<span class="sd">           This method is primarily intended to be able to recover</span>
+<span class="sd">           from decoding errors.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">,</span> <span class="nb">getattr</span><span class="o">=</span><span class="nb">getattr</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot; Inherit all other methods from the underlying stream.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="p">,</span><span class="n">name</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Stream codec implementors are free to combine the <code class="docutils literal notranslate"><span class="pre">StreamWriter</span></code> and
+<code class="docutils literal notranslate"><span class="pre">StreamReader</span></code> interfaces into one class.  Even combining all these
+with the Codec class should be possible.</p>
+<p>Implementors are free to add additional methods to enhance the
+codec functionality or provide extra state information needed for
+them to work.  The internal codec implementation will only use the
+above interfaces, though.</p>
+<p>It is not required by the Unicode implementation to use these base
+classes, only the interfaces must match; this allows writing
+Codecs as extension types.</p>
+<p>As guideline, large mapping tables should be implemented using
+static C data in separate (shared) extension modules.  That way
+multiple processes can share the same data.</p>
+<p>A tool to auto-convert Unicode mapping files to mapping modules
+should be provided to simplify support for additional mappings
+(see References).</p>
+</section>
+<section id="whitespace">
+<h2><a class="toc-backref" href="#id33">Whitespace</a><a class="headerlink" href="#whitespace" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">.split()</span></code> method will have to know about what is considered
+whitespace in Unicode.</p>
+</section>
+<section id="case-conversion">
+<h2><a class="toc-backref" href="#id34">Case Conversion</a><a class="headerlink" href="#case-conversion" title="Permalink to this headline">¶</a></h2>
+<p>Case conversion is rather complicated with Unicode data, since
+there are many different conditions to respect.  See</p>
+<blockquote>
+<div><p><a class="reference external" href="http://www.unicode.org/unicode/reports/tr13/">http://www.unicode.org/unicode/reports/tr13/</a></p>
+</div></blockquote>
+<p>for some guidelines on implementing case conversion.</p>
+<p>For Python, we should only implement the 1-1 conversions included
+in Unicode.  Locale dependent and other special case conversions
+(see the Unicode standard file SpecialCasing.txt) should be left
+to user land routines and not go into the core interpreter.</p>
+<p>The methods <code class="docutils literal notranslate"><span class="pre">.capitalize()</span></code> and <code class="docutils literal notranslate"><span class="pre">.iscapitalized()</span></code> should follow the
+case mapping algorithm defined in the above technical report as
+closely as possible.</p>
+</section>
+<section id="line-breaks">
+<h2><a class="toc-backref" href="#id35">Line Breaks</a><a class="headerlink" href="#line-breaks" title="Permalink to this headline">¶</a></h2>
+<p>Line breaking should be done for all Unicode characters having the
+B property as well as the combinations CRLF, CR, LF (interpreted
+in that order) and other special line separators defined by the
+standard.</p>
+<p>The Unicode type should provide a <code class="docutils literal notranslate"><span class="pre">.splitlines()</span></code> method which
+returns a list of lines according to the above specification. See
+Unicode Methods.</p>
+</section>
+<section id="unicode-character-properties">
+<h2><a class="toc-backref" href="#id36">Unicode Character Properties</a><a class="headerlink" href="#unicode-character-properties" title="Permalink to this headline">¶</a></h2>
+<p>A separate module “unicodedata” should provide a compact interface
+to all Unicode character properties defined in the standard’s
+UnicodeData.txt file.</p>
+<p>Among other things, these properties provide ways to recognize
+numbers, digits, spaces, whitespace, etc.</p>
+<p>Since this module will have to provide access to all Unicode
+characters, it will eventually have to contain the data from
+UnicodeData.txt which takes up around 600kB.  For this reason, the
+data should be stored in static C data.  This enables compilation
+as shared module which the underlying OS can shared between
+processes (unlike normal Python code modules).</p>
+<p>There should be a standard Python interface for accessing this
+information so that other implementors can plug in their own
+possibly enhanced versions, e.g. ones that do decompressing of the
+data on-the-fly.</p>
+</section>
+<section id="private-code-point-areas">
+<h2><a class="toc-backref" href="#id37">Private Code Point Areas</a><a class="headerlink" href="#private-code-point-areas" title="Permalink to this headline">¶</a></h2>
+<p>Support for these is left to user land Codecs and not explicitly
+integrated into the core.  Note that due to the Internal Format
+being implemented, only the area between <code class="docutils literal notranslate"><span class="pre">\uE000</span></code> and <code class="docutils literal notranslate"><span class="pre">\uF8FF</span></code> is
+usable for private encodings.</p>
+</section>
+<section id="internal-format">
+<h2><a class="toc-backref" href="#id38">Internal Format</a><a class="headerlink" href="#internal-format" title="Permalink to this headline">¶</a></h2>
+<p>The internal format for Unicode objects should use a Python
+specific fixed format &lt;PythonUnicode&gt; implemented as ‘unsigned
+short’ (or another unsigned numeric type having 16 bits).  Byte
+order is platform dependent.</p>
+<p>This format will hold UTF-16 encodings of the corresponding
+Unicode ordinals.  The Python Unicode implementation will address
+these values as if they were UCS-2 values. UCS-2 and UTF-16 are
+the same for all currently defined Unicode character points.
+UTF-16 without surrogates provides access to about 64k characters
+and covers all characters in the Basic Multilingual Plane (BMP) of
+Unicode.</p>
+<p>It is the Codec’s responsibility to ensure that the data they pass
+to the Unicode object constructor respects this assumption.  The
+constructor does not check the data for Unicode compliance or use
+of surrogates.</p>
+<p>Future implementations can extend the 32 bit restriction to the
+full set of all UTF-16 addressable characters (around 1M
+characters).</p>
+<p>The Unicode API should provide interface routines from
+&lt;PythonUnicode&gt; to the compiler’s wchar_t which can be 16 or 32
+bit depending on the compiler/libc/platform being used.</p>
+<p>Unicode objects should have a pointer to a cached Python string
+object &lt;defenc&gt; holding the object’s value using the &lt;default
+encoding&gt;.  This is needed for performance and internal parsing
+(see Internal Argument Parsing) reasons.  The buffer is filled
+when the first conversion request to the &lt;default encoding&gt; is
+issued on the object.</p>
+<p>Interning is not needed (for now), since Python identifiers are
+defined as being ASCII only.</p>
+<p><code class="docutils literal notranslate"><span class="pre">codecs.BOM</span></code> should return the byte order mark (BOM) for the format
+used internally.  The codecs module should provide the following
+additional constants for convenience and reference (<code class="docutils literal notranslate"><span class="pre">codecs.BOM</span></code>
+will either be <code class="docutils literal notranslate"><span class="pre">BOM_BE</span></code> or <code class="docutils literal notranslate"><span class="pre">BOM_LE</span></code> depending on the platform):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">BOM_BE</span><span class="p">:</span> <span class="s1">&#39;</span><span class="se">\376\377</span><span class="s1">&#39;</span>
+  <span class="p">(</span><span class="n">corresponds</span> <span class="n">to</span> <span class="n">Unicode</span> <span class="n">U</span><span class="o">+</span><span class="mi">0000</span><span class="n">FEFF</span> <span class="ow">in</span> <span class="n">UTF</span><span class="o">-</span><span class="mi">16</span> <span class="n">on</span> <span class="n">big</span> <span class="n">endian</span>
+   <span class="n">platforms</span> <span class="o">==</span> <span class="n">ZERO</span> <span class="n">WIDTH</span> <span class="n">NO</span><span class="o">-</span><span class="n">BREAK</span> <span class="n">SPACE</span><span class="p">)</span>
+
+<span class="n">BOM_LE</span><span class="p">:</span> <span class="s1">&#39;</span><span class="se">\377\376</span><span class="s1">&#39;</span>
+  <span class="p">(</span><span class="n">corresponds</span> <span class="n">to</span> <span class="n">Unicode</span> <span class="n">U</span><span class="o">+</span><span class="mi">0000</span><span class="n">FFFE</span> <span class="ow">in</span> <span class="n">UTF</span><span class="o">-</span><span class="mi">16</span> <span class="n">on</span> <span class="n">little</span> <span class="n">endian</span>
+   <span class="n">platforms</span> <span class="o">==</span> <span class="n">defined</span> <span class="k">as</span> <span class="n">being</span> <span class="n">an</span> <span class="n">illegal</span> <span class="n">Unicode</span> <span class="n">character</span><span class="p">)</span>
+
+<span class="n">BOM4_BE</span><span class="p">:</span> <span class="s1">&#39;</span><span class="se">\000\000\376\377</span><span class="s1">&#39;</span>
+  <span class="p">(</span><span class="n">corresponds</span> <span class="n">to</span> <span class="n">Unicode</span> <span class="n">U</span><span class="o">+</span><span class="mi">0000</span><span class="n">FEFF</span> <span class="ow">in</span> <span class="n">UCS</span><span class="o">-</span><span class="mi">4</span><span class="p">)</span>
+
+<span class="n">BOM4_LE</span><span class="p">:</span> <span class="s1">&#39;</span><span class="se">\377\376\000\000</span><span class="s1">&#39;</span>
+  <span class="p">(</span><span class="n">corresponds</span> <span class="n">to</span> <span class="n">Unicode</span> <span class="n">U</span><span class="o">+</span><span class="mi">0000</span><span class="n">FFFE</span> <span class="ow">in</span> <span class="n">UCS</span><span class="o">-</span><span class="mi">4</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that Unicode sees big endian byte order as being “correct”.
+The swapped order is taken to be an indicator for a “wrong”
+format, hence the illegal character definition.</p>
+<p>The configure script should provide aid in deciding whether Python
+can use the native <code class="docutils literal notranslate"><span class="pre">wchar_t</span></code> type or not (it has to be a 16-bit
+unsigned type).</p>
+</section>
+<section id="buffer-interface">
+<h2><a class="toc-backref" href="#id39">Buffer Interface</a><a class="headerlink" href="#buffer-interface" title="Permalink to this headline">¶</a></h2>
+<p>Implement the buffer interface using the &lt;defenc&gt; Python string
+object as basis for <code class="docutils literal notranslate"><span class="pre">bf_getcharbuf</span></code> and the internal buffer for
+<code class="docutils literal notranslate"><span class="pre">bf_getreadbuf</span></code>.  If <code class="docutils literal notranslate"><span class="pre">bf_getcharbuf</span></code> is requested and the &lt;defenc&gt;
+object does not yet exist, it is created first.</p>
+<p>Note that as special case, the parser marker “s#” will not return
+raw Unicode UTF-16 data (which the <code class="docutils literal notranslate"><span class="pre">bf_getreadbuf</span></code> returns), but
+instead tries to encode the Unicode object using the default
+encoding and then returns a pointer to the resulting string object
+(or raises an exception in case the conversion fails).  This was
+done in order to prevent accidentely writing binary data to an
+output stream which the other end might not recognize.</p>
+<p>This has the advantage of being able to write to output streams
+(which typically use this interface) without additional
+specification of the encoding to use.</p>
+<p>If you need to access the read buffer interface of Unicode
+objects, use the <code class="docutils literal notranslate"><span class="pre">PyObject_AsReadBuffer()</span></code> interface.</p>
+<p>The internal format can also be accessed using the
+‘unicode-internal’ codec, e.g. via <code class="docutils literal notranslate"><span class="pre">u.encode('unicode-internal')</span></code>.</p>
+</section>
+<section id="pickle-marshalling">
+<h2><a class="toc-backref" href="#id40">Pickle/Marshalling</a><a class="headerlink" href="#pickle-marshalling" title="Permalink to this headline">¶</a></h2>
+<p>Should have native Unicode object support.  The objects should be
+encoded using platform independent encodings.</p>
+<p>Marshal should use UTF-8 and Pickle should either choose
+Raw-Unicode-Escape (in text mode) or UTF-8 (in binary mode) as
+encoding.  Using UTF-8 instead of UTF-16 has the advantage of
+eliminating the need to store a BOM mark.</p>
+</section>
+<section id="regular-expressions">
+<h2><a class="toc-backref" href="#id41">Regular Expressions</a><a class="headerlink" href="#regular-expressions" title="Permalink to this headline">¶</a></h2>
+<p>Secret Labs AB is working on a Unicode-aware regular expression
+machinery.  It works on plain 8-bit, UCS-2, and (optionally) UCS-4
+internal character buffers.</p>
+<p>Also see</p>
+<blockquote>
+<div><p><a class="reference external" href="http://www.unicode.org/unicode/reports/tr18/">http://www.unicode.org/unicode/reports/tr18/</a></p>
+</div></blockquote>
+<p>for some remarks on how to treat Unicode REs.</p>
+</section>
+<section id="formatting-markers">
+<h2><a class="toc-backref" href="#id42">Formatting Markers</a><a class="headerlink" href="#formatting-markers" title="Permalink to this headline">¶</a></h2>
+<p>Format markers are used in Python format strings.  If Python
+strings are used as format strings, the following interpretations
+should be in effect:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">:</span> <span class="n">For</span> <span class="n">Unicode</span> <span class="n">objects</span> <span class="n">this</span> <span class="n">will</span> <span class="n">cause</span> <span class="n">coercion</span> <span class="n">of</span> <span class="n">the</span>
+      <span class="n">whole</span> <span class="nb">format</span> <span class="n">string</span> <span class="n">to</span> <span class="n">Unicode</span><span class="o">.</span>  <span class="n">Note</span> <span class="n">that</span> <span class="n">you</span> <span class="n">should</span> <span class="n">use</span>
+      <span class="n">a</span> <span class="n">Unicode</span> <span class="nb">format</span> <span class="n">string</span> <span class="n">to</span> <span class="n">start</span> <span class="k">with</span> <span class="k">for</span> <span class="n">performance</span>
+      <span class="n">reasons</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>In case the format string is an Unicode object, all parameters are
+coerced to Unicode first and then put together and formatted
+according to the format string.  Numbers are first converted to
+strings and then to Unicode.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">:</span> <span class="n">Python</span> <span class="n">strings</span> <span class="n">are</span> <span class="n">interpreted</span> <span class="k">as</span> <span class="n">Unicode</span>
+      <span class="n">string</span> <span class="n">using</span> <span class="n">the</span> <span class="o">&lt;</span><span class="n">default</span> <span class="n">encoding</span><span class="o">&gt;.</span>  <span class="n">Unicode</span> <span class="n">objects</span> <span class="n">are</span>
+      <span class="n">taken</span> <span class="k">as</span> <span class="ow">is</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>All other string formatters should work accordingly.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="sa">u</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="sa">u</span><span class="s2">&quot;abc&quot;</span><span class="p">,</span> <span class="s2">&quot;abc&quot;</span><span class="p">)</span>  <span class="o">==</span>  <span class="sa">u</span><span class="s2">&quot;abc abc&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="internal-argument-parsing">
+<h2><a class="toc-backref" href="#id43">Internal Argument Parsing</a><a class="headerlink" href="#internal-argument-parsing" title="Permalink to this headline">¶</a></h2>
+<p>These markers are used by the <code class="docutils literal notranslate"><span class="pre">PyArg_ParseTuple()</span></code> APIs:</p>
+<dl>
+<dt>“U”</dt><dd><p>Check for Unicode object and return a pointer to it</p>
+</dd>
+<dt>“s”</dt><dd><p>For Unicode objects: return a pointer to the object’s
+&lt;defenc&gt; buffer (which uses the &lt;default encoding&gt;).</p>
+</dd>
+<dt>“s#”</dt><dd><p>Access to the default encoded version of the Unicode object
+(see Buffer Interface); note that the length relates to
+the length of the default encoded string rather than the
+Unicode object length.</p>
+</dd>
+<dt>“t#”</dt><dd><p>Same as “s#”.</p>
+</dd>
+<dt>“es”</dt><dd><p>Takes two parameters: encoding (<code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">char</span> <span class="pre">*</span></code>) and buffer
+(<code class="docutils literal notranslate"><span class="pre">char</span> <span class="pre">**</span></code>).</p>
+<p>The input object is first coerced to Unicode in the usual
+way and then encoded into a string using the given
+encoding.</p>
+<p>On output, a buffer of the needed size is allocated and
+returned through <code class="docutils literal notranslate"><span class="pre">*buffer</span></code> as NULL-terminated string.  The
+encoded may not contain embedded NULL characters.  The
+caller is responsible for calling <code class="docutils literal notranslate"><span class="pre">PyMem_Free()</span></code> to free the
+allocated <code class="docutils literal notranslate"><span class="pre">*buffer</span></code> after usage.</p>
+</dd>
+<dt>“es#”</dt><dd><p>Takes three parameters: encoding (<code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">char</span> <span class="pre">*</span></code>), buffer
+(<code class="docutils literal notranslate"><span class="pre">char</span> <span class="pre">**</span></code>) and buffer_len (<code class="docutils literal notranslate"><span class="pre">int</span> <span class="pre">*</span></code>).</p>
+<p>The input object is first coerced to Unicode in the usual
+way and then encoded into a string using the given
+encoding.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">*buffer</span></code> is non-NULL, <code class="docutils literal notranslate"><span class="pre">*buffer_len</span></code> must be set to
+<code class="docutils literal notranslate"><span class="pre">sizeof(buffer)</span></code> on input. Output is then copied to <code class="docutils literal notranslate"><span class="pre">*buffer</span></code>.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">*buffer</span></code> is NULL, a buffer of the needed size is
+allocated and output copied into it.  <code class="docutils literal notranslate"><span class="pre">*buffer</span></code> is then
+updated to point to the allocated memory area.  The caller
+is responsible for calling <code class="docutils literal notranslate"><span class="pre">PyMem_Free()</span></code> to free the
+allocated <code class="docutils literal notranslate"><span class="pre">*buffer</span></code> after usage.</p>
+<p>In both cases <code class="docutils literal notranslate"><span class="pre">*buffer_len</span></code> is updated to the number of
+characters written (excluding the trailing NULL-byte).
+The output buffer is assured to be NULL-terminated.</p>
+</dd>
+</dl>
+<p>Examples:</p>
+<p>Using “es#” with auto-allocation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>static PyObject *
+test_parser(PyObject *self,
+            PyObject *args)
+{
+    PyObject *str;
+    const char *encoding = &quot;latin-1&quot;;
+    char *buffer = NULL;
+    int buffer_len = 0;
+
+    if (!PyArg_ParseTuple(args, &quot;es#:test_parser&quot;,
+                          encoding, &amp;buffer, &amp;buffer_len))
+        return NULL;
+    if (!buffer) {
+        PyErr_SetString(PyExc_SystemError,
+                        &quot;buffer is NULL&quot;);
+        return NULL;
+    }
+    str = PyString_FromStringAndSize(buffer, buffer_len);
+    PyMem_Free(buffer);
+    return str;
+}
+</pre></div>
+</div>
+<p>Using “es” with auto-allocation returning a NULL-terminated string:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>static PyObject *
+test_parser(PyObject *self,
+            PyObject *args)
+{
+    PyObject *str;
+    const char *encoding = &quot;latin-1&quot;;
+    char *buffer = NULL;
+
+    if (!PyArg_ParseTuple(args, &quot;es:test_parser&quot;,
+                          encoding, &amp;buffer))
+        return NULL;
+    if (!buffer) {
+        PyErr_SetString(PyExc_SystemError,
+                        &quot;buffer is NULL&quot;);
+        return NULL;
+    }
+    str = PyString_FromString(buffer);
+    PyMem_Free(buffer);
+    return str;
+}
+</pre></div>
+</div>
+<p>Using “es#” with a pre-allocated buffer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>static PyObject *
+test_parser(PyObject *self,
+            PyObject *args)
+{
+    PyObject *str;
+    const char *encoding = &quot;latin-1&quot;;
+    char _buffer[10];
+    char *buffer = _buffer;
+    int buffer_len = sizeof(_buffer);
+
+    if (!PyArg_ParseTuple(args, &quot;es#:test_parser&quot;,
+                          encoding, &amp;buffer, &amp;buffer_len))
+        return NULL;
+    if (!buffer) {
+        PyErr_SetString(PyExc_SystemError,
+                        &quot;buffer is NULL&quot;);
+        return NULL;
+    }
+    str = PyString_FromStringAndSize(buffer, buffer_len);
+    return str;
+}
+</pre></div>
+</div>
+</section>
+<section id="file-stream-output">
+<h2><a class="toc-backref" href="#id44">File/Stream Output</a><a class="headerlink" href="#file-stream-output" title="Permalink to this headline">¶</a></h2>
+<p>Since file.write(object) and most other stream writers use the
+“s#” or “t#” argument parsing marker for querying the data to
+write, the default encoded string version of the Unicode object
+will be written to the streams (see Buffer Interface).</p>
+<p>For explicit handling of files using Unicode, the standard stream
+codecs as available through the codecs module should be used.</p>
+<p>The codecs module should provide a short-cut
+open(filename,mode,encoding) available which also assures that
+mode contains the ‘b’ character when needed.</p>
+</section>
+<section id="file-stream-input">
+<h2><a class="toc-backref" href="#id45">File/Stream Input</a><a class="headerlink" href="#file-stream-input" title="Permalink to this headline">¶</a></h2>
+<p>Only the user knows what encoding the input data uses, so no
+special magic is applied.  The user will have to explicitly
+convert the string data to Unicode objects as needed or use the
+file wrappers defined in the codecs module (see File/Stream
+Output).</p>
+</section>
+<section id="unicode-methods-attributes">
+<h2><a class="toc-backref" href="#id46">Unicode Methods &amp; Attributes</a><a class="headerlink" href="#unicode-methods-attributes" title="Permalink to this headline">¶</a></h2>
+<p>All Python string methods, plus:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">.</span><span class="n">encode</span><span class="p">([</span><span class="n">encoding</span><span class="o">=&lt;</span><span class="n">default</span> <span class="n">encoding</span><span class="o">&gt;</span><span class="p">][,</span><span class="n">errors</span><span class="o">=</span><span class="s2">&quot;strict&quot;</span><span class="p">])</span>
+   <span class="o">--&gt;</span> <span class="n">see</span> <span class="n">Unicode</span> <span class="n">Output</span>
+
+<span class="o">.</span><span class="n">splitlines</span><span class="p">([</span><span class="n">include_breaks</span><span class="o">=</span><span class="mi">0</span><span class="p">])</span>
+   <span class="o">--&gt;</span> <span class="n">breaks</span> <span class="n">the</span> <span class="n">Unicode</span> <span class="n">string</span> <span class="n">into</span> <span class="n">a</span> <span class="nb">list</span> <span class="n">of</span> <span class="p">(</span><span class="n">Unicode</span><span class="p">)</span> <span class="n">lines</span><span class="p">;</span>
+       <span class="n">returns</span> <span class="n">the</span> <span class="n">lines</span> <span class="k">with</span> <span class="n">line</span> <span class="n">breaks</span> <span class="n">included</span><span class="p">,</span> <span class="k">if</span>
+       <span class="n">include_breaks</span> <span class="ow">is</span> <span class="n">true</span><span class="o">.</span>  <span class="n">See</span> <span class="n">Line</span> <span class="n">Breaks</span> <span class="k">for</span> <span class="n">a</span>
+       <span class="n">specification</span> <span class="n">of</span> <span class="n">how</span> <span class="n">line</span> <span class="n">breaking</span> <span class="ow">is</span> <span class="n">done</span><span class="o">.</span>
+</pre></div>
+</div>
+</section>
+<section id="code-base">
+<h2><a class="toc-backref" href="#id47">Code Base</a><a class="headerlink" href="#code-base" title="Permalink to this headline">¶</a></h2>
+<p>We should use Fredrik Lundh’s Unicode object implementation as
+basis. It already implements most of the string methods needed
+and provides a well written code base which we can build upon.</p>
+<p>The object sharing implemented in Fredrik’s implementation should
+be dropped.</p>
+</section>
+<section id="test-cases">
+<h2><a class="toc-backref" href="#id48">Test Cases</a><a class="headerlink" href="#test-cases" title="Permalink to this headline">¶</a></h2>
+<p>Test cases should follow those in Lib/test/test_string.py and
+include additional checks for the Codec Registry and the Standard
+Codecs.</p>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#id49">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Unicode Consortium: <a class="reference external" href="http://www.unicode.org/">http://www.unicode.org/</a></p></li>
+<li><p>Unicode FAQ: <a class="reference external" href="http://www.unicode.org/unicode/faq/">http://www.unicode.org/unicode/faq/</a></p></li>
+<li><p>Unicode 3.0: <a class="reference external" href="http://www.unicode.org/unicode/standard/versions/Unicode3.0.html">http://www.unicode.org/unicode/standard/versions/Unicode3.0.html</a></p></li>
+<li><p>Unicode-TechReports: <a class="reference external" href="http://www.unicode.org/unicode/reports/techreports.html">http://www.unicode.org/unicode/reports/techreports.html</a></p></li>
+<li><p>Unicode-Mappings: <a class="reference external" href="ftp://ftp.unicode.org/Public/MAPPINGS/">ftp://ftp.unicode.org/Public/MAPPINGS/</a></p></li>
+<li><p>Introduction to Unicode (a little outdated by still nice to read):
+<a class="reference external" href="http://www.nada.kth.se/i18n/ucs/unicode-iso10646-oview.html">http://www.nada.kth.se/i18n/ucs/unicode-iso10646-oview.html</a></p></li>
+<li><p>For comparison:
+Introducing Unicode to ECMAScript (aka JavaScript) –
+<a class="reference external" href="http://www-4.ibm.com/software/developer/library/internationalization-support.html">http://www-4.ibm.com/software/developer/library/internationalization-support.html</a></p></li>
+<li><p>IANA Character Set Names:
+<a class="reference external" href="ftp://ftp.isi.edu/in-notes/iana/assignments/character-sets">ftp://ftp.isi.edu/in-notes/iana/assignments/character-sets</a></p></li>
+<li><p>Discussion of UTF-8 and Unicode support for POSIX and Linux:
+<a class="reference external" href="http://www.cl.cam.ac.uk/~mgk25/unicode.html">http://www.cl.cam.ac.uk/~mgk25/unicode.html</a></p></li>
+<li><p>Encodings:</p>
+<ul>
+<li><p>Overview: <a class="reference external" href="http://czyborra.com/utf/">http://czyborra.com/utf/</a></p></li>
+<li><p>UCS-2: <a class="reference external" href="http://www.uazone.org/multiling/unicode/ucs2.html">http://www.uazone.org/multiling/unicode/ucs2.html</a></p></li>
+<li><p>UTF-7: Defined in <a class="reference external" href="https://tools.ietf.org/html/rfc2152.html">RFC2152</a>, e.g.
+<a class="reference external" href="http://www.uazone.org/multiling/ml-docs/rfc2152.txt">http://www.uazone.org/multiling/ml-docs/rfc2152.txt</a></p></li>
+<li><p>UTF-8: Defined in <a class="reference external" href="https://tools.ietf.org/html/rfc2279.html">RFC2279</a>, e.g.
+<a class="reference external" href="https://tools.ietf.org/html/rfc2279">https://tools.ietf.org/html/rfc2279</a></p></li>
+<li><p>UTF-16: <a class="reference external" href="http://www.uazone.org/multiling/unicode/wg2n1035.html">http://www.uazone.org/multiling/unicode/wg2n1035.html</a></p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="history-of-this-proposal">
+<h2><a class="toc-backref" href="#id50">History of this Proposal</a><a class="headerlink" href="#history-of-this-proposal" title="Permalink to this headline">¶</a></h2>
+<p>[ed. note: revisions prior to 1.7 are available in the CVS history
+of Misc/unicode.txt from the standard Python distribution.  All
+subsequent history is available via the CVS revisions on this
+file.]</p>
+<section id="id1">
+<h3><a class="toc-backref" href="#id51">1.7</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Added note about the changed behaviour of “s#”.</p></li>
+</ul>
+</section>
+<section id="id2">
+<h3><a class="toc-backref" href="#id52">1.6</a><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Changed &lt;defencstr&gt; to &lt;defenc&gt; since this is the name used in the
+implementation.</p></li>
+<li><p>Added notes about the usage of &lt;defenc&gt; in
+the buffer protocol implementation.</p></li>
+</ul>
+</section>
+<section id="id3">
+<h3><a class="toc-backref" href="#id53">1.5</a><a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Added notes about setting the &lt;default encoding&gt;.</p></li>
+<li><p>Fixed some typos (thanks to Andrew Kuchling).</p></li>
+<li><p>Changed &lt;defencstr&gt; to &lt;utf8str&gt;.</p></li>
+</ul>
+</section>
+<section id="id4">
+<h3><a class="toc-backref" href="#id54">1.4</a><a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Added note about mixed type comparisons and contains tests.</p></li>
+<li><p>Changed treating of Unicode objects in format strings (if
+used with <code class="docutils literal notranslate"><span class="pre">'%s'</span> <span class="pre">%</span> <span class="pre">u</span></code> they will now cause the format string to
+be coerced to Unicode, thus producing a Unicode object on
+return).</p></li>
+<li><p>Added link to IANA charset names (thanks to Lars
+Marius Garshol).</p></li>
+<li><p>Added new codec methods <code class="docutils literal notranslate"><span class="pre">.readline()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">.readlines()</span></code> and <code class="docutils literal notranslate"><span class="pre">.writelines()</span></code>.</p></li>
+</ul>
+</section>
+<section id="id5">
+<h3><a class="toc-backref" href="#id55">1.3</a><a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Added new “es” and “es#” parser markers</p></li>
+</ul>
+</section>
+<section id="id6">
+<h3><a class="toc-backref" href="#id56">1.2</a><a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Removed POD about <code class="docutils literal notranslate"><span class="pre">codecs.open()</span></code></p></li>
+</ul>
+</section>
+<section id="id7">
+<h3><a class="toc-backref" href="#id57">1.1</a><a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Added note about comparisons and hash values.</p></li>
+<li><p>Added note about case mapping algorithms.</p></li>
+<li><p>Changed stream codecs <code class="docutils literal notranslate"><span class="pre">.read()</span></code> and <code class="docutils literal notranslate"><span class="pre">.write()</span></code> method
+to match the standard file-like object
+methods (bytes consumed information is no longer returned by
+the methods)</p></li>
+</ul>
+</section>
+<section id="id8">
+<h3><a class="toc-backref" href="#id58">1.0</a><a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>changed encode Codec method to be symmetric to the decode method
+(they both return (object, data consumed) now and thus become
+interchangeable);</p></li>
+<li><p>removed <code class="docutils literal notranslate"><span class="pre">__init__</span></code> method of Codec class (the
+methods are stateless) and moved the errors argument down to
+the methods;</p></li>
+<li><p>made the Codec design more generic w/r to type
+of input and output objects;</p></li>
+<li><p>changed <code class="docutils literal notranslate"><span class="pre">StreamWriter.flush</span></code> to <code class="docutils literal notranslate"><span class="pre">StreamWriter.reset</span></code> in order to
+avoid overriding the stream’s <code class="docutils literal notranslate"><span class="pre">.flush()</span></code> method;</p></li>
+<li><p>renamed <code class="docutils literal notranslate"><span class="pre">.breaklines()</span></code> to <code class="docutils literal notranslate"><span class="pre">.splitlines()</span></code>;</p></li>
+<li><p>renamed the module unicodec to codecs;</p></li>
+<li><p>modified the File I/O section to refer to the stream codecs.</p></li>
+</ul>
+</section>
+<section id="id9">
+<h3><a class="toc-backref" href="#id59">0.9</a><a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>changed errors keyword argument definition;</p></li>
+<li><p>added ‘replace’ error handling;</p></li>
+<li><p>changed the codec APIs to accept buffer like
+objects on input;</p></li>
+<li><p>some minor typo fixes;</p></li>
+<li><p>added Whitespace section and included references for Unicode characters that
+have the whitespace and the line break characteristic;</p></li>
+<li><p>added note that search functions can expect lower-case encoding names;</p></li>
+<li><p>dropped slicing and offsets in the codec APIs</p></li>
+</ul>
+</section>
+<section id="id10">
+<h3><a class="toc-backref" href="#id60">0.8</a><a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>added encodings package and raw unicode escape encoding;</p></li>
+<li><p>untabified the proposal;</p></li>
+<li><p>added notes on Unicode format strings;</p></li>
+<li><p>added <code class="docutils literal notranslate"><span class="pre">.breaklines()</span></code> method</p></li>
+</ul>
+</section>
+<section id="id11">
+<h3><a class="toc-backref" href="#id61">0.7</a><a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>added a whole new set of codec APIs;</p></li>
+<li><p>added a different encoder lookup scheme;</p></li>
+<li><p>fixed some names</p></li>
+</ul>
+</section>
+<section id="id12">
+<h3><a class="toc-backref" href="#id62">0.6</a><a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>changed “s#” to “t#”;</p></li>
+<li><p>changed &lt;defencbuf&gt; to &lt;defencstr&gt; holding
+a real Python string object;</p></li>
+<li><p>changed Buffer Interface to
+delegate requests to &lt;defencstr&gt;’s buffer interface;</p></li>
+<li><p>removed the explicit reference to the unicodec.codecs dictionary (the
+module can implement this in way fit for the purpose);</p></li>
+<li><p>removed the settable default encoding;</p></li>
+<li><p>move <code class="docutils literal notranslate"><span class="pre">UnicodeError</span></code> from unicodec to exceptions;</p></li>
+<li><p>“s#” not returns the internal data;</p></li>
+<li><p>passed the UCS-2/UTF-16 checking from the Unicode constructor
+to the Codecs</p></li>
+</ul>
+</section>
+<section id="id13">
+<h3><a class="toc-backref" href="#id63">0.5</a><a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>moved <code class="docutils literal notranslate"><span class="pre">sys.bom</span></code> to <code class="docutils literal notranslate"><span class="pre">unicodec.BOM</span></code>;</p></li>
+<li><p>added sections on case mapping,</p></li>
+<li><p>private use encodings and Unicode character properties</p></li>
+</ul>
+</section>
+<section id="id14">
+<h3><a class="toc-backref" href="#id64">0.4</a><a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>added Codec interface, notes on %-formatting,</p></li>
+<li><p>changed some encoding details,</p></li>
+<li><p>added comments on stream wrappers,</p></li>
+<li><p>fixed some discussion points (most important: Internal Format),</p></li>
+<li><p>clarified the ‘unicode-escape’ encoding, added encoding
+references</p></li>
+</ul>
+</section>
+<section id="id15">
+<h3><a class="toc-backref" href="#id65">0.3</a><a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>added references, comments on codec modules, the internal format,
+bf_getcharbuffer and the RE engine;</p></li>
+<li><p>added ‘unicode-escape’
+encoding proposed by Tim Peters and fixed repr(u) accordingly</p></li>
+</ul>
+</section>
+<section id="id16">
+<h3><a class="toc-backref" href="#id66">0.2</a><a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>integrated Guido’s suggestions, added stream codecs and file wrapping</p></li>
+</ul>
+</section>
+<section id="id17">
+<h3><a class="toc-backref" href="#id67">0.1</a><a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>first version</p></li>
+</ul>
+</section>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0100.txt">https://github.com/python/peps/blob/master/pep-0100.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0100.txt">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0001/">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0101/">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0374/">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0391/">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0423/">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0451/">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0471/">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0479/">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0495/">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0558/">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0570/">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0584/">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0586/">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0594/">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3118/">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-0042/" title="previous chapter">PEP 42 – Feature Requests</a></li>
+      <li>Next: <a href="../pep-0101/" title="next chapter">PEP 101 – Doing Python Releases 101</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-0100.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

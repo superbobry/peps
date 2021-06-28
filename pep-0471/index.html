@@ -1,0 +1,1311 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 471 – os.scandir() function – a better and faster directory iterator &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 472 – Support for indexing with keyword arguments" href="../pep-0472/" />
+    <link rel="prev" title="PEP 470 – Removing External Hosting Support on PyPI" href="../pep-0470/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pep-471-os-scandir-function-a-better-and-faster-directory-iterator">
+<h1 class="page-title">PEP 471 – os.scandir() function – a better and faster directory iterator<a class="headerlink" href="#pep-471-os-scandir-function-a-better-and-faster-directory-iterator" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>471</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>os.scandir() function – a better and faster directory iterator</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Ben Hoyt &lt;<a class="reference external" href="mailto:benhoyt&#37;&#52;&#48;gmail&#46;com?subject=PEP%20-1">benhoyt&#32;&#97;t&#32;gmail.com</a>&gt;</p>
+</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even"><p>Victor Stinner &lt;<a class="reference external" href="mailto:vstinner&#37;&#52;&#48;python&#46;org?subject=PEP%20-1">vstinner&#32;&#97;t&#32;python.org</a>&gt;</p>
+</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd"><p>Final</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Standards Track</p>
+</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd"><p>30-May-2014</p>
+</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even"><p>3.5</p>
+</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p>27-Jun-2014, 8-Jul-2014, 14-Jul-2014</p>
+</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#abstract" id="id15">Abstract</a></p></li>
+<li><p><a class="reference internal" href="#rationale" id="id16">Rationale</a></p></li>
+<li><p><a class="reference internal" href="#implementation" id="id17">Implementation</a></p></li>
+<li><p><a class="reference internal" href="#specifics-of-proposal" id="id18">Specifics of proposal</a></p>
+<ul>
+<li><p><a class="reference internal" href="#os-scandir" id="id19">os.scandir()</a></p></li>
+<li><p><a class="reference internal" href="#os-walk" id="id20">os.walk()</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#examples" id="id21">Examples</a></p>
+<ul>
+<li><p><a class="reference internal" href="#notes-on-caching" id="id22">Notes on caching</a></p></li>
+<li><p><a class="reference internal" href="#notes-on-exception-handling" id="id23">Notes on exception handling</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#support" id="id24">Support</a></p></li>
+<li><p><a class="reference internal" href="#use-in-the-wild" id="id25">Use in the wild</a></p></li>
+<li><p><a class="reference internal" href="#rejected-ideas" id="id26">Rejected ideas</a></p>
+<ul>
+<li><p><a class="reference internal" href="#naming" id="id27">Naming</a></p></li>
+<li><p><a class="reference internal" href="#wildcard-support" id="id28">Wildcard support</a></p></li>
+<li><p><a class="reference internal" href="#methods-not-following-symlinks-by-default" id="id29">Methods not following symlinks by default</a></p></li>
+<li><p><a class="reference internal" href="#direntry-attributes-being-properties" id="id30">DirEntry attributes being properties</a></p></li>
+<li><p><a class="reference internal" href="#direntry-fields-being-static-attribute-only-objects" id="id31">DirEntry fields being “static” attribute-only objects</a></p></li>
+<li><p><a class="reference internal" href="#direntry-fields-being-static-with-an-ensure-lstat-option" id="id32">DirEntry fields being static with an ensure_lstat option</a></p></li>
+<li><p><a class="reference internal" href="#return-values-being-name-stat-result-two-tuples" id="id33">Return values being (name, stat_result) two-tuples</a></p></li>
+<li><p><a class="reference internal" href="#return-values-being-overloaded-stat-result-objects" id="id34">Return values being overloaded stat_result objects</a></p></li>
+<li><p><a class="reference internal" href="#return-values-being-pathlib-path-objects" id="id35">Return values being pathlib.Path objects</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#possible-improvements" id="id36">Possible improvements</a></p></li>
+<li><p><a class="reference internal" href="#previous-discussion" id="id37">Previous discussion</a></p></li>
+<li><p><a class="reference internal" href="#id1" id="id38">References</a></p></li>
+<li><p><a class="reference internal" href="#copyright" id="id39">Copyright</a></p></li>
+</ul>
+</div>
+<section id="abstract">
+<h2><a class="toc-backref" href="#id15">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes including a new directory iteration function,
+<code class="docutils literal notranslate"><span class="pre">os.scandir()</span></code>, in the standard library. This new function adds
+useful functionality and increases the speed of <code class="docutils literal notranslate"><span class="pre">os.walk()</span></code> by 2-20
+times (depending on the platform and file system) by avoiding calls to
+<code class="docutils literal notranslate"><span class="pre">os.stat()</span></code> in most cases.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#id16">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Python’s built-in <code class="docutils literal notranslate"><span class="pre">os.walk()</span></code> is significantly slower than it needs
+to be, because – in addition to calling <code class="docutils literal notranslate"><span class="pre">os.listdir()</span></code> on each
+directory – it executes the <code class="docutils literal notranslate"><span class="pre">stat()</span></code> system call or
+<code class="docutils literal notranslate"><span class="pre">GetFileAttributes()</span></code> on each file to determine whether the entry is
+a directory or not.</p>
+<p>But the underlying system calls – <code class="docutils literal notranslate"><span class="pre">FindFirstFile</span></code> /
+<code class="docutils literal notranslate"><span class="pre">FindNextFile</span></code> on Windows and <code class="docutils literal notranslate"><span class="pre">readdir</span></code> on POSIX systems –
+already tell you whether the files returned are directories or not, so
+no further system calls are needed. Further, the Windows system calls
+return all the information for a <code class="docutils literal notranslate"><span class="pre">stat_result</span></code> object on the directory
+entry, such as file size and last modification time.</p>
+<p>In short, you can reduce the number of system calls required for a
+tree function like <code class="docutils literal notranslate"><span class="pre">os.walk()</span></code> from approximately 2N to N, where N
+is the total number of files and directories in the tree. (And because
+directory trees are usually wider than they are deep, it’s often much
+better than this.)</p>
+<p>In practice, removing all those extra system calls makes <code class="docutils literal notranslate"><span class="pre">os.walk()</span></code>
+about <strong>8-9 times as fast on Windows</strong>, and about <strong>2-3 times as fast
+on POSIX systems</strong>. So we’re not talking about micro-
+optimizations. See more <a class="reference external" href="https://github.com/benhoyt/scandir#benchmarks">benchmarks here</a> <a class="footnote-reference brackets" href="#id2" id="id3">1</a>.</p>
+<p>Somewhat relatedly, many people (see Python <a class="reference external" href="http://bugs.python.org/issue11406">Issue 11406</a> <a class="footnote-reference brackets" href="#id4" id="id5">2</a>) are also
+keen on a version of <code class="docutils literal notranslate"><span class="pre">os.listdir()</span></code> that yields filenames as it
+iterates instead of returning them as one big list. This improves
+memory efficiency for iterating very large directories.</p>
+<p>So, as well as providing a <code class="docutils literal notranslate"><span class="pre">scandir()</span></code> iterator function for calling
+directly, Python’s existing <code class="docutils literal notranslate"><span class="pre">os.walk()</span></code> function can be sped up a
+huge amount.</p>
+</section>
+<section id="implementation">
+<h2><a class="toc-backref" href="#id17">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>The implementation of this proposal was written by Ben Hoyt (initial
+version) and Tim Golden (who helped a lot with the C extension
+module). It lives on GitHub at <a class="reference external" href="https://github.com/benhoyt/scandir">benhoyt/scandir</a> <a class="footnote-reference brackets" href="#id7" id="id8">3</a>. (The implementation
+may lag behind the updates to this PEP a little.)</p>
+<p>Note that this module has been used and tested (see “Use in the wild”
+section in this PEP), so it’s more than a proof-of-concept. However,
+it is marked as beta software and is not extensively battle-tested.
+It will need some cleanup and more thorough testing before going into
+the standard library, as well as integration into <code class="docutils literal notranslate"><span class="pre">posixmodule.c</span></code>.</p>
+</section>
+<section id="specifics-of-proposal">
+<h2><a class="toc-backref" href="#id18">Specifics of proposal</a><a class="headerlink" href="#specifics-of-proposal" title="Permalink to this headline">¶</a></h2>
+<section id="os-scandir">
+<h3><a class="toc-backref" href="#id19">os.scandir()</a><a class="headerlink" href="#os-scandir" title="Permalink to this headline">¶</a></h3>
+<p>Specifically, this PEP proposes adding a single function to the <code class="docutils literal notranslate"><span class="pre">os</span></code>
+module in the standard library, <code class="docutils literal notranslate"><span class="pre">scandir</span></code>, that takes a single,
+optional string as its argument:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">scandir</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">generator</span> <span class="n">of</span> <span class="n">DirEntry</span> <span class="n">objects</span>
+</pre></div>
+</div>
+<p>Like <code class="docutils literal notranslate"><span class="pre">listdir</span></code>, <code class="docutils literal notranslate"><span class="pre">scandir</span></code> calls the operating system’s directory
+iteration system calls to get the names of the files in the given
+<code class="docutils literal notranslate"><span class="pre">path</span></code>, but it’s different from <code class="docutils literal notranslate"><span class="pre">listdir</span></code> in two ways:</p>
+<ul class="simple">
+<li><p>Instead of returning bare filename strings, it returns lightweight
+<code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> objects that hold the filename string and provide
+simple methods that allow access to the additional data the
+operating system may have returned.</p></li>
+<li><p>It returns a generator instead of a list, so that <code class="docutils literal notranslate"><span class="pre">scandir</span></code> acts
+as a true iterator instead of returning the full list immediately.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">scandir()</span></code> yields a <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> object for each file and
+sub-directory in <code class="docutils literal notranslate"><span class="pre">path</span></code>. Just like <code class="docutils literal notranslate"><span class="pre">listdir</span></code>, the <code class="docutils literal notranslate"><span class="pre">'.'</span></code>
+and <code class="docutils literal notranslate"><span class="pre">'..'</span></code> pseudo-directories are skipped, and the entries are
+yielded in system-dependent order. Each <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> object has the
+following attributes and methods:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code>: the entry’s filename, relative to the scandir <code class="docutils literal notranslate"><span class="pre">path</span></code>
+argument (corresponds to the return values of <code class="docutils literal notranslate"><span class="pre">os.listdir</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">path</span></code>: the entry’s full path name (not necessarily an absolute
+path) – the equivalent of <code class="docutils literal notranslate"><span class="pre">os.path.join(scandir_path,</span>
+<span class="pre">entry.name)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">inode()</span></code>: return the inode number of the entry. The result is cached on
+the <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> object, use <code class="docutils literal notranslate"><span class="pre">os.stat(entry.path,</span>
+<span class="pre">follow_symlinks=False).st_ino</span></code> to fetch up-to-date information.
+On Unix, no system call is required.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">is_dir(*,</span> <span class="pre">follow_symlinks=True)</span></code>: similar to
+<code class="docutils literal notranslate"><span class="pre">pathlib.Path.is_dir()</span></code>, but the return value is cached on the
+<code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> object; doesn’t require a system call in most cases;
+don’t follow symbolic links if <code class="docutils literal notranslate"><span class="pre">follow_symlinks</span></code> is False</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">is_file(*,</span> <span class="pre">follow_symlinks=True)</span></code>: similar to
+<code class="docutils literal notranslate"><span class="pre">pathlib.Path.is_file()</span></code>, but the return value is cached on the
+<code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> object; doesn’t require a system call in most cases;
+don’t follow symbolic links if <code class="docutils literal notranslate"><span class="pre">follow_symlinks</span></code> is False</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">is_symlink()</span></code>: similar to <code class="docutils literal notranslate"><span class="pre">pathlib.Path.is_symlink()</span></code>, but the
+return value is cached on the <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> object; doesn’t require a
+system call in most cases</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">stat(*,</span> <span class="pre">follow_symlinks=True)</span></code>: like <code class="docutils literal notranslate"><span class="pre">os.stat()</span></code>, but the
+return value is cached on the <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> object; does not require a
+system call on Windows (except for symlinks); don’t follow symbolic links
+(like <code class="docutils literal notranslate"><span class="pre">os.lstat()</span></code>) if <code class="docutils literal notranslate"><span class="pre">follow_symlinks</span></code> is False</p></li>
+</ul>
+<p>All <em>methods</em> may perform system calls in some cases and therefore
+possibly raise <code class="docutils literal notranslate"><span class="pre">OSError</span></code> – see the “Notes on exception handling”
+section for more details.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> attribute and method names were chosen to be the same
+as those in the new <code class="docutils literal notranslate"><span class="pre">pathlib</span></code> module where possible, for
+consistency. The only difference in functionality is that the
+<code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> methods cache their values on the entry object after the
+first call.</p>
+<p>Like the other functions in the <code class="docutils literal notranslate"><span class="pre">os</span></code> module, <code class="docutils literal notranslate"><span class="pre">scandir()</span></code> accepts
+either a bytes or str object for the <code class="docutils literal notranslate"><span class="pre">path</span></code> parameter, and
+returns the <code class="docutils literal notranslate"><span class="pre">DirEntry.name</span></code> and <code class="docutils literal notranslate"><span class="pre">DirEntry.path</span></code> attributes with
+the same type as <code class="docutils literal notranslate"><span class="pre">path</span></code>. However, it is <em>strongly recommended</em>
+to use the str type, as this ensures cross-platform support for
+Unicode filenames. (On Windows, bytes filenames have been deprecated
+since Python 3.3).</p>
+</section>
+<section id="os-walk">
+<h3><a class="toc-backref" href="#id20">os.walk()</a><a class="headerlink" href="#os-walk" title="Permalink to this headline">¶</a></h3>
+<p>As part of this proposal, <code class="docutils literal notranslate"><span class="pre">os.walk()</span></code> will also be modified to use
+<code class="docutils literal notranslate"><span class="pre">scandir()</span></code> rather than <code class="docutils literal notranslate"><span class="pre">listdir()</span></code> and <code class="docutils literal notranslate"><span class="pre">os.path.isdir()</span></code>. This
+will increase the speed of <code class="docutils literal notranslate"><span class="pre">os.walk()</span></code> very significantly (as
+mentioned above, by 2-20 times, depending on the system).</p>
+</section>
+</section>
+<section id="examples">
+<h2><a class="toc-backref" href="#id21">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>First, a very simple example of <code class="docutils literal notranslate"><span class="pre">scandir()</span></code> showing use of the
+<code class="docutils literal notranslate"><span class="pre">DirEntry.name</span></code> attribute and the <code class="docutils literal notranslate"><span class="pre">DirEntry.is_dir()</span></code> method:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">subdirs</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Yield directory names not starting with &#39;.&#39; under given path.&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">scandir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">entry</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+            <span class="k">yield</span> <span class="n">entry</span><span class="o">.</span><span class="n">name</span>
+</pre></div>
+</div>
+<p>This <code class="docutils literal notranslate"><span class="pre">subdirs()</span></code> function will be significantly faster with scandir
+than <code class="docutils literal notranslate"><span class="pre">os.listdir()</span></code> and <code class="docutils literal notranslate"><span class="pre">os.path.isdir()</span></code> on both Windows and POSIX
+systems, especially on medium-sized or large directories.</p>
+<p>Or, for getting the total size of files in a directory tree, showing
+use of the <code class="docutils literal notranslate"><span class="pre">DirEntry.stat()</span></code> method and <code class="docutils literal notranslate"><span class="pre">DirEntry.path</span></code>
+attribute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_tree_size</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return total size of files in given path and subdirs.&quot;&quot;&quot;</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">scandir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">is_dir</span><span class="p">(</span><span class="n">follow_symlinks</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="n">total</span> <span class="o">+=</span> <span class="n">get_tree_size</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">total</span> <span class="o">+=</span> <span class="n">entry</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">follow_symlinks</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">st_size</span>
+    <span class="k">return</span> <span class="n">total</span>
+</pre></div>
+</div>
+<p>This also shows the use of the <code class="docutils literal notranslate"><span class="pre">follow_symlinks</span></code> parameter to
+<code class="docutils literal notranslate"><span class="pre">is_dir()</span></code> – in a recursive function like this, we probably don’t
+want to follow links. (To properly follow links in a recursive
+function like this we’d want special handling for the case where
+following a symlink leads to a recursive loop.)</p>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">get_tree_size()</span></code> will get a huge speed boost on Windows,
+because no extra stat call are needed, but on POSIX systems the size
+information is not returned by the directory iteration functions, so
+this function won’t gain anything there.</p>
+<section id="notes-on-caching">
+<h3><a class="toc-backref" href="#id22">Notes on caching</a><a class="headerlink" href="#notes-on-caching" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> objects are relatively dumb – the <code class="docutils literal notranslate"><span class="pre">name</span></code> and
+<code class="docutils literal notranslate"><span class="pre">path</span></code> attributes are obviously always cached, and the <code class="docutils literal notranslate"><span class="pre">is_X</span></code>
+and <code class="docutils literal notranslate"><span class="pre">stat</span></code> methods cache their values (immediately on Windows via
+<code class="docutils literal notranslate"><span class="pre">FindNextFile</span></code>, and on first use on POSIX systems via a <code class="docutils literal notranslate"><span class="pre">stat</span></code>
+system call) and never refetch from the system.</p>
+<p>For this reason, <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> objects are intended to be used and
+thrown away after iteration, not stored in long-lived data structured
+and the methods called again and again.</p>
+<p>If developers want “refresh” behaviour (for example, for watching a
+file’s size change), they can simply use <code class="docutils literal notranslate"><span class="pre">pathlib.Path</span></code> objects,
+or call the regular <code class="docutils literal notranslate"><span class="pre">os.stat()</span></code> or <code class="docutils literal notranslate"><span class="pre">os.path.getsize()</span></code> functions
+which get fresh data from the operating system every call.</p>
+</section>
+<section id="notes-on-exception-handling">
+<h3><a class="toc-backref" href="#id23">Notes on exception handling</a><a class="headerlink" href="#notes-on-exception-handling" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">DirEntry.is_X()</span></code> and <code class="docutils literal notranslate"><span class="pre">DirEntry.stat()</span></code> are explicitly methods
+rather than attributes or properties, to make it clear that they may
+not be cheap operations (although they often are), and they may do a
+system call. As a result, these methods may raise <code class="docutils literal notranslate"><span class="pre">OSError</span></code>.</p>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">DirEntry.stat()</span></code> will always make a system call on
+POSIX-based systems, and the <code class="docutils literal notranslate"><span class="pre">DirEntry.is_X()</span></code> methods will make a
+<code class="docutils literal notranslate"><span class="pre">stat()</span></code> system call on such systems if <code class="docutils literal notranslate"><span class="pre">readdir()</span></code> does not
+support <code class="docutils literal notranslate"><span class="pre">d_type</span></code> or returns a <code class="docutils literal notranslate"><span class="pre">d_type</span></code> with a value of
+<code class="docutils literal notranslate"><span class="pre">DT_UNKNOWN</span></code>, which can occur under certain conditions or on
+certain file systems.</p>
+<p>Often this does not matter – for example, <code class="docutils literal notranslate"><span class="pre">os.walk()</span></code> as defined in
+the standard library only catches errors around the <code class="docutils literal notranslate"><span class="pre">listdir()</span></code>
+calls.</p>
+<p>Also, because the exception-raising behaviour of the <code class="docutils literal notranslate"><span class="pre">DirEntry.is_X</span></code>
+methods matches that of <code class="docutils literal notranslate"><span class="pre">pathlib</span></code> – which only raises <code class="docutils literal notranslate"><span class="pre">OSError</span></code>
+in the case of permissions or other fatal errors, but returns False
+if the path doesn’t exist or is a broken symlink – it’s often
+not necessary to catch errors around the <code class="docutils literal notranslate"><span class="pre">is_X()</span></code> calls.</p>
+<p>However, when a user requires fine-grained error handling, it may be
+desirable to catch <code class="docutils literal notranslate"><span class="pre">OSError</span></code> around all method calls and handle as
+appropriate.</p>
+<p>For example, below is a version of the <code class="docutils literal notranslate"><span class="pre">get_tree_size()</span></code> example
+shown above, but with fine-grained error handling added:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_tree_size</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return total size of files in path and subdirs. If</span>
+<span class="sd">    is_dir() or stat() fails, print an error message to stderr</span>
+<span class="sd">    and assume zero size (for example, file has been deleted).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">scandir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">is_dir</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">is_dir</span><span class="p">(</span><span class="n">follow_symlinks</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error calling is_dir():&#39;</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">is_dir</span><span class="p">:</span>
+            <span class="n">total</span> <span class="o">+=</span> <span class="n">get_tree_size</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">total</span> <span class="o">+=</span> <span class="n">entry</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">follow_symlinks</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">st_size</span>
+            <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error calling stat():&#39;</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">total</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="support">
+<h2><a class="toc-backref" href="#id24">Support</a><a class="headerlink" href="#support" title="Permalink to this headline">¶</a></h2>
+<p>The scandir module on GitHub has been forked and used quite a bit (see
+“Use in the wild” in this PEP), but there’s also been a fair bit of
+direct support for a scandir-like function from core developers and
+others on the python-dev and python-ideas mailing lists. A sampling:</p>
+<ul class="simple">
+<li><p><strong>python-dev</strong>: a good number of +1’s and very few negatives for
+scandir and <a class="reference external" href="pep-0471.html">PEP 471</a> on <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-June/135217.html">this June 2014 python-dev thread</a></p></li>
+<li><p><strong>Nick Coghlan</strong>, a core Python developer: “I’ve had the local Red
+Hat release engineering team express their displeasure at having to
+stat every file in a network mounted directory tree for info that is
+present in the dirent structure, so a definite +1 to os.scandir from
+me, so long as it makes that info available.”
+[<a class="reference external" href="http://bugs.python.org/issue11406">source1</a>]</p></li>
+<li><p><strong>Tim Golden</strong>, a core Python developer, supports scandir enough to
+have spent time refactoring and significantly improving scandir’s C
+extension module.
+[<a class="reference external" href="https://github.com/tjguk/scandir">source2</a>]</p></li>
+<li><p><strong>Christian Heimes</strong>, a core Python developer: “+1 for something
+like yielddir()”
+[<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2012-November/017772.html">source3</a>]
+and “Indeed! I’d like to see the feature in 3.4 so I can remove my
+own hack from our code base.”
+[<a class="reference external" href="http://bugs.python.org/issue11406">source4</a>]</p></li>
+<li><p><strong>Gregory P. Smith</strong>, a core Python developer: “As 3.4beta1 happens
+tonight, this isn’t going to make 3.4 so i’m bumping this to 3.5.
+I really like the proposed design outlined above.”
+[<a class="reference external" href="http://bugs.python.org/issue11406">source5</a>]</p></li>
+<li><p><strong>Guido van Rossum</strong> on the possibility of adding scandir to Python
+3.5 (as it was too late for 3.4): “The ship has likewise sailed for
+adding scandir() (whether to os or pathlib). By all means experiment
+and get it ready for consideration for 3.5, but I don’t want to add
+it to 3.4.”
+[<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-November/130583.html">source6</a>]</p></li>
+</ul>
+<p>Support for this PEP itself (meta-support?) was given by Nick Coghlan
+on python-dev: “A PEP reviewing all this for 3.5 and proposing a
+specific os.scandir API would be a good thing.”
+[<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-November/130588.html">source7</a>]</p>
+</section>
+<section id="use-in-the-wild">
+<h2><a class="toc-backref" href="#id25">Use in the wild</a><a class="headerlink" href="#use-in-the-wild" title="Permalink to this headline">¶</a></h2>
+<p>To date, the <code class="docutils literal notranslate"><span class="pre">scandir</span></code> implementation is definitely useful, but has
+been clearly marked “beta”, so it’s uncertain how much use of it there
+is in the wild. Ben Hoyt has had several reports from people using it.
+For example:</p>
+<ul class="simple">
+<li><p>Chris F: “I am processing some pretty large directories and was half
+expecting to have to modify getdents. So thanks for saving me the
+effort.” [via personal email]</p></li>
+<li><p>bschollnick: “I wanted to let you know about this, since I am using
+Scandir as a building block for this code. Here’s a good example of
+scandir making a radical performance improvement over os.listdir.”
+[<a class="reference external" href="https://github.com/benhoyt/scandir/issues/19">source8</a>]</p></li>
+<li><p>Avram L: “I’m testing our scandir for a project I’m working on.
+Seems pretty solid, so first thing, just want to say nice work!”
+[via personal email]</p></li>
+<li><p>Matt Z: “I used scandir to dump the contents of a network dir in
+under 15 seconds. 13 root dirs, 60,000 files in the structure. This
+will replace some old VBA code embedded in a spreadsheet that was
+taking 15-20 minutes to do the exact same thing.” [via personal
+email]</p></li>
+</ul>
+<p>Others have <a class="reference external" href="https://github.com/benhoyt/scandir/issues/12">requested a PyPI package</a> <a class="footnote-reference brackets" href="#id9" id="id10">4</a> for it, which has been
+created. See <a class="reference external" href="https://pypi.python.org/pypi/scandir">PyPI package</a> <a class="footnote-reference brackets" href="#id11" id="id12">5</a>.</p>
+<p>GitHub stats don’t mean too much, but scandir does have several
+watchers, issues, forks, etc. Here’s the run-down as of the stats as
+of July 7, 2014:</p>
+<ul class="simple">
+<li><p>Watchers: 17</p></li>
+<li><p>Stars: 57</p></li>
+<li><p>Forks: 20</p></li>
+<li><p>Issues: 4 open, 26 closed</p></li>
+</ul>
+<p>Also, because this PEP will increase the speed of <code class="docutils literal notranslate"><span class="pre">os.walk()</span></code>
+significantly, there are thousands of developers and scripts, and a lot
+of production code, that would benefit from it. For example, on GitHub,
+there are almost as many uses of <code class="docutils literal notranslate"><span class="pre">os.walk</span></code> (194,000) as there are of
+<code class="docutils literal notranslate"><span class="pre">os.mkdir</span></code> (230,000).</p>
+</section>
+<section id="rejected-ideas">
+<h2><a class="toc-backref" href="#id26">Rejected ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<section id="naming">
+<h3><a class="toc-backref" href="#id27">Naming</a><a class="headerlink" href="#naming" title="Permalink to this headline">¶</a></h3>
+<p>The only other real contender for this function’s name was
+<code class="docutils literal notranslate"><span class="pre">iterdir()</span></code>. However, <code class="docutils literal notranslate"><span class="pre">iterX()</span></code> functions in Python (mostly found
+in Python 2) tend to be simple iterator equivalents of their
+non-iterator counterparts. For example, <code class="docutils literal notranslate"><span class="pre">dict.iterkeys()</span></code> is just an
+iterator version of <code class="docutils literal notranslate"><span class="pre">dict.keys()</span></code>, but the objects returned are
+identical. In <code class="docutils literal notranslate"><span class="pre">scandir()</span></code>’s case, however, the return values are
+quite different objects (<code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> objects vs filename strings), so
+this should probably be reflected by a difference in name – hence
+<code class="docutils literal notranslate"><span class="pre">scandir()</span></code>.</p>
+<p>See some <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-June/135228.html">relevant discussion on python-dev</a>.</p>
+</section>
+<section id="wildcard-support">
+<h3><a class="toc-backref" href="#id28">Wildcard support</a><a class="headerlink" href="#wildcard-support" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">FindFirstFile</span></code>/<code class="docutils literal notranslate"><span class="pre">FindNextFile</span></code> on Windows support passing a
+“wildcard” like <code class="docutils literal notranslate"><span class="pre">*.jpg</span></code>, so at first folks (this PEP’s author
+included) felt it would be a good idea to include a
+<code class="docutils literal notranslate"><span class="pre">windows_wildcard</span></code> keyword argument to the <code class="docutils literal notranslate"><span class="pre">scandir</span></code> function so
+users could pass this in.</p>
+<p>However, on further thought and discussion it was decided that this
+would be bad idea, <em>unless it could be made cross-platform</em> (a
+<code class="docutils literal notranslate"><span class="pre">pattern</span></code> keyword argument or similar). This seems easy enough at
+first – just use the OS wildcard support on Windows, and something
+like <code class="docutils literal notranslate"><span class="pre">fnmatch</span></code> or <code class="docutils literal notranslate"><span class="pre">re</span></code> afterwards on POSIX-based systems.</p>
+<p>Unfortunately the exact Windows wildcard matching rules aren’t really
+documented anywhere by Microsoft, and they’re quite quirky (see this
+<a class="reference external" href="http://blogs.msdn.com/b/oldnewthing/archive/2007/12/17/6785519.aspx">blog post</a>),
+meaning it’s very problematic to emulate using <code class="docutils literal notranslate"><span class="pre">fnmatch</span></code> or regexes.</p>
+<p>So the consensus was that Windows wildcard support was a bad idea.
+It would be possible to add at a later date if there’s a
+cross-platform way to achieve it, but not for the initial version.</p>
+<p>Read more on the <a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2012-November/017770.html">this Nov 2012 python-ideas thread</a>
+and this <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-June/135217.html">June 2014 python-dev thread on PEP 471</a>.</p>
+</section>
+<section id="methods-not-following-symlinks-by-default">
+<h3><a class="toc-backref" href="#id29">Methods not following symlinks by default</a><a class="headerlink" href="#methods-not-following-symlinks-by-default" title="Permalink to this headline">¶</a></h3>
+<p>There was much debate on python-dev (see messages in <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-July/135485.html">this thread</a>)
+over whether the <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> methods should follow symbolic links or
+not (when the <code class="docutils literal notranslate"><span class="pre">is_X()</span></code> methods had no <code class="docutils literal notranslate"><span class="pre">follow_symlinks</span></code> parameter).</p>
+<p>Initially they did not (see previous versions of this PEP and the
+scandir.py module), but Victor Stinner made a pretty compelling case on
+python-dev that following symlinks by default is a better idea, because:</p>
+<ul class="simple">
+<li><p>following links is usually what you want (in 92% of cases in the
+standard library, functions using <code class="docutils literal notranslate"><span class="pre">os.listdir()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">os.path.isdir()</span></code> do follow symlinks)</p></li>
+<li><p>that’s the precedent set by the similar functions
+<code class="docutils literal notranslate"><span class="pre">os.path.isdir()</span></code> and <code class="docutils literal notranslate"><span class="pre">pathlib.Path.is_dir()</span></code>, so to do
+otherwise would be confusing</p></li>
+<li><p>with the non-link-following approach, if you wanted to follow links
+you’d have to say something like <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">(entry.is_symlink()</span> <span class="pre">and</span>
+<span class="pre">os.path.isdir(entry.path))</span> <span class="pre">or</span> <span class="pre">entry.is_dir()</span></code>, which is clumsy</p></li>
+</ul>
+<p>As a case in point that shows the non-symlink-following version is
+error prone, this PEP’s author had a bug caused by getting this
+exact test wrong in his initial implementation of <code class="docutils literal notranslate"><span class="pre">scandir.walk()</span></code>
+in scandir.py (see <a class="reference external" href="https://github.com/benhoyt/scandir/issues/4">Issue #4 here</a>).</p>
+<p>In the end there was not total agreement that the methods should
+follow symlinks, but there was basic consensus among the most involved
+participants, and this PEP’s author believes that the above case is
+strong enough to warrant following symlinks by default.</p>
+<p>In addition, it’s straightforward to call the relevant methods with
+<code class="docutils literal notranslate"><span class="pre">follow_symlinks=False</span></code> if the other behaviour is desired.</p>
+</section>
+<section id="direntry-attributes-being-properties">
+<h3><a class="toc-backref" href="#id30">DirEntry attributes being properties</a><a class="headerlink" href="#direntry-attributes-being-properties" title="Permalink to this headline">¶</a></h3>
+<p>In some ways it would be nicer for the <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> <code class="docutils literal notranslate"><span class="pre">is_X()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">stat()</span></code> to be properties instead of methods, to indicate they’re
+very cheap or free. However, this isn’t quite the case, as <code class="docutils literal notranslate"><span class="pre">stat()</span></code>
+will require an OS call on POSIX-based systems but not on Windows.
+Even <code class="docutils literal notranslate"><span class="pre">is_dir()</span></code> and friends may perform an OS call on POSIX-based
+systems if the <code class="docutils literal notranslate"><span class="pre">dirent.d_type</span></code> value is <code class="docutils literal notranslate"><span class="pre">DT_UNKNOWN</span></code> (on certain
+file systems).</p>
+<p>Also, people would expect the attribute access <code class="docutils literal notranslate"><span class="pre">entry.is_dir</span></code> to
+only ever raise <code class="docutils literal notranslate"><span class="pre">AttributeError</span></code>, not <code class="docutils literal notranslate"><span class="pre">OSError</span></code> in the case it
+makes a system call under the covers. Calling code would have to have
+a <code class="docutils literal notranslate"><span class="pre">try</span></code>/<code class="docutils literal notranslate"><span class="pre">except</span></code> around what looks like a simple attribute access,
+and so it’s much better to make them <em>methods</em>.</p>
+<p>See <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-May/126184.html">this May 2013 python-dev thread</a>
+where this PEP author makes this case and there’s agreement from a
+core developers.</p>
+</section>
+<section id="direntry-fields-being-static-attribute-only-objects">
+<h3><a class="toc-backref" href="#id31">DirEntry fields being “static” attribute-only objects</a><a class="headerlink" href="#direntry-fields-being-static-attribute-only-objects" title="Permalink to this headline">¶</a></h3>
+<p>In <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-July/135303.html">this July 2014 python-dev message</a>,
+Paul Moore suggested a solution that was a “thin wrapper round the OS
+feature”, where the <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> object had only static attributes:
+<code class="docutils literal notranslate"><span class="pre">name</span></code>, <code class="docutils literal notranslate"><span class="pre">path</span></code>, and <code class="docutils literal notranslate"><span class="pre">is_X</span></code>, with the <code class="docutils literal notranslate"><span class="pre">st_X</span></code> attributes only
+present on Windows. The idea was to use this simpler, lower-level
+function as a building block for higher-level functions.</p>
+<p>At first there was general agreement that simplifying in this way was
+a good thing. However, there were two problems with this approach.
+First, the assumption is the <code class="docutils literal notranslate"><span class="pre">is_dir</span></code> and similar attributes are
+always present on POSIX, which isn’t the case (if <code class="docutils literal notranslate"><span class="pre">d_type</span></code> is not
+present or is <code class="docutils literal notranslate"><span class="pre">DT_UNKNOWN</span></code>). Second, it’s a much harder-to-use API
+in practice, as even the <code class="docutils literal notranslate"><span class="pre">is_dir</span></code> attributes aren’t always present
+on POSIX, and would need to be tested with <code class="docutils literal notranslate"><span class="pre">hasattr()</span></code> and then
+<code class="docutils literal notranslate"><span class="pre">os.stat()</span></code> called if they weren’t present.</p>
+<p>See <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-July/135312.html">this July 2014 python-dev response</a>
+from this PEP’s author detailing why this option is a non-ideal
+solution, and the subsequent reply from Paul Moore voicing agreement.</p>
+</section>
+<section id="direntry-fields-being-static-with-an-ensure-lstat-option">
+<h3><a class="toc-backref" href="#id32">DirEntry fields being static with an ensure_lstat option</a><a class="headerlink" href="#direntry-fields-being-static-with-an-ensure-lstat-option" title="Permalink to this headline">¶</a></h3>
+<p>Another seemingly simpler and attractive option was suggested by
+Nick Coghlan in this <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-June/135261.html">June 2014 python-dev message</a>:
+make <code class="docutils literal notranslate"><span class="pre">DirEntry.is_X</span></code> and <code class="docutils literal notranslate"><span class="pre">DirEntry.lstat_result</span></code> properties, and
+populate <code class="docutils literal notranslate"><span class="pre">DirEntry.lstat_result</span></code> at iteration time, but only if
+the new argument <code class="docutils literal notranslate"><span class="pre">ensure_lstat=True</span></code> was specified on the
+<code class="docutils literal notranslate"><span class="pre">scandir()</span></code> call.</p>
+<p>This does have the advantage over the above in that you can easily get
+the stat result from <code class="docutils literal notranslate"><span class="pre">scandir()</span></code> if you need it. However, it has the
+serious disadvantage that fine-grained error handling is messy,
+because <code class="docutils literal notranslate"><span class="pre">stat()</span></code> will be called (and hence potentially raise
+<code class="docutils literal notranslate"><span class="pre">OSError</span></code>) during iteration, leading to a rather ugly, hand-made
+iteration loop:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">it</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">scandir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">entry</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="n">handle_error</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+        <span class="k">break</span>
+</pre></div>
+</div>
+<p>Or it means that <code class="docutils literal notranslate"><span class="pre">scandir()</span></code> would have to accept an <code class="docutils literal notranslate"><span class="pre">onerror</span></code>
+argument – a function to call when <code class="docutils literal notranslate"><span class="pre">stat()</span></code> errors occur during
+iteration. This seems to this PEP’s author neither as direct nor as
+Pythonic as <code class="docutils literal notranslate"><span class="pre">try</span></code>/<code class="docutils literal notranslate"><span class="pre">except</span></code> around a <code class="docutils literal notranslate"><span class="pre">DirEntry.stat()</span></code> call.</p>
+<p>Another drawback is that <code class="docutils literal notranslate"><span class="pre">os.scandir()</span></code> is written to make code faster.
+Always calling <code class="docutils literal notranslate"><span class="pre">os.lstat()</span></code> on POSIX would not bring any speedup. In most
+cases, you don’t need the full <code class="docutils literal notranslate"><span class="pre">stat_result</span></code> object – the <code class="docutils literal notranslate"><span class="pre">is_X()</span></code>
+methods are enough and this information is already known.</p>
+<p>See <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-July/135312.html">Ben Hoyt’s July 2014 reply</a>
+to the discussion summarizing this and detailing why he thinks the
+original <a class="reference external" href="pep-0471.html">PEP 471</a> proposal is “the right one” after all.</p>
+</section>
+<section id="return-values-being-name-stat-result-two-tuples">
+<h3><a class="toc-backref" href="#id33">Return values being (name, stat_result) two-tuples</a><a class="headerlink" href="#return-values-being-name-stat-result-two-tuples" title="Permalink to this headline">¶</a></h3>
+<p>Initially this PEP’s author proposed this concept as a function called
+<code class="docutils literal notranslate"><span class="pre">iterdir_stat()</span></code> which yielded two-tuples of (name, stat_result).
+This does have the advantage that there are no new types introduced.
+However, the <code class="docutils literal notranslate"><span class="pre">stat_result</span></code> is only partially filled on POSIX-based
+systems (most fields set to <code class="docutils literal notranslate"><span class="pre">None</span></code> and other quirks), so they’re not
+really <code class="docutils literal notranslate"><span class="pre">stat_result</span></code> objects at all, and this would have to be
+thoroughly documented as different from <code class="docutils literal notranslate"><span class="pre">os.stat()</span></code>.</p>
+<p>Also, Python has good support for proper objects with attributes and
+methods, which makes for a saner and simpler API than two-tuples. It
+also makes the <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> objects more extensible and future-proof
+as operating systems add functionality and we want to include this in
+<code class="docutils literal notranslate"><span class="pre">DirEntry</span></code>.</p>
+<p>See also some previous discussion:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-May/126148.html">May 2013 python-dev thread</a>
+where Nick Coghlan makes the original case for a <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code>-style
+object.</p></li>
+<li><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-June/135244.html">June 2014 python-dev thread</a>
+where Nick Coghlan makes (another) good case against the two-tuple
+approach.</p></li>
+</ul>
+</section>
+<section id="return-values-being-overloaded-stat-result-objects">
+<h3><a class="toc-backref" href="#id34">Return values being overloaded stat_result objects</a><a class="headerlink" href="#return-values-being-overloaded-stat-result-objects" title="Permalink to this headline">¶</a></h3>
+<p>Another alternative discussed was making the return values to be
+overloaded <code class="docutils literal notranslate"><span class="pre">stat_result</span></code> objects with <code class="docutils literal notranslate"><span class="pre">name</span></code> and <code class="docutils literal notranslate"><span class="pre">path</span></code>
+attributes. However, apart from this being a strange (and strained!)
+kind of overloading, this has the same problems mentioned above –
+most of the <code class="docutils literal notranslate"><span class="pre">stat_result</span></code> information is not fetched by
+<code class="docutils literal notranslate"><span class="pre">readdir()</span></code> on POSIX systems, only (part of) the <code class="docutils literal notranslate"><span class="pre">st_mode</span></code> value.</p>
+</section>
+<section id="return-values-being-pathlib-path-objects">
+<h3><a class="toc-backref" href="#id35">Return values being pathlib.Path objects</a><a class="headerlink" href="#return-values-being-pathlib-path-objects" title="Permalink to this headline">¶</a></h3>
+<p>With Antoine Pitrou’s new standard library <code class="docutils literal notranslate"><span class="pre">pathlib</span></code> module, it
+at first seems like a great idea for <code class="docutils literal notranslate"><span class="pre">scandir()</span></code> to return instances
+of <code class="docutils literal notranslate"><span class="pre">pathlib.Path</span></code>. However, <code class="docutils literal notranslate"><span class="pre">pathlib.Path</span></code>’s <code class="docutils literal notranslate"><span class="pre">is_X()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">stat()</span></code> functions are explicitly not cached, whereas <code class="docutils literal notranslate"><span class="pre">scandir</span></code>
+has to cache them by design, because it’s (often) returning values
+from the original directory iteration system call.</p>
+<p>And if the <code class="docutils literal notranslate"><span class="pre">pathlib.Path</span></code> instances returned by <code class="docutils literal notranslate"><span class="pre">scandir</span></code> cached
+stat values, but the ordinary <code class="docutils literal notranslate"><span class="pre">pathlib.Path</span></code> objects explicitly
+don’t, that would be more than a little confusing.</p>
+<p>Guido van Rossum explicitly rejected <code class="docutils literal notranslate"><span class="pre">pathlib.Path</span></code> caching stat in
+the context of scandir <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-November/130583.html">here</a>,
+making <code class="docutils literal notranslate"><span class="pre">pathlib.Path</span></code> objects a bad choice for scandir return
+values.</p>
+</section>
+</section>
+<section id="possible-improvements">
+<h2><a class="toc-backref" href="#id36">Possible improvements</a><a class="headerlink" href="#possible-improvements" title="Permalink to this headline">¶</a></h2>
+<p>There are many possible improvements one could make to scandir, but
+here is a short list of some this PEP’s author has in mind:</p>
+<ul class="simple">
+<li><p>scandir could potentially be further sped up by calling <code class="docutils literal notranslate"><span class="pre">readdir</span></code>
+/ <code class="docutils literal notranslate"><span class="pre">FindNextFile</span></code> say 50 times per <code class="docutils literal notranslate"><span class="pre">Py_BEGIN_ALLOW_THREADS</span></code> block
+so that it stays in the C extension module for longer, and may be
+somewhat faster as a result. This approach hasn’t been tested, but
+was suggested by on Issue 11406 by Antoine Pitrou.
+[<a class="reference external" href="http://bugs.python.org/msg130125">source9</a>]</p></li>
+<li><p>scandir could use a free list to avoid the cost of memory allocation
+for each iteration – a short free list of 10 or maybe even 1 may help.
+Suggested by Victor Stinner on a <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-June/135232.html">python-dev thread on June 27</a> <a class="footnote-reference brackets" href="#id13" id="id14">6</a>.</p></li>
+</ul>
+</section>
+<section id="previous-discussion">
+<h2><a class="toc-backref" href="#id37">Previous discussion</a><a class="headerlink" href="#previous-discussion" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2012-November/017770.html">Original November 2012 thread Ben Hoyt started on python-ideas</a>
+about speeding up <code class="docutils literal notranslate"><span class="pre">os.walk()</span></code></p></li>
+<li><p>Python <a class="reference external" href="http://bugs.python.org/issue11406">Issue 11406</a> <a class="footnote-reference brackets" href="#id4" id="id6">2</a>, which includes the original proposal for a
+scandir-like function</p></li>
+<li><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-May/126119.html">Further May 2013 thread Ben Hoyt started on python-dev</a>
+that refined the <code class="docutils literal notranslate"><span class="pre">scandir()</span></code> API, including Nick Coghlan’s
+suggestion of scandir yielding <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code>-like objects</p></li>
+<li><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-November/130572.html">November 2013 thread Ben Hoyt started on python-dev</a>
+to discuss the interaction between scandir and the new <code class="docutils literal notranslate"><span class="pre">pathlib</span></code>
+module</p></li>
+<li><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-June/135215.html">June 2014 thread Ben Hoyt started on python-dev</a>
+to discuss the first version of this PEP, with extensive discussion
+about the API</p></li>
+<li><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-July/135377.html">First July 2014 thread Ben Hoyt started on python-dev</a>
+to discuss his updates to <a class="reference external" href="pep-0471.html">PEP 471</a></p></li>
+<li><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-July/135485.html">Second July 2014 thread Ben Hoyt started on python-dev</a>
+to discuss the remaining decisions needed to finalize <a class="reference external" href="pep-0471.html">PEP 471</a>,
+specifically whether the <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> methods should follow symlinks
+by default</p></li>
+<li><p><a class="reference external" href="http://stackoverflow.com/questions/2485719/very-quickly-getting-total-size-of-folder">Question on StackOverflow</a>
+about why <code class="docutils literal notranslate"><span class="pre">os.walk()</span></code> is slow and pointers on how to fix it (this
+inspired the author of this PEP early on)</p></li>
+<li><p><a class="reference external" href="https://github.com/benhoyt/betterwalk">BetterWalk</a>, this PEP’s
+author’s previous attempt at this, on which the scandir code is based</p></li>
+</ul>
+</section>
+<section id="id1">
+<h2><a class="toc-backref" href="#id38">References</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dd><p><a class="reference external" href="https://github.com/benhoyt/scandir#benchmarks">https://github.com/benhoyt/scandir#benchmarks</a></p>
+</dd>
+<dt class="label" id="id4"><span class="brackets">2</span><span class="fn-backref">(<a href="#id5">1</a>,<a href="#id6">2</a>)</span></dt>
+<dd><p><a class="reference external" href="http://bugs.python.org/issue11406">http://bugs.python.org/issue11406</a></p>
+</dd>
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id8">3</a></span></dt>
+<dd><p><a class="reference external" href="https://github.com/benhoyt/scandir">https://github.com/benhoyt/scandir</a></p>
+</dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id10">4</a></span></dt>
+<dd><p><a class="reference external" href="https://github.com/benhoyt/scandir/issues/12">https://github.com/benhoyt/scandir/issues/12</a></p>
+</dd>
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id12">5</a></span></dt>
+<dd><p><a class="reference external" href="https://pypi.python.org/pypi/scandir">https://pypi.python.org/pypi/scandir</a></p>
+</dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id14">6</a></span></dt>
+<dd><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-June/135232.html">https://mail.python.org/pipermail/python-dev/2014-June/135232.html</a></p>
+</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#id39">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0471.txt">https://github.com/python/peps/blob/master/pep-0471.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0471.txt">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0001/">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0100/">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0101/">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0374/">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0391/">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0423/">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0451/">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0479/">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0495/">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0558/">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0570/">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0584/">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0586/">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0594/">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3118/">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-0470/" title="previous chapter">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+      <li>Next: <a href="../pep-0472/" title="next chapter">PEP 472 – Support for indexing with keyword arguments</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-0471.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

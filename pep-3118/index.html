@@ -1,0 +1,1617 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 3118 – Revising the buffer protocol &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 3119 – Introducing Abstract Base Classes" href="../pep-3119/" />
+    <link rel="prev" title="PEP 3117 – Postfix type declarations" href="../pep-3117/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pep-3118-revising-the-buffer-protocol">
+<h1 class="page-title">PEP 3118 – Revising the buffer protocol<a class="headerlink" href="#pep-3118-revising-the-buffer-protocol" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>3118</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>Revising the buffer protocol</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Travis Oliphant &lt;<a class="reference external" href="mailto:oliphant&#37;&#52;&#48;ee&#46;byu&#46;edu?subject=PEP%20-1">oliphant&#32;&#97;t&#32;ee.byu.edu</a>&gt;, Carl Banks &lt;<a class="reference external" href="mailto:pythondev&#37;&#52;&#48;aerojockey&#46;com?subject=PEP%20-1">pythondev&#32;&#97;t&#32;aerojockey.com</a>&gt;</p>
+</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even"><p>Final</p>
+</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Standards Track</p>
+</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even"><p>28-Aug-2006</p>
+</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd"><p>3.0</p>
+</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#abstract" id="id2">Abstract</a></p></li>
+<li><p><a class="reference internal" href="#rationale" id="id3">Rationale</a></p></li>
+<li><p><a class="reference internal" href="#proposal-overview" id="id4">Proposal Overview</a></p></li>
+<li><p><a class="reference internal" href="#specification" id="id5">Specification</a></p>
+<ul>
+<li><p><a class="reference internal" href="#access-flags" id="id6">Access flags</a></p></li>
+<li><p><a class="reference internal" href="#the-py-buffer-struct" id="id7">The Py_buffer struct</a></p></li>
+<li><p><a class="reference internal" href="#releasing-the-buffer" id="id8">Releasing the buffer</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#new-c-api-calls-are-proposed" id="id9">New C-API calls are proposed</a></p></li>
+<li><p><a class="reference internal" href="#additions-to-the-struct-string-syntax" id="id10">Additions to the struct string-syntax</a></p></li>
+<li><p><a class="reference internal" href="#examples-of-data-format-descriptions" id="id11">Examples of Data-Format Descriptions</a></p></li>
+<li><p><a class="reference internal" href="#code-to-be-affected" id="id12">Code to be affected</a></p></li>
+<li><p><a class="reference internal" href="#issues-and-details" id="id13">Issues and Details</a></p></li>
+<li><p><a class="reference internal" href="#code" id="id14">Code</a></p></li>
+<li><p><a class="reference internal" href="#examples" id="id15">Examples</a></p>
+<ul>
+<li><p><a class="reference internal" href="#ex-1" id="id16">Ex. 1</a></p></li>
+<li><p><a class="reference internal" href="#ex-2" id="id17">Ex. 2</a></p></li>
+<li><p><a class="reference internal" href="#ex-3" id="id18">Ex.  3</a></p></li>
+<li><p><a class="reference internal" href="#ex-4" id="id19">Ex. 4</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#copyright" id="id20">Copyright</a></p></li>
+</ul>
+</div>
+<section id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes re-designing the buffer interface (<code class="docutils literal notranslate"><span class="pre">PyBufferProcs</span></code>
+function pointers) to improve the way Python allows memory sharing in
+Python 3.0</p>
+<p>In particular, it is proposed that the character buffer portion
+of the API be eliminated and the multiple-segment portion be
+re-designed in conjunction with allowing for strided memory
+to be shared.   In addition, the new buffer interface will
+allow the sharing of any multi-dimensional nature of the
+memory and what data-format the memory contains.</p>
+<p>This interface will allow any extension module to either
+create objects that share memory or create algorithms that
+use and manipulate raw memory from arbitrary objects that
+export the interface.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#id3">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The Python 2.X buffer protocol allows different Python types to
+exchange a pointer to a sequence of internal buffers.  This
+functionality is <em>extremely</em> useful for sharing large segments of
+memory between different high-level objects, but it is too limited and
+has issues:</p>
+<ol class="arabic">
+<li><p>There is the little used “sequence-of-segments” option
+(bf_getsegcount) that is not well motivated.</p></li>
+<li><p>There is the apparently redundant character-buffer option
+(bf_getcharbuffer)</p></li>
+<li><p>There is no way for a consumer to tell the buffer-API-exporting
+object it is “finished” with its view of the memory and
+therefore no way for the exporting object to be sure that it is
+safe to reallocate the pointer to the memory that it owns (for
+example, the array object reallocating its memory after sharing
+it with the buffer object which held the original pointer led
+to the infamous buffer-object problem).</p></li>
+<li><p>Memory is just a pointer with a length. There is no way to
+describe what is “in” the memory (float, int, C-structure, etc.)</p></li>
+<li><p>There is no shape information provided for the memory.  But,
+several array-like Python types could make use of a standard
+way to describe the shape-interpretation of the memory
+(wxPython, GTK, pyQT, CVXOPT, PyVox, Audio and Video
+Libraries, ctypes, NumPy, data-base interfaces, etc.)</p></li>
+<li><p>There is no way to share discontiguous memory (except through
+the sequence of segments notion).</p>
+<p>There are two widely used libraries that use the concept of
+discontiguous memory: PIL and NumPy.  Their view of discontiguous
+arrays is different, though.  The proposed buffer interface allows
+sharing of either memory model.  Exporters will typically use only one
+approach and consumers may choose to support discontiguous
+arrays of each type however they choose.</p>
+<p>NumPy uses the notion of constant striding in each dimension as its
+basic concept of an array. With this concept, a simple sub-region
+of a larger array can be described without copying the data.
+Thus, stride information is the additional information that must be
+shared.</p>
+<p>The PIL uses a more opaque memory representation. Sometimes an
+image is contained in a contiguous segment of memory, but sometimes
+it is contained in an array of pointers to the contiguous segments
+(usually lines) of the image.  The PIL is where the idea of multiple
+buffer segments in the original buffer interface came from.</p>
+<p>NumPy’s strided memory model is used more often in computational
+libraries and because it is so simple it makes sense to support
+memory sharing using this model.  The PIL memory model is sometimes
+used in C-code where a 2-d array can then be accessed using double
+pointer indirection:  e.g. <code class="docutils literal notranslate"><span class="pre">image[i][j]</span></code>.</p>
+<p>The buffer interface should allow the object to export either of these
+memory models.  Consumers are free to either require contiguous memory
+or write code to handle one or both of these memory models.</p>
+</li>
+</ol>
+</section>
+<section id="proposal-overview">
+<h2><a class="toc-backref" href="#id4">Proposal Overview</a><a class="headerlink" href="#proposal-overview" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Eliminate the char-buffer and multiple-segment sections of the
+buffer-protocol.</p></li>
+<li><p>Unify the read/write versions of getting the buffer.</p></li>
+<li><p>Add a new function to the interface that should be called when
+the consumer object is “done” with the memory area.</p></li>
+<li><p>Add a new variable to allow the interface to describe what is in
+memory (unifying what is currently done now in struct and
+array)</p></li>
+<li><p>Add a new variable to allow the protocol to share shape information</p></li>
+<li><p>Add a new variable for sharing stride information</p></li>
+<li><p>Add a new mechanism for sharing arrays that must
+be accessed using pointer indirection.</p></li>
+<li><p>Fix all objects in the core and the standard library to conform
+to the new interface</p></li>
+<li><p>Extend the struct module to handle more format specifiers</p></li>
+<li><p>Extend the buffer object into a new memory object which places
+a Python veneer around the buffer interface.</p></li>
+<li><p>Add a few functions to make it easy to copy contiguous data
+in and out of object supporting the buffer interface.</p></li>
+</ul>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#id5">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>While the new specification allows for complicated memory sharing,
+simple contiguous buffers of bytes can still be obtained from an
+object.  In fact, the new protocol allows a standard mechanism for
+doing this even if the original object is not represented as a
+contiguous chunk of memory.</p>
+<p>The easiest way to obtain a simple contiguous chunk of memory is
+to use the provided C-API to obtain a chunk of memory.</p>
+<p>Change the <code class="docutils literal notranslate"><span class="pre">PyBufferProcs</span></code> structure to</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedef</span> <span class="n">struct</span> <span class="p">{</span>
+     <span class="n">getbufferproc</span> <span class="n">bf_getbuffer</span><span class="p">;</span>
+     <span class="n">releasebufferproc</span> <span class="n">bf_releasebuffer</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">PyBufferProcs</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Both of these routines are optional for a type object</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedef</span> <span class="nb">int</span> <span class="p">(</span><span class="o">*</span><span class="n">getbufferproc</span><span class="p">)(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">obj</span><span class="p">,</span> <span class="n">PyBuffer</span> <span class="o">*</span><span class="n">view</span><span class="p">,</span> <span class="nb">int</span> <span class="n">flags</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This function returns <code class="docutils literal notranslate"><span class="pre">0</span></code> on success and <code class="docutils literal notranslate"><span class="pre">-1</span></code> on failure (and raises an
+error). The first variable is the “exporting” object.  The second
+argument is the address to a bufferinfo structure.  Both arguments must
+never be NULL.</p>
+<p>The third argument indicates what kind of buffer the consumer is
+prepared to deal with and therefore what kind of buffer the exporter
+is allowed to return.  The new buffer interface allows for much more
+complicated memory sharing possibilities.  Some consumers may not be
+able to handle all the complexity but may want to see if the
+exporter will let them take a simpler view to its memory.</p>
+<p>In addition, some exporters may not be able to share memory in every
+possible way and may need to raise errors to signal to some consumers
+that something is just not possible.  These errors should be
+<code class="docutils literal notranslate"><span class="pre">PyErr_BufferError</span></code> unless there is another error that is actually
+causing the problem. The exporter can use flags information to
+simplify how much of the PyBuffer structure is filled in with
+non-default values and/or raise an error if the object can’t support a
+simpler view of its memory.</p>
+<p>The exporter should always fill in all elements of the buffer
+structure (with defaults or NULLs if nothing else is requested). The
+PyBuffer_FillInfo function can be used for simple cases.</p>
+<section id="access-flags">
+<h3><a class="toc-backref" href="#id6">Access flags</a><a class="headerlink" href="#access-flags" title="Permalink to this headline">¶</a></h3>
+<p>Some flags are useful for requesting a specific kind of memory
+segment, while others indicate to the exporter what kind of
+information the consumer can deal with.  If certain information is not
+asked for by the consumer, but the exporter cannot share its memory
+without that information, then a <code class="docutils literal notranslate"><span class="pre">PyErr_BufferError</span></code> should be raised.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyBUF_SIMPLE</span></code></p>
+<blockquote>
+<div><p>This is the default flag state (0). The returned buffer may or may
+not have writable memory.  The format will be assumed to be
+unsigned bytes.  This is a “stand-alone” flag constant.  It never
+needs to be |’d to the others.  The exporter will raise an error if
+it cannot provide such a contiguous buffer of bytes.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">PyBUF_WRITABLE</span></code></p>
+<blockquote>
+<div><p>The returned buffer must be writable.  If it is not writable,
+then raise an error.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">PyBUF_FORMAT</span></code></p>
+<blockquote>
+<div><p>The returned buffer must have true format information if this flag
+is provided.  This would be used when the consumer is going to be
+checking for what ‘kind’ of data is actually stored.  An exporter
+should always be able to provide this information if requested.  If
+format is not explicitly requested then the format must be returned
+as <code class="docutils literal notranslate"><span class="pre">NULL</span></code> (which means “B”, or unsigned bytes)</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">PyBUF_ND</span></code></p>
+<blockquote>
+<div><p>The returned buffer must provide shape information. The memory will
+be assumed C-style contiguous (last dimension varies the fastest).
+The exporter may raise an error if it cannot provide this kind of
+contiguous buffer.  If this is not given then shape will be NULL.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">PyBUF_STRIDES</span></code> (implies <code class="docutils literal notranslate"><span class="pre">PyBUF_ND</span></code>)</p>
+<blockquote>
+<div><p>The returned buffer must provide strides information (i.e. the
+strides cannot be NULL).  This would be used when the consumer can
+handle strided, discontiguous arrays. Handling strides
+automatically assumes you can handle shape. The exporter may raise
+an error if cannot provide a strided-only representation of the
+data (i.e. without the suboffsets).</p>
+</div></blockquote>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">PyBUF_C_CONTIGUOUS</span></code></div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">PyBUF_F_CONTIGUOUS</span></code></div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">PyBUF_ANY_CONTIGUOUS</span></code></div>
+</div>
+<blockquote>
+<div><p>These flags indicate that the returned buffer must be respectively,
+C-contiguous (last dimension varies the fastest), Fortran
+contiguous (first dimension varies the fastest) or either one.
+All of these flags imply PyBUF_STRIDES and guarantee that the
+strides buffer info structure will be filled in correctly.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">PyBUF_INDIRECT</span></code> (implies <code class="docutils literal notranslate"><span class="pre">PyBUF_STRIDES</span></code>)</p>
+<blockquote>
+<div><p>The returned buffer must have suboffsets information (which can be
+NULL if no suboffsets are needed).  This would be used when the
+consumer can handle indirect array referencing implied by these
+suboffsets.</p>
+</div></blockquote>
+<p>Specialized combinations of flags for specific kinds of memory_sharing.</p>
+<blockquote>
+<div><p>Multi-dimensional (but contiguous)</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">PyBUF_CONTIG</span></code> (<code class="docutils literal notranslate"><span class="pre">PyBUF_ND</span> <span class="pre">|</span> <span class="pre">PyBUF_WRITABLE</span></code>)</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">PyBUF_CONTIG_RO</span></code> (<code class="docutils literal notranslate"><span class="pre">PyBUF_ND</span></code>)</div>
+</div>
+</div></blockquote>
+<p>Multi-dimensional using strides but aligned</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">PyBUF_STRIDED</span></code> (<code class="docutils literal notranslate"><span class="pre">PyBUF_STRIDES</span> <span class="pre">|</span> <span class="pre">PyBUF_WRITABLE</span></code>)</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">PyBUF_STRIDED_RO</span></code> (<code class="docutils literal notranslate"><span class="pre">PyBUF_STRIDES</span></code>)</div>
+</div>
+</div></blockquote>
+<p>Multi-dimensional using strides and not necessarily aligned</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">PyBUF_RECORDS</span></code> (<code class="docutils literal notranslate"><span class="pre">PyBUF_STRIDES</span> <span class="pre">|</span> <span class="pre">PyBUF_WRITABLE</span> <span class="pre">|</span> <span class="pre">PyBUF_FORMAT</span></code>)</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">PyBUF_RECORDS_RO</span></code> (<code class="docutils literal notranslate"><span class="pre">PyBUF_STRIDES</span> <span class="pre">|</span> <span class="pre">PyBUF_FORMAT</span></code>)</div>
+</div>
+</div></blockquote>
+<p>Multi-dimensional using sub-offsets</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">PyBUF_FULL</span></code> (<code class="docutils literal notranslate"><span class="pre">PyBUF_INDIRECT</span> <span class="pre">|</span> <span class="pre">PyBUF_WRITABLE</span> <span class="pre">|</span> <span class="pre">PyBUF_FORMAT</span></code>)</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">PyBUF_FULL_RO</span></code> (<code class="docutils literal notranslate"><span class="pre">PyBUF_INDIRECT</span> <span class="pre">|</span> <span class="pre">PyBUF_FORMAT</span></code>)</div>
+</div>
+</div></blockquote>
+</div></blockquote>
+<p>Thus, the consumer simply wanting a contiguous chunk of bytes from
+the object would use <code class="docutils literal notranslate"><span class="pre">PyBUF_SIMPLE</span></code>, while a consumer that understands
+how to make use of the most complicated cases could use <code class="docutils literal notranslate"><span class="pre">PyBUF_FULL</span></code>.</p>
+<p>The format information is only guaranteed to be non-NULL if
+<code class="docutils literal notranslate"><span class="pre">PyBUF_FORMAT</span></code> is in the flag argument, otherwise it is expected the
+consumer will assume unsigned bytes.</p>
+<p>There is a C-API that simple exporting objects can use to fill-in the
+buffer info structure correctly according to the provided flags if a
+contiguous chunk of “unsigned bytes” is all that can be exported.</p>
+</section>
+<section id="the-py-buffer-struct">
+<h3><a class="toc-backref" href="#id7">The Py_buffer struct</a><a class="headerlink" href="#the-py-buffer-struct" title="Permalink to this headline">¶</a></h3>
+<p>The bufferinfo structure is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">bufferinfo</span> <span class="p">{</span>
+     <span class="n">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">;</span>
+     <span class="n">Py_ssize_t</span> <span class="nb">len</span><span class="p">;</span>
+     <span class="nb">int</span> <span class="n">readonly</span><span class="p">;</span>
+     <span class="n">const</span> <span class="n">char</span> <span class="o">*</span><span class="nb">format</span><span class="p">;</span>
+     <span class="nb">int</span> <span class="n">ndim</span><span class="p">;</span>
+     <span class="n">Py_ssize_t</span> <span class="o">*</span><span class="n">shape</span><span class="p">;</span>
+     <span class="n">Py_ssize_t</span> <span class="o">*</span><span class="n">strides</span><span class="p">;</span>
+     <span class="n">Py_ssize_t</span> <span class="o">*</span><span class="n">suboffsets</span><span class="p">;</span>
+     <span class="n">Py_ssize_t</span> <span class="n">itemsize</span><span class="p">;</span>
+     <span class="n">void</span> <span class="o">*</span><span class="n">internal</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">Py_buffer</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Before calling the bf_getbuffer function, the bufferinfo structure can
+be filled with whatever, but the <code class="docutils literal notranslate"><span class="pre">buf</span></code> field must be NULL when
+requesting a new buffer.  Upon return from bf_getbuffer, the
+bufferinfo structure is filled in with relevant information about the
+buffer.  This same bufferinfo structure must be passed to
+bf_releasebuffer (if available) when the consumer is done with the
+memory. The caller is responsible for keeping a reference to obj until
+releasebuffer is called (i.e. the call to bf_getbuffer does not alter
+the reference count of obj).</p>
+<p>The members of the bufferinfo structure are:</p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">buf</span></code></dt><dd><p>a pointer to the start of the memory for the object</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">len</span></code></dt><dd><p>the total bytes of memory the object uses.  This should be the
+same as the product of the shape array multiplied by the number of
+bytes per item of memory.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">readonly</span></code></dt><dd><p>an integer variable to hold whether or not the memory is readonly.
+1 means the memory is readonly, zero means the memory is writable.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">format</span></code></dt><dd><p>a NULL-terminated format-string (following the struct-style syntax
+including extensions) indicating what is in each element of
+memory.  The number of elements is len / itemsize, where itemsize
+is the number of bytes implied by the format.  This can be NULL which
+implies standard unsigned bytes (“B”).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">ndim</span></code></dt><dd><p>a variable storing the number of dimensions the memory represents.
+Must be &gt;=0.  A value of 0 means that shape and strides and suboffsets
+must be <code class="docutils literal notranslate"><span class="pre">NULL</span></code> (i.e. the memory represents a scalar).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">shape</span></code></dt><dd><p>an array of <code class="docutils literal notranslate"><span class="pre">Py_ssize_t</span></code> of length <code class="docutils literal notranslate"><span class="pre">ndims</span></code> indicating the
+shape of the memory as an N-D array.  Note that <code class="docutils literal notranslate"><span class="pre">((*shape)[0]</span> <span class="pre">*</span>
+<span class="pre">...</span> <span class="pre">*</span> <span class="pre">(*shape)[ndims-1])*itemsize</span> <span class="pre">=</span> <span class="pre">len</span></code>.  If ndims is 0 (indicating
+a scalar), then this must be <code class="docutils literal notranslate"><span class="pre">NULL</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">strides</span></code></dt><dd><p>address of a <code class="docutils literal notranslate"><span class="pre">Py_ssize_t*</span></code> variable that will be filled with a
+pointer to an array of <code class="docutils literal notranslate"><span class="pre">Py_ssize_t</span></code> of length <code class="docutils literal notranslate"><span class="pre">ndims</span></code> (or <code class="docutils literal notranslate"><span class="pre">NULL</span></code>
+if <code class="docutils literal notranslate"><span class="pre">ndims</span></code> is 0).  indicating the number of bytes to skip to get to
+the next element in each dimension.  If this is not requested by
+the caller (<code class="docutils literal notranslate"><span class="pre">PyBUF_STRIDES</span></code> is not set), then this should be set
+to NULL which indicates a C-style contiguous array or a
+PyExc_BufferError raised if this is not possible.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">suboffsets</span></code></dt><dd><p>address of a <code class="docutils literal notranslate"><span class="pre">Py_ssize_t</span> <span class="pre">*</span></code> variable that will be filled with a
+pointer to an array of <code class="docutils literal notranslate"><span class="pre">Py_ssize_t</span></code> of length <code class="docutils literal notranslate"><span class="pre">*ndims</span></code>.  If
+these suboffset numbers are &gt;=0, then the value stored along the
+indicated dimension is a pointer and the suboffset value dictates
+how many bytes to add to the pointer after de-referencing.  A
+suboffset value that it negative indicates that no de-referencing
+should occur (striding in a contiguous memory block).  If all
+suboffsets are negative (i.e. no de-referencing is needed, then
+this must be NULL (the default value).  If this is not requested
+by the caller (PyBUF_INDIRECT is not set), then this should be
+set to NULL or an PyExc_BufferError raised if this is not possible.</p>
+<p>For clarity, here is a function that returns a pointer to the
+element in an N-D array pointed to by an N-dimensional index when
+there are both non-NULL strides and suboffsets:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="o">*</span><span class="n">get_item_pointer</span><span class="p">(</span><span class="nb">int</span> <span class="n">ndim</span><span class="p">,</span> <span class="n">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="n">Py_ssize_t</span> <span class="o">*</span><span class="n">strides</span><span class="p">,</span>
+                       <span class="n">Py_ssize_t</span> <span class="o">*</span><span class="n">suboffsets</span><span class="p">,</span> <span class="n">Py_ssize_t</span> <span class="o">*</span><span class="n">indices</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">char</span> <span class="o">*</span><span class="n">pointer</span> <span class="o">=</span> <span class="p">(</span><span class="n">char</span><span class="o">*</span><span class="p">)</span><span class="n">buf</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">i</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">ndim</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">pointer</span> <span class="o">+=</span> <span class="n">strides</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">suboffsets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span><span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
+            <span class="n">pointer</span> <span class="o">=</span> <span class="o">*</span><span class="p">((</span><span class="n">char</span><span class="o">**</span><span class="p">)</span><span class="n">pointer</span><span class="p">)</span> <span class="o">+</span> <span class="n">suboffsets</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">void</span><span class="o">*</span><span class="p">)</span><span class="n">pointer</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Notice the suboffset is added “after” the dereferencing occurs.
+Thus slicing in the ith dimension would add to the suboffsets in
+the (i-1)st dimension.  Slicing in the first dimension would change
+the location of the starting pointer directly (i.e. buf would
+be modified).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">itemsize</span></code></dt><dd><p>This is a storage for the itemsize (in bytes) of each element of the shared
+memory.  It is technically un-necessary as it can be obtained using
+<code class="docutils literal notranslate"><span class="pre">PyBuffer_SizeFromFormat</span></code>, however an exporter may know this
+information without parsing the format string and it is necessary
+to know the itemsize for proper interpretation of striding.
+Therefore, storing it is more convenient and faster.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">internal</span></code></dt><dd><p>This is for use internally by the exporting object.  For example,
+this might be re-cast as an integer by the exporter and used to
+store flags about whether or not the shape, strides, and suboffsets
+arrays must be freed when the buffer is released.   The consumer
+should never alter this value.</p>
+</dd>
+</dl>
+<p>The exporter is responsible for making sure that any memory pointed to
+by buf, format, shape, strides, and suboffsets is valid until
+releasebuffer is called.  If the exporter wants to be able to change
+an object’s shape, strides, and/or suboffsets before releasebuffer is
+called then it should allocate those arrays when getbuffer is called
+(pointing to them in the buffer-info structure provided) and free them
+when releasebuffer is called.</p>
+</section>
+<section id="releasing-the-buffer">
+<h3><a class="toc-backref" href="#id8">Releasing the buffer</a><a class="headerlink" href="#releasing-the-buffer" title="Permalink to this headline">¶</a></h3>
+<p>The same bufferinfo struct should be used in the release-buffer
+interface call.  The caller is responsible for the memory of the
+Py_buffer structure itself.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedef</span> <span class="n">void</span> <span class="p">(</span><span class="o">*</span><span class="n">releasebufferproc</span><span class="p">)(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">obj</span><span class="p">,</span> <span class="n">Py_buffer</span> <span class="o">*</span><span class="n">view</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Callers of getbufferproc must make sure that this function is called
+when memory previously acquired from the object is no longer needed.
+The exporter of the interface must make sure that any memory pointed
+to in the bufferinfo structure remains valid until releasebuffer is
+called.</p>
+<p>If the bf_releasebuffer function is not provided (i.e. it is NULL),
+then it does not ever need to be called.</p>
+<p>Exporters will need to define a bf_releasebuffer function if they can
+re-allocate their memory, strides, shape, suboffsets, or format
+variables which they might share through the struct bufferinfo.
+Several mechanisms could be used to keep track of how many getbuffer
+calls have been made and shared.  Either a single variable could be
+used to keep track of how many “views” have been exported, or a
+linked-list of bufferinfo structures filled in could be maintained in
+each object.</p>
+<p>All that is specifically required by the exporter, however, is to
+ensure that any memory shared through the bufferinfo structure remains
+valid until releasebuffer is called on the bufferinfo structure
+exporting that memory.</p>
+</section>
+</section>
+<section id="new-c-api-calls-are-proposed">
+<h2><a class="toc-backref" href="#id9">New C-API calls are proposed</a><a class="headerlink" href="#new-c-api-calls-are-proposed" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">PyObject_CheckBuffer</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">obj</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Return 1 if the getbuffer function is available otherwise 0.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">PyObject_GetBuffer</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">obj</span><span class="p">,</span> <span class="n">Py_buffer</span> <span class="o">*</span><span class="n">view</span><span class="p">,</span>
+                       <span class="nb">int</span> <span class="n">flags</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This is a C-API version of the getbuffer function call.  It checks to
+make sure object has the required function pointer and issues the
+call.  Returns -1 and raises an error on failure and returns 0 on
+success.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="n">PyBuffer_Release</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">obj</span><span class="p">,</span> <span class="n">Py_buffer</span> <span class="o">*</span><span class="n">view</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This is a C-API version of the releasebuffer function call.  It checks
+to make sure the object has the required function pointer and issues
+the call.  This function always succeeds even if there is no releasebuffer
+function for the object.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span><span class="n">PyObject_GetMemoryView</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">obj</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Return a memory-view object from an object that defines the buffer interface.</p>
+<p>A memory-view object is an extended buffer object that could replace
+the buffer object (but doesn’t have to as that could be kept as a
+simple 1-d memory-view object).  Its C-structure is</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedef</span> <span class="n">struct</span> <span class="p">{</span>
+    <span class="n">PyObject_HEAD</span>
+    <span class="n">PyObject</span> <span class="o">*</span><span class="n">base</span><span class="p">;</span>
+    <span class="n">Py_buffer</span> <span class="n">view</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">PyMemoryViewObject</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>This is functionally similar to the current buffer object except a
+reference to base is kept and the memory view is not re-grabbed.
+Thus, this memory view object holds on to the memory of base until it
+is deleted.</p>
+<p>This memory-view object will support multi-dimensional slicing and be
+the first object provided with Python to do so.  Slices of the
+memory-view object are other memory-view objects with the same base
+but with a different view of the base object.</p>
+<p>When an “element” from the memory-view is returned it is always a
+bytes object whose format should be interpreted by the format
+attribute of the memoryview object.  The struct module can be used to
+“decode” the bytes in Python if desired.  Or the contents can be
+passed to a NumPy array or other object consuming the buffer protocol.</p>
+<p>The Python name will be</p>
+<p><code class="docutils literal notranslate"><span class="pre">__builtin__.memoryview</span></code></p>
+<p>Methods:</p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">__getitem__</span></code>  (will support multi-dimensional slicing)</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">__setitem__</span></code>  (will support multi-dimensional slicing)</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">tobytes</span></code>      (obtain a new bytes-object of a copy of the memory).</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">tolist</span></code>       (obtain a “nested” list of the memory.  Everything
+is interpreted into standard Python objects
+as the struct module unpack would do – in fact
+it uses struct.unpack to accomplish it).</div>
+</div>
+<p>Attributes (taken from the memory of the base object):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">format</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">itemsize</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">shape</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">strides</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">suboffsets</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">readonly</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ndim</span></code></p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Py_ssize_t</span> <span class="n">PyBuffer_SizeFromFormat</span><span class="p">(</span><span class="n">const</span> <span class="n">char</span> <span class="o">*</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Return the implied itemsize of the data-format area from a struct-style
+description.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyMemoryView_GetContiguous</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">obj</span><span class="p">,</span>  <span class="nb">int</span> <span class="n">buffertype</span><span class="p">,</span>
+                                      <span class="n">char</span> <span class="n">fortran</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Return a memoryview object to a contiguous chunk of memory represented
+by obj. If a copy must be made (because the memory pointed to by obj
+is not contiguous), then a new bytes object will be created and become
+the base object for the returned memory view object.</p>
+<p>The buffertype argument can be PyBUF_READ, PyBUF_WRITE,
+PyBUF_UPDATEIFCOPY to determine whether the returned buffer should be
+readable, writable, or set to update the original buffer if a copy
+must be made.  If buffertype is PyBUF_WRITE and the buffer is not
+contiguous an error will be raised.  In this circumstance, the user
+can use PyBUF_UPDATEIFCOPY to ensure that a writable temporary
+contiguous buffer is returned.  The contents of this contiguous buffer
+will be copied back into the original object after the memoryview
+object is deleted as long as the original object is writable.  If this
+is not allowed by the original object, then a BufferError is raised.</p>
+<p>If the object is multi-dimensional, then if fortran is ‘F’, the first
+dimension of the underlying array will vary the fastest in the buffer.
+If fortran is ‘C’, then the last dimension will vary the fastest
+(C-style contiguous). If fortran is ‘A’, then it does not matter and
+you will get whatever the object decides is more efficient.  If a copy
+is made, then the memory must be freed by calling <code class="docutils literal notranslate"><span class="pre">PyMem_Free</span></code>.</p>
+<p>You receive a new reference to the memoryview object.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">PyObject_CopyToObject</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">obj</span><span class="p">,</span> <span class="n">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="n">Py_ssize_t</span> <span class="nb">len</span><span class="p">,</span>
+                          <span class="n">char</span> <span class="n">fortran</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Copy <code class="docutils literal notranslate"><span class="pre">len</span></code> bytes of data pointed to by the contiguous chunk of
+memory pointed to by <code class="docutils literal notranslate"><span class="pre">buf</span></code> into the buffer exported by obj.  Return
+0 on success and return -1 and raise an error on failure.  If the
+object does not have a writable buffer, then an error is raised.  If
+fortran is ‘F’, then if the object is multi-dimensional, then the data
+will be copied into the array in Fortran-style (first dimension varies
+the fastest).  If fortran is ‘C’, then the data will be copied into
+the array in C-style (last dimension varies the fastest).  If fortran
+is ‘A’, then it does not matter and the copy will be made in whatever
+way is more efficient.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">PyObject_CopyData</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">dest</span><span class="p">,</span> <span class="n">PyObject</span> <span class="o">*</span><span class="n">src</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>These last three C-API calls allow a standard way of getting data in and
+out of Python objects into contiguous memory areas no matter how it is
+actually stored.  These calls use the extended buffer interface to perform
+their work.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">PyBuffer_IsContiguous</span><span class="p">(</span><span class="n">Py_buffer</span> <span class="o">*</span><span class="n">view</span><span class="p">,</span> <span class="n">char</span> <span class="n">fortran</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Return 1 if the memory defined by the view object is C-style (fortran
+= ‘C’) or Fortran-style (fortran = ‘F’) contiguous or either one
+(fortran = ‘A’).  Return 0 otherwise.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="n">PyBuffer_FillContiguousStrides</span><span class="p">(</span><span class="nb">int</span> <span class="n">ndim</span><span class="p">,</span> <span class="n">Py_ssize_t</span> <span class="o">*</span><span class="n">shape</span><span class="p">,</span>
+                                    <span class="n">Py_ssize_t</span> <span class="o">*</span><span class="n">strides</span><span class="p">,</span> <span class="n">Py_ssize_t</span> <span class="n">itemsize</span><span class="p">,</span>
+                                    <span class="n">char</span> <span class="n">fortran</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Fill the strides array with byte-strides of a contiguous (C-style if
+fortran is ‘C’ or Fortran-style if fortran is ‘F’ array of the given
+shape with the given number of bytes per element.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">PyBuffer_FillInfo</span><span class="p">(</span><span class="n">Py_buffer</span> <span class="o">*</span><span class="n">view</span><span class="p">,</span> <span class="n">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span>
+                      <span class="n">Py_ssize_t</span> <span class="nb">len</span><span class="p">,</span> <span class="nb">int</span> <span class="n">readonly</span><span class="p">,</span> <span class="nb">int</span> <span class="n">infoflags</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Fills in a buffer-info structure correctly for an exporter that can
+only share a contiguous chunk of memory of “unsigned bytes” of the
+given length.  Returns 0 on success and -1 (with raising an error) on
+error.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyExc_BufferError</span>
+</pre></div>
+</div>
+<p>A new error object for returning buffer errors which arise because an
+exporter cannot provide the kind of buffer that a consumer expects.
+This will also be raised when a consumer requests a buffer from an
+object that does not provide the protocol.</p>
+</section>
+<section id="additions-to-the-struct-string-syntax">
+<h2><a class="toc-backref" href="#id10">Additions to the struct string-syntax</a><a class="headerlink" href="#additions-to-the-struct-string-syntax" title="Permalink to this headline">¶</a></h2>
+<p>The struct string-syntax is missing some characters to fully
+implement data-format descriptions already available elsewhere (in
+ctypes and NumPy for example).  The Python 2.5 specification is
+at <a class="reference external" href="http://docs.python.org/library/struct.html">http://docs.python.org/library/struct.html</a>.</p>
+<p>Here are the proposed additions:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 76%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Character</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>‘t’</p></td>
+<td><p>bit (number before states how many bits)</p></td>
+</tr>
+<tr class="row-odd"><td><p>‘?’</p></td>
+<td><p>platform _Bool type</p></td>
+</tr>
+<tr class="row-even"><td><p>‘g’</p></td>
+<td><p>long double</p></td>
+</tr>
+<tr class="row-odd"><td><p>‘c’</p></td>
+<td><p>ucs-1 (latin-1) encoding</p></td>
+</tr>
+<tr class="row-even"><td><p>‘u’</p></td>
+<td><p>ucs-2</p></td>
+</tr>
+<tr class="row-odd"><td><p>‘w’</p></td>
+<td><p>ucs-4</p></td>
+</tr>
+<tr class="row-even"><td><p>‘O’</p></td>
+<td><p>pointer to Python Object</p></td>
+</tr>
+<tr class="row-odd"><td><p>‘Z’</p></td>
+<td><p>complex (whatever the next specifier is)</p></td>
+</tr>
+<tr class="row-even"><td><p>‘&amp;’</p></td>
+<td><p>specific pointer (prefix before another character)</p></td>
+</tr>
+<tr class="row-odd"><td><p>‘T{}’</p></td>
+<td><p>structure (detailed layout inside {})</p></td>
+</tr>
+<tr class="row-even"><td><p>‘(k1,k2,…,kn)’</p></td>
+<td><p>multi-dimensional array of whatever follows</p></td>
+</tr>
+<tr class="row-odd"><td><p>‘:name:’</p></td>
+<td><p>optional name of the preceding element</p></td>
+</tr>
+<tr class="row-even"><td><p>‘X{}’</p></td>
+<td><dl class="simple">
+<dt>pointer to a function (optional function</dt><dd><p>signature inside {} with any return value
+preceded by -&gt; and placed at the end)</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The struct module will be changed to understand these as well and
+return appropriate Python objects on unpacking.  Unpacking a
+long-double will return a decimal object or a ctypes long-double.
+Unpacking ‘u’ or ‘w’ will return Python unicode.  Unpacking a
+multi-dimensional array will return a list (of lists if &gt;1d).
+Unpacking a pointer will return a ctypes pointer object. Unpacking a
+function pointer will return a ctypes call-object (perhaps). Unpacking
+a bit will return a Python Bool.  White-space in the struct-string
+syntax will be ignored if it isn’t already.  Unpacking a named-object
+will return some kind of named-tuple-like object that acts like a
+tuple but whose entries can also be accessed by name. Unpacking a
+nested structure will return a nested tuple.</p>
+<p>Endian-specification (‘!’, ‘&#64;’,’=’,’&gt;’,’&lt;’, ‘^’) is also allowed
+inside the string so that it can change if needed.  The
+previously-specified endian string is in force until changed.  The
+default endian is ‘&#64;’ which means native data-types and alignment.  If
+un-aligned, native data-types are requested, then the endian
+specification is ‘^’.</p>
+<p>According to the struct-module, a number can precede a character
+code to specify how many of that type there are.  The
+<code class="docutils literal notranslate"><span class="pre">(k1,k2,...,kn)</span></code> extension also allows specifying if the data is
+supposed to be viewed as a (C-style contiguous, last-dimension
+varies the fastest) multi-dimensional array of a particular format.</p>
+<p>Functions should be added to ctypes to create a ctypes object from
+a struct description, and add long-double, and ucs-2 to ctypes.</p>
+</section>
+<section id="examples-of-data-format-descriptions">
+<h2><a class="toc-backref" href="#id11">Examples of Data-Format Descriptions</a><a class="headerlink" href="#examples-of-data-format-descriptions" title="Permalink to this headline">¶</a></h2>
+<p>Here are some examples of C-structures and how they would be
+represented using the struct-style syntax.</p>
+<p>&lt;named&gt; is the constructor for a named-tuple (not-specified yet).</p>
+<dl>
+<dt>float</dt><dd><p><code class="docutils literal notranslate"><span class="pre">'d'</span></code> &lt;–&gt; Python float</p>
+</dd>
+<dt>complex double</dt><dd><p><code class="docutils literal notranslate"><span class="pre">'Zd'</span></code> &lt;–&gt; Python complex</p>
+</dd>
+<dt>RGB Pixel data</dt><dd><p><code class="docutils literal notranslate"><span class="pre">'BBB'</span></code> &lt;–&gt; (int, int, int)
+<code class="docutils literal notranslate"><span class="pre">'B:r:</span> <span class="pre">B:g:</span> <span class="pre">B:b:'</span></code> &lt;–&gt; &lt;named&gt;((int, int, int), (‘r’,’g’,’b’))</p>
+</dd>
+<dt>Mixed endian (weird but possible)</dt><dd><p><code class="docutils literal notranslate"><span class="pre">'&gt;i:big:</span> <span class="pre">&lt;i:little:'</span></code> &lt;–&gt; &lt;named&gt;((int, int), (‘big’, ‘little’))</p>
+</dd>
+<dt>Nested structure</dt><dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="p">{</span>
+     <span class="nb">int</span> <span class="n">ival</span><span class="p">;</span>
+     <span class="n">struct</span> <span class="p">{</span>
+         <span class="n">unsigned</span> <span class="n">short</span> <span class="n">sval</span><span class="p">;</span>
+         <span class="n">unsigned</span> <span class="n">char</span> <span class="n">bval</span><span class="p">;</span>
+         <span class="n">unsigned</span> <span class="n">char</span> <span class="n">cval</span><span class="p">;</span>
+     <span class="p">}</span> <span class="n">sub</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="sd">&quot;&quot;&quot;i:ival:</span>
+<span class="sd">   T{</span>
+<span class="sd">      H:sval:</span>
+<span class="sd">      B:bval:</span>
+<span class="sd">      B:cval:</span>
+<span class="sd">    }:sub:</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</dd>
+<dt>Nested array</dt><dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="p">{</span>
+     <span class="nb">int</span> <span class="n">ival</span><span class="p">;</span>
+     <span class="n">double</span> <span class="n">data</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="mi">4</span><span class="p">];</span>
+<span class="p">}</span>
+<span class="sd">&quot;&quot;&quot;i:ival:</span>
+<span class="sd">   (16,4)d:data:</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>Note, that in the last example, the C-structure compared against is
+intentionally a 1-d array and not a 2-d array data[16][4].  The reason
+for this is to avoid the confusions between static multi-dimensional
+arrays in C (which are laid out contiguously) and dynamic
+multi-dimensional arrays which use the same syntax to access elements,
+data[0][1], but whose memory is not necessarily contiguous.  The
+struct-syntax <em>always</em> uses contiguous memory and the
+multi-dimensional character is information about the memory to be
+communicated by the exporter.</p>
+<p>In other words, the struct-syntax description does not have to match
+the C-syntax exactly as long as it describes the same memory layout.
+The fact that a C-compiler would think of the memory as a 1-d array of
+doubles is irrelevant to the fact that the exporter wanted to
+communicate to the consumer that this field of the memory should be
+thought of as a 2-d array where a new dimension is considered after
+every 4 elements.</p>
+</section>
+<section id="code-to-be-affected">
+<h2><a class="toc-backref" href="#id12">Code to be affected</a><a class="headerlink" href="#code-to-be-affected" title="Permalink to this headline">¶</a></h2>
+<p>All objects and modules in Python that export or consume the old
+buffer interface will be modified.  Here is a partial list.</p>
+<ul class="simple">
+<li><p>buffer object</p></li>
+<li><p>bytes object</p></li>
+<li><p>string object</p></li>
+<li><p>unicode object</p></li>
+<li><p>array module</p></li>
+<li><p>struct module</p></li>
+<li><p>mmap module</p></li>
+<li><p>ctypes module</p></li>
+</ul>
+<p>Anything else using the buffer API.</p>
+</section>
+<section id="issues-and-details">
+<h2><a class="toc-backref" href="#id13">Issues and Details</a><a class="headerlink" href="#issues-and-details" title="Permalink to this headline">¶</a></h2>
+<p>It is intended that this PEP will be back-ported to Python 2.6 by
+adding the C-API and the two functions to the existing buffer
+protocol.</p>
+<p>Previous versions of this PEP proposed a read/write locking scheme,
+but it was later perceived as a) too complicated for common simple use
+cases that do not require any locking and b) too simple for use cases
+that required concurrent read/write access to a buffer with changing,
+short-living locks.  It is therefore left to users to implement their
+own specific locking scheme around buffer objects if they require
+consistent views across concurrent read/write access.  A future PEP
+may be proposed which includes a separate locking API after some
+experience with these user-schemes is obtained</p>
+<p>The sharing of strided memory and suboffsets is new and can be seen as
+a modification of the multiple-segment interface.  It is motivated by
+NumPy and the PIL.  NumPy objects should be able to share their
+strided memory with code that understands how to manage strided memory
+because strided memory is very common when interfacing with compute
+libraries.</p>
+<p>Also, with this approach it should be possible to write generic code
+that works with both kinds of memory without copying.</p>
+<p>Memory management of the format string, the shape array, the strides
+array, and the suboffsets array in the bufferinfo structure is always
+the responsibility of the exporting object.  The consumer should not
+set these pointers to any other memory or try to free them.</p>
+<p>Several ideas were discussed and rejected:</p>
+<blockquote>
+<div><p>Having a “releaser” object whose release-buffer was called.  This
+was deemed unacceptable because it caused the protocol to be
+asymmetric (you called release on something different than you
+“got” the buffer from).  It also complicated the protocol without
+providing a real benefit.</p>
+<p>Passing all the struct variables separately into the function.
+This had the advantage that it allowed one to set NULL to
+variables that were not of interest, but it also made the function
+call more difficult.  The flags variable allows the same
+ability of consumers to be “simple” in how they call the protocol.</p>
+</div></blockquote>
+</section>
+<section id="code">
+<h2><a class="toc-backref" href="#id14">Code</a><a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<p>The authors of the PEP promise to contribute and maintain the code for
+this proposal but will welcome any help.</p>
+</section>
+<section id="examples">
+<h2><a class="toc-backref" href="#id15">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<section id="ex-1">
+<h3><a class="toc-backref" href="#id16">Ex. 1</a><a class="headerlink" href="#ex-1" title="Permalink to this headline">¶</a></h3>
+<p>This example shows how an image object that uses contiguous lines might expose its buffer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">rgba</span> <span class="p">{</span>
+    <span class="n">unsigned</span> <span class="n">char</span> <span class="n">r</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="n">struct</span> <span class="n">ImageObject</span> <span class="p">{</span>
+    <span class="n">PyObject_HEAD</span><span class="p">;</span>
+    <span class="o">...</span>
+    <span class="n">struct</span> <span class="n">rgba</span><span class="o">**</span> <span class="n">lines</span><span class="p">;</span>
+    <span class="n">Py_ssize_t</span> <span class="n">height</span><span class="p">;</span>
+    <span class="n">Py_ssize_t</span> <span class="n">width</span><span class="p">;</span>
+    <span class="n">Py_ssize_t</span> <span class="n">shape_array</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+    <span class="n">Py_ssize_t</span> <span class="n">stride_array</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+    <span class="n">Py_ssize_t</span> <span class="n">view_count</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>“lines” points to malloced 1-D array of <code class="docutils literal notranslate"><span class="pre">(struct</span> <span class="pre">rgba*)</span></code>.  Each pointer
+in THAT block points to a separately malloced array of <code class="docutils literal notranslate"><span class="pre">(struct</span> <span class="pre">rgba)</span></code>.</p>
+<p>In order to access, say, the red value of the pixel at x=30, y=50, you’d use “lines[50][30].r”.</p>
+<p>So what does ImageObject’s getbuffer do?  Leaving error checking out:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">Image_getbuffer</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="bp">self</span><span class="p">,</span> <span class="n">Py_buffer</span> <span class="o">*</span><span class="n">view</span><span class="p">,</span> <span class="nb">int</span> <span class="n">flags</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="n">static</span> <span class="n">Py_ssize_t</span> <span class="n">suboffsets</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">};</span>
+
+    <span class="n">view</span><span class="o">-&gt;</span><span class="n">buf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">-&gt;</span><span class="n">lines</span><span class="p">;</span>
+    <span class="n">view</span><span class="o">-&gt;</span><span class="nb">len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">-&gt;</span><span class="n">height</span><span class="o">*</span><span class="bp">self</span><span class="o">-&gt;</span><span class="n">width</span><span class="p">;</span>
+    <span class="n">view</span><span class="o">-&gt;</span><span class="n">readonly</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="n">view</span><span class="o">-&gt;</span><span class="n">ndims</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+    <span class="bp">self</span><span class="o">-&gt;</span><span class="n">shape_array</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">height</span><span class="p">;</span>
+    <span class="bp">self</span><span class="o">-&gt;</span><span class="n">shape_array</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">width</span><span class="p">;</span>
+    <span class="n">view</span><span class="o">-&gt;</span><span class="n">shape</span> <span class="o">=</span> <span class="o">&amp;</span><span class="bp">self</span><span class="o">-&gt;</span><span class="n">shape_array</span><span class="p">;</span>
+    <span class="bp">self</span><span class="o">-&gt;</span><span class="n">stride_array</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">struct</span> <span class="n">rgba</span><span class="o">*</span><span class="p">);</span>
+    <span class="bp">self</span><span class="o">-&gt;</span><span class="n">stride_array</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">struct</span> <span class="n">rgba</span><span class="p">);</span>
+    <span class="n">view</span><span class="o">-&gt;</span><span class="n">strides</span> <span class="o">=</span> <span class="o">&amp;</span><span class="bp">self</span><span class="o">-&gt;</span><span class="n">stride_array</span><span class="p">;</span>
+    <span class="n">view</span><span class="o">-&gt;</span><span class="n">suboffsets</span> <span class="o">=</span> <span class="n">suboffsets</span><span class="p">;</span>
+
+    <span class="bp">self</span><span class="o">-&gt;</span><span class="n">view_count</span> <span class="o">++</span><span class="p">;</span>
+
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+
+<span class="nb">int</span> <span class="n">Image_releasebuffer</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="bp">self</span><span class="p">,</span> <span class="n">Py_buffer</span> <span class="o">*</span><span class="n">view</span><span class="p">)</span> <span class="p">{</span>
+    <span class="bp">self</span><span class="o">-&gt;</span><span class="n">view_count</span><span class="o">--</span><span class="p">;</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="ex-2">
+<h3><a class="toc-backref" href="#id17">Ex. 2</a><a class="headerlink" href="#ex-2" title="Permalink to this headline">¶</a></h3>
+<p>This example shows how an object that wants to expose a contiguous
+chunk of memory (which will never be re-allocated while the object is
+alive) would do that.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">myobject_getbuffer</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="bp">self</span><span class="p">,</span> <span class="n">Py_buffer</span> <span class="o">*</span><span class="n">view</span><span class="p">,</span> <span class="nb">int</span> <span class="n">flags</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="n">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">;</span>
+    <span class="n">Py_ssize_t</span> <span class="nb">len</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">readonly</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+
+    <span class="n">buf</span> <span class="o">=</span> <span class="o">/*</span> <span class="n">Point</span> <span class="n">to</span> <span class="n">buffer</span> <span class="o">*/</span>
+    <span class="nb">len</span> <span class="o">=</span> <span class="o">/*</span> <span class="n">Set</span> <span class="n">to</span> <span class="n">size</span> <span class="n">of</span> <span class="n">buffer</span> <span class="o">*/</span>
+    <span class="n">readonly</span> <span class="o">=</span> <span class="o">/*</span> <span class="n">Set</span> <span class="n">to</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">readonly</span> <span class="o">*/</span>
+
+    <span class="k">return</span> <span class="n">PyObject_FillBufferInfo</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="n">buf</span><span class="p">,</span> <span class="nb">len</span><span class="p">,</span> <span class="n">readonly</span><span class="p">,</span> <span class="n">flags</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="o">/*</span> <span class="n">No</span> <span class="n">releasebuffer</span> <span class="ow">is</span> <span class="n">necessary</span> <span class="n">because</span> <span class="n">the</span> <span class="n">memory</span> <span class="n">will</span> <span class="n">never</span>
+   <span class="n">be</span> <span class="n">re</span><span class="o">-</span><span class="n">allocated</span>
+<span class="o">*/</span>
+</pre></div>
+</div>
+</section>
+<section id="ex-3">
+<h3><a class="toc-backref" href="#id18">Ex.  3</a><a class="headerlink" href="#ex-3" title="Permalink to this headline">¶</a></h3>
+<p>A consumer that wants to only get a simple contiguous chunk of bytes
+from a Python object, obj would do the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Py_buffer</span> <span class="n">view</span><span class="p">;</span>
+<span class="nb">int</span> <span class="n">ret</span><span class="p">;</span>
+
+<span class="k">if</span> <span class="p">(</span><span class="n">PyObject_GetBuffer</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">view</span><span class="p">,</span> <span class="n">Py_BUF_SIMPLE</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+     <span class="o">/*</span> <span class="n">error</span> <span class="k">return</span> <span class="o">*/</span>
+<span class="p">}</span>
+
+<span class="o">/*</span> <span class="n">Now</span><span class="p">,</span> <span class="n">view</span><span class="o">.</span><span class="n">buf</span> <span class="ow">is</span> <span class="n">the</span> <span class="n">pointer</span> <span class="n">to</span> <span class="n">memory</span>
+        <span class="n">view</span><span class="o">.</span><span class="n">len</span> <span class="ow">is</span> <span class="n">the</span> <span class="n">length</span>
+        <span class="n">view</span><span class="o">.</span><span class="n">readonly</span> <span class="ow">is</span> <span class="n">whether</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">the</span> <span class="n">memory</span> <span class="ow">is</span> <span class="n">read</span><span class="o">-</span><span class="n">only</span><span class="o">.</span>
+ <span class="o">*/</span>
+
+
+<span class="o">/*</span> <span class="n">After</span> <span class="n">using</span> <span class="n">the</span> <span class="n">information</span> <span class="ow">and</span> <span class="n">you</span> <span class="n">don</span><span class="s1">&#39;t need it anymore */</span>
+
+<span class="k">if</span> <span class="p">(</span><span class="n">PyBuffer_Release</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">view</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="o">/*</span> <span class="n">error</span> <span class="k">return</span> <span class="o">*/</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="ex-4">
+<h3><a class="toc-backref" href="#id19">Ex. 4</a><a class="headerlink" href="#ex-4" title="Permalink to this headline">¶</a></h3>
+<p>A consumer that wants to be able to use any object’s memory but is
+writing an algorithm that only handle contiguous memory could do the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">;</span>
+<span class="n">Py_ssize_t</span> <span class="nb">len</span><span class="p">;</span>
+<span class="n">char</span> <span class="o">*</span><span class="nb">format</span><span class="p">;</span>
+<span class="nb">int</span> <span class="n">copy</span><span class="p">;</span>
+
+<span class="n">copy</span> <span class="o">=</span> <span class="n">PyObject_GetContiguous</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">buf</span><span class="p">,</span> <span class="o">&amp;</span><span class="nb">len</span><span class="p">,</span> <span class="o">&amp;</span><span class="nb">format</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">copy</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+   <span class="o">/*</span> <span class="n">error</span> <span class="k">return</span> <span class="o">*/</span>
+<span class="p">}</span>
+
+<span class="o">/*</span> <span class="n">process</span> <span class="n">memory</span> <span class="n">pointed</span> <span class="n">to</span> <span class="n">by</span> <span class="n">buffer</span> <span class="k">if</span> <span class="nb">format</span> <span class="ow">is</span> <span class="n">correct</span> <span class="o">*/</span>
+
+<span class="o">/*</span> <span class="n">Optional</span><span class="p">:</span>
+
+   <span class="k">if</span><span class="p">,</span> <span class="n">after</span> <span class="n">processing</span><span class="p">,</span> <span class="n">we</span> <span class="n">want</span> <span class="n">to</span> <span class="n">copy</span> <span class="n">data</span> <span class="kn">from</span> <span class="nn">buffer</span> <span class="n">back</span>
+   <span class="n">into</span> <span class="n">the</span> <span class="nb">object</span>
+
+   <span class="n">we</span> <span class="n">could</span> <span class="n">do</span>
+   <span class="o">*/</span>
+
+<span class="k">if</span> <span class="p">(</span><span class="n">PyObject_CopyToObject</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">buf</span><span class="p">,</span> <span class="nb">len</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+       <span class="o">/*</span>        <span class="n">error</span> <span class="k">return</span> <span class="o">*/</span>
+<span class="p">}</span>
+
+<span class="o">/*</span> <span class="n">Make</span> <span class="n">sure</span> <span class="n">that</span> <span class="k">if</span> <span class="n">a</span> <span class="n">copy</span> <span class="n">was</span> <span class="n">made</span><span class="p">,</span> <span class="n">the</span> <span class="n">memory</span> <span class="ow">is</span> <span class="n">freed</span> <span class="o">*/</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">copy</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="n">PyMem_Free</span><span class="p">(</span><span class="n">buf</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#id20">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This PEP is placed in the public domain.</p>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3118.txt">https://github.com/python/peps/blob/master/pep-3118.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-3118.txt">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0001/">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0100/">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0101/">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0374/">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0391/">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0423/">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0451/">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0471/">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0479/">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0495/">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0558/">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0570/">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0584/">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0586/">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0594/">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-3117/" title="previous chapter">PEP 3117 – Postfix type declarations</a></li>
+      <li>Next: <a href="../pep-3119/" title="next chapter">PEP 3119 – Introducing Abstract Base Classes</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-3118.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

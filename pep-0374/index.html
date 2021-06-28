@@ -1,0 +1,2373 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 374 – Choosing a distributed VCS for the Python project &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 375 – Python 3.1 Release Schedule" href="../pep-0375/" />
+    <link rel="prev" title="PEP 373 – Python 2.7 Release Schedule" href="../pep-0373/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pep-374-choosing-a-distributed-vcs-for-the-python-project">
+<h1 class="page-title">PEP 374 – Choosing a distributed VCS for the Python project<a class="headerlink" href="#pep-374-choosing-a-distributed-vcs-for-the-python-project" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>374</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>Choosing a distributed VCS for the Python project</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Brett Cannon &lt;<a class="reference external" href="mailto:brett&#37;&#52;&#48;python&#46;org?subject=PEP%20-1">brett&#32;&#97;t&#32;python.org</a>&gt;,
+Stephen J. Turnbull &lt;<a class="reference external" href="mailto:stephen&#37;&#52;&#48;xemacs&#46;org?subject=PEP%20-1">stephen&#32;&#97;t&#32;xemacs.org</a>&gt;,
+Alexandre Vassalotti &lt;<a class="reference external" href="mailto:alexandre&#37;&#52;&#48;peadrop&#46;com?subject=PEP%20-1">alexandre&#32;&#97;t&#32;peadrop.com</a>&gt;,
+Barry Warsaw &lt;<a class="reference external" href="mailto:barry&#37;&#52;&#48;python&#46;org?subject=PEP%20-1">barry&#32;&#97;t&#32;python.org</a>&gt;,
+Dirkjan Ochtman &lt;<a class="reference external" href="mailto:dirkjan&#37;&#52;&#48;ochtman&#46;nl?subject=PEP%20-1">dirkjan&#32;&#97;t&#32;ochtman.nl</a>&gt;</p>
+</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even"><p>Final</p>
+</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Process</p>
+</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even"><p>07-Nov-2008</p>
+</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p>07-Nov-2008
+22-Jan-2009</p>
+</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#rationale" id="id68">Rationale</a></p></li>
+<li><p><a class="reference internal" href="#terminology" id="id69">Terminology</a></p></li>
+<li><p><a class="reference internal" href="#typical-workflow" id="id70">Typical Workflow</a></p></li>
+<li><p><a class="reference internal" href="#contenders" id="id71">Contenders</a></p></li>
+<li><p><a class="reference internal" href="#interoperability" id="id72">Interoperability</a></p></li>
+<li><p><a class="reference internal" href="#usage-scenarios" id="id73">Usage Scenarios</a></p>
+<ul>
+<li><p><a class="reference internal" href="#initial-setup" id="id74">Initial Setup</a></p>
+<ul>
+<li><p><a class="reference internal" href="#svn" id="id75">svn</a></p></li>
+<li><p><a class="reference internal" href="#bzr" id="id76">bzr</a></p></li>
+<li><p><a class="reference internal" href="#hg" id="id77">hg</a></p></li>
+<li><p><a class="reference internal" href="#id1" id="id78">git</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#one-off-checkout" id="id79">One-Off Checkout</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id2" id="id80">svn</a></p></li>
+<li><p><a class="reference internal" href="#id3" id="id81">bzr</a></p></li>
+<li><p><a class="reference internal" href="#id4" id="id82">hg</a></p></li>
+<li><p><a class="reference internal" href="#id5" id="id83">git</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#backing-out-changes" id="id84">Backing Out Changes</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id6" id="id85">svn</a></p></li>
+<li><p><a class="reference internal" href="#id7" id="id86">bzr</a></p></li>
+<li><p><a class="reference internal" href="#id8" id="id87">hg</a></p></li>
+<li><p><a class="reference internal" href="#id9" id="id88">git</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#patch-review" id="id89">Patch Review</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id10" id="id90">svn</a></p></li>
+<li><p><a class="reference internal" href="#id11" id="id91">bzr</a></p></li>
+<li><p><a class="reference internal" href="#id12" id="id92">hg</a></p></li>
+<li><p><a class="reference internal" href="#id13" id="id93">git</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#backport" id="id94">Backport</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id14" id="id95">svn</a></p></li>
+<li><p><a class="reference internal" href="#id15" id="id96">bzr</a></p></li>
+<li><p><a class="reference internal" href="#id16" id="id97">hg</a></p></li>
+<li><p><a class="reference internal" href="#id17" id="id98">git</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#coordinated-development-of-a-new-feature" id="id99">Coordinated Development of a New Feature</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id18" id="id100">svn</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#separation-of-issue-dependencies" id="id101">Separation of Issue Dependencies</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id19" id="id102">svn</a></p></li>
+<li><p><a class="reference internal" href="#id20" id="id103">bzr</a></p></li>
+<li><p><a class="reference internal" href="#id21" id="id104">hg</a></p></li>
+<li><p><a class="reference internal" href="#id22" id="id105">git</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#doing-a-python-release" id="id106">Doing a Python Release</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id23" id="id107">bzr</a></p></li>
+<li><p><a class="reference internal" href="#id24" id="id108">hg</a></p></li>
+<li><p><a class="reference internal" href="#id25" id="id109">git</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#platform-tool-support" id="id110">Platform/Tool Support</a></p>
+<ul>
+<li><p><a class="reference internal" href="#operating-systems" id="id111">Operating Systems</a></p></li>
+<li><p><a class="reference internal" href="#crlf-lf-support" id="id112">CRLF -&gt; LF Support</a></p></li>
+<li><p><a class="reference internal" href="#case-insensitive-filesystem-support" id="id113">Case-insensitive filesystem support</a></p></li>
+<li><p><a class="reference internal" href="#tools" id="id114">Tools</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#usage-on-top-of-subversion" id="id115">Usage On Top Of Subversion</a></p></li>
+<li><p><a class="reference internal" href="#server-support" id="id116">Server Support</a></p></li>
+<li><p><a class="reference internal" href="#development" id="id117">Development</a></p></li>
+<li><p><a class="reference internal" href="#special-features" id="id118">Special Features</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id26" id="id119">bzr</a></p></li>
+<li><p><a class="reference internal" href="#id27" id="id120">hg</a></p></li>
+<li><p><a class="reference internal" href="#id28" id="id121">git</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#tests-impressions" id="id122">Tests/Impressions</a></p>
+<ul>
+<li><p><a class="reference internal" href="#barrier-to-entry" id="id123">Barrier to Entry</a></p></li>
+<li><p><a class="reference internal" href="#performance-of-basic-information-functionality" id="id124">Performance of basic information functionality</a></p></li>
+<li><p><a class="reference internal" href="#figuring-out-what-command-to-use-from-built-in-help" id="id125">Figuring out what command to use from built-in help</a></p></li>
+<li><p><a class="reference internal" href="#updating-a-checkout" id="id126">Updating a checkout</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#decision" id="id127">Decision</a></p>
+<ul>
+<li><p><a class="reference internal" href="#why-mercurial-over-subversion" id="id128">Why Mercurial over Subversion</a></p></li>
+<li><p><a class="reference internal" href="#why-mercurial-over-other-dvcss" id="id129">Why Mercurial over other DVCSs</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#transition-plan" id="id130">Transition Plan</a></p></li>
+<li><p><a class="reference internal" href="#id29" id="id131">References</a></p></li>
+<li><p><a class="reference internal" href="#copyright" id="id132">Copyright</a></p></li>
+</ul>
+</div>
+<section id="rationale">
+<h2><a class="toc-backref" href="#id68">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Python has been using a centralized version control system (VCS;
+first CVS, now Subversion) for years to great effect. Having a master
+copy of the official version of Python provides people with a single
+place to always get the official Python source code. It has also
+allowed for the storage of the history of the language, mostly for
+help with development, but also for posterity. And of course the V in
+VCS is very helpful when developing.</p>
+<p>But a centralized version control system has its drawbacks. First and
+foremost, in order to have the benefits of version control with
+Python in a seamless fashion, one must be a “core developer” (i.e.
+someone with commit privileges on the master copy of Python). People
+who are not core developers but who wish to work with Python’s
+revision tree, e.g. anyone writing a patch for Python or creating a
+custom version, do not have direct tool support for revisions. This
+can be quite a limitation, since these non-core developers cannot
+easily do basic tasks such as reverting changes to a previously
+saved state, creating branches, publishing one’s changes with full
+revision history, etc. For non-core developers, the last safe tree
+state is one the Python developers happen to set, and this prevents
+safe development. This second-class citizenship is a hindrance to
+people who wish to contribute to Python with a patch of any
+complexity and want a way to incrementally save their progress to
+make their development lives easier.</p>
+<p>There is also the issue of having to be online to be able to commit
+one’s work. Because centralized VCSs keep a central copy that stores
+all revisions, one must have Internet access in order for their
+revisions to be stored; no Net, no commit. This can be annoying if
+you happen to be traveling and lack any Internet. There is also the
+situation of someone wishing to contribute to Python but having a
+bad Internet connection where committing is time-consuming and
+expensive and it might work out better to do it in a single step.</p>
+<p>Another drawback to a centralized VCS is that a common use case is
+for a developer to revise patches in response to review comments.
+This is more difficult with a centralized model because there’s no
+place to contain intermediate work. It’s either all checked in or
+none of it is checked in. In the centralized VCS, it’s also very
+difficult to track changes to the trunk as they are committed, while
+you’re working on your feature or bug fix branch. This increases
+the risk that such branches will grow stale, out-dated, or that
+merging them into the trunk will generate too may conflicts to be
+easily resolved.</p>
+<p>Lastly, there is the issue of maintenance of Python. At any one time
+there is at least one major version of Python under development (at
+the time of this writing there are two). For each major version of
+Python under development there is at least the maintenance version
+of the last minor version and the in-development minor version (e.g.
+with 2.6 just released, that means that both 2.6 and 2.7 are being
+worked on). Once a release is done, a branch is created between the
+code bases where changes in one version do not (but could) belong in
+the other version. As of right now there is no natural support for
+this branch in time in central VCSs; you must use tools that
+simulate the branching. Tracking merges is similarly painful for
+developers, as revisions often need to be merged between four active
+branches (e.g. 2.6 maintenance, 3.0 maintenance, 2.7 development,
+3.1 development). In this case, VCSs such as Subversion only handle
+this through arcane third party tools.</p>
+<p>Distributed VCSs (DVCSs) solve all of these problems. While one can
+keep a master copy of a revision tree, anyone is free to copy that
+tree for their own use. This gives everyone the power to commit
+changes to their copy, online or offline. It also more naturally
+ties into the idea of branching in the history of a revision tree
+for maintenance and the development of new features bound for
+Python. DVCSs also provide a great many additional features that
+centralized VCSs don’t or can’t provide.</p>
+<p>This PEP explores the possibility of changing Python’s use of Subversion
+to any of the currently popular  DVCSs, in order to gain
+the benefits outlined above. This PEP does not guarantee that a switch
+to a DVCS will occur at the conclusion of this PEP. It is quite
+possible that no clear winner will be found and that svn will continue
+to be used. If this happens, this PEP will be revisited and revised in
+the future as the state of DVCSs evolves.</p>
+</section>
+<section id="terminology">
+<h2><a class="toc-backref" href="#id69">Terminology</a><a class="headerlink" href="#terminology" title="Permalink to this headline">¶</a></h2>
+<p>Agreeing on a common terminology is surprisingly difficult,
+primarily because each VCS uses these terms when describing subtly
+different tasks, objects, and concepts. Where possible, we try to
+provide a generic definition of the concepts, but you should consult
+the individual system’s glossaries for details. Here are some basic
+references for terminology, from some of the standard web-based
+references on each VCS. You can also refer to glossaries for each
+DVCS:</p>
+<ul class="simple">
+<li><p>Subversion : <a class="reference external" href="http://svnbook.red-bean.com/en/1.5/svn.basic.html">http://svnbook.red-bean.com/en/1.5/svn.basic.html</a></p></li>
+<li><p>Bazaar : <a class="reference external" href="http://bazaar-vcs.org/BzrGlossary">http://bazaar-vcs.org/BzrGlossary</a></p></li>
+<li><p>Mercurial : <a class="reference external" href="http://www.selenic.com/mercurial/wiki/index.cgi/UnderstandingMercurial">http://www.selenic.com/mercurial/wiki/index.cgi/UnderstandingMercurial</a></p></li>
+<li><p>git : <a class="reference external" href="http://book.git-scm.com/1_the_git_object_model.html">http://book.git-scm.com/1_the_git_object_model.html</a></p></li>
+</ul>
+<dl class="simple">
+<dt>branch</dt><dd><p>A line of development; a collection of revisions, ordered by
+time.</p>
+</dd>
+<dt>checkout/working copy/working tree</dt><dd><p>A tree of code the developer can edit, linked to a branch.</p>
+</dd>
+<dt>index</dt><dd><p>A “staging area” where a revision is built (unique to git).</p>
+</dd>
+<dt>repository</dt><dd><p>A collection of revisions, organized into branches.</p>
+</dd>
+<dt>clone</dt><dd><p>A complete copy of a branch or repository.</p>
+</dd>
+<dt>commit</dt><dd><p>To record a revision in a repository.</p>
+</dd>
+<dt>merge</dt><dd><p>Applying all the changes and history from one branch/repository
+to another.</p>
+</dd>
+<dt>pull</dt><dd><p>To update a checkout/clone from the original branch/repository,
+which can be remote or local</p>
+</dd>
+<dt>push/publish</dt><dd><p>To copy a revision, and all revisions it depends on, from a one
+repository to another.</p>
+</dd>
+<dt>cherry-pick</dt><dd><p>To merge one or more specific revisions from one branch to
+another, possibly in a different repository, possibly without its
+dependent revisions.</p>
+</dd>
+<dt>rebase</dt><dd><p>To “detach” a branch, and move it to a new branch point; move
+commits to the beginning of a branch instead of where they
+happened in time.</p>
+</dd>
+</dl>
+</section>
+<section id="typical-workflow">
+<h2><a class="toc-backref" href="#id70">Typical Workflow</a><a class="headerlink" href="#typical-workflow" title="Permalink to this headline">¶</a></h2>
+<p>At the moment, the typical workflow for a Python core developer is:</p>
+<ul class="simple">
+<li><p>Edit code in a checkout until it is stable enough to commit/push.</p></li>
+<li><p>Commit to the master repository.</p></li>
+</ul>
+<p>It is a rather simple workflow, but it has drawbacks. For one,
+because any work that involves the repository takes time thanks to
+the network, commits/pushes tend to not necessarily be as atomic as
+possible. There is also the drawback of there not being a
+necessarily cheap way to create new checkouts beyond a recursive
+copy of the checkout directory.</p>
+<p>A DVCS would lead to a workflow more like this:</p>
+<ul class="simple">
+<li><p>Branch off of a local clone of the master repository.</p></li>
+<li><p>Edit code, committing in atomic pieces.</p></li>
+<li><p>Merge the branch into the mainline, and</p></li>
+<li><p>Push all commits to the master repository.</p></li>
+</ul>
+<p>While there are more possible steps, the workflow is much more
+independent of the master repository than is currently possible. By
+being able to commit locally at the speed of your disk, a core
+developer is able to do atomic commits much more frequently,
+minimizing having commits that do multiple things to the code. Also
+by using a branch, the changes are isolated (if desired) from other
+changes being made by other developers. Because branches are cheap,
+it is easy to create and maintain many smaller branches that address
+one specific issue, e.g. one bug or one new feature. More
+sophisticated features of DVCSs allow the developer to more easily
+track long running development branches as the official mainline
+progresses.</p>
+</section>
+<section id="contenders">
+<h2><a class="toc-backref" href="#id71">Contenders</a><a class="headerlink" href="#contenders" title="Permalink to this headline">¶</a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 7%" />
+<col style="width: 34%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Short Name</p></th>
+<th class="head"><p>Version</p></th>
+<th class="head"><p>2.x Trunk Mirror</p></th>
+<th class="head"><p>3.x Trunk Mirror</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="http://bazaar-vcs.org/">Bazaar</a> <a class="footnote-reference brackets" href="#id30" id="id31">1</a></p></td>
+<td><p>bzr</p></td>
+<td><p>1.12</p></td>
+<td><p><a class="reference external" href="http://code.python.org/python/trunk">http://code.python.org/python/trunk</a></p></td>
+<td><p><a class="reference external" href="http://code.python.org/python/3.0">http://code.python.org/python/3.0</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="http://www.selenic.com/mercurial/">Mercurial</a> <a class="footnote-reference brackets" href="#id32" id="id33">2</a></p></td>
+<td><p>hg</p></td>
+<td><p>1.2.0</p></td>
+<td><p><a class="reference external" href="http://code.python.org/hg/trunk/">http://code.python.org/hg/trunk/</a></p></td>
+<td><p><a class="reference external" href="http://code.python.org/hg/branches/py3k/">http://code.python.org/hg/branches/py3k/</a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="http://www.git-scm.com/">git</a> <a class="footnote-reference brackets" href="#id34" id="id35">3</a></p></td>
+<td><p>N/A</p></td>
+<td><p>1.6.1</p></td>
+<td><p>git://code.python.org/python/trunk</p></td>
+<td><p>git://code.python.org/python/branches/py3k</p></td>
+</tr>
+</tbody>
+</table>
+<p>This PEP does not consider darcs, arch, or monotone. The main
+problem with these DVCSs is that they are simply not popular enough
+to bother supporting when they do not provide some very compelling
+features that the other DVCSs provide. Arch and darcs also have
+significant performance problems which seem unlikely to be addressed
+in the near future.</p>
+</section>
+<section id="interoperability">
+<h2><a class="toc-backref" href="#id72">Interoperability</a><a class="headerlink" href="#interoperability" title="Permalink to this headline">¶</a></h2>
+<p>For those who have already decided which DVCSs they want to use, and
+are willing to maintain local mirrors themselves, all three DVCSs
+support interchange via the git “fast-import” changeset format.  git
+does so natively, of course, and native support for Bazaar is under
+active development, and getting good early reviews as of mid-February
+2009.  Mercurial has idiosyncratic support for importing via its <em>hg
+convert</em> command, and <a class="reference external" href="http://repo.or.cz/r/fast-export.git/.git/description">third-party fast-import support</a> <a class="footnote-reference brackets" href="#id36" id="id37">4</a> is available
+for exporting.  Also, the <a class="reference external" href="http://progetti.arstecnica.it/tailor/">Tailor</a> <a class="footnote-reference brackets" href="#id38" id="id39">5</a> tool supports automatic maintenance
+of mirrors based on an official repository in any of the candidate
+formats with a local mirror in any format.</p>
+</section>
+<section id="usage-scenarios">
+<h2><a class="toc-backref" href="#id73">Usage Scenarios</a><a class="headerlink" href="#usage-scenarios" title="Permalink to this headline">¶</a></h2>
+<p>Probably the best way to help decide on whether/which DVCS should
+replace Subversion is to see what it takes to perform some
+real-world usage scenarios that developers (core and non-core) have
+to work with. Each usage scenario outlines what it is, a bullet list
+of what the basic steps are (which can vary slightly per VCS), and
+how to perform the usage scenario in the various VCSs
+(including Subversion).</p>
+<p>Each VCS had a single author in charge of writing implementations
+for each scenario (unless otherwise noted).</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 75%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>VCS</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Brett</p></td>
+<td><p>svn</p></td>
+</tr>
+<tr class="row-odd"><td><p>Barry</p></td>
+<td><p>bzr</p></td>
+</tr>
+<tr class="row-even"><td><p>Alexandre</p></td>
+<td><p>hg</p></td>
+</tr>
+<tr class="row-odd"><td><p>Stephen</p></td>
+<td><p>git</p></td>
+</tr>
+</tbody>
+</table>
+<section id="initial-setup">
+<h3><a class="toc-backref" href="#id74">Initial Setup</a><a class="headerlink" href="#initial-setup" title="Permalink to this headline">¶</a></h3>
+<p>Some DVCSs have some perks if you do some initial setup upfront.
+This section covers what can be done before any of the usage
+scenarios are run in order to take better advantage of the tools.</p>
+<p>All of the DVCSs support configuring your project identification.
+Unlike the centralized systems, they use your email address to
+identify your commits. (Access control is generally done by
+mechanisms external to the DVCS, such as ssh or console login).
+This identity may be associated with a full name.</p>
+<p>All of the DVCSs will query the system to get some approximation to
+this information, but that may not be what you want. They also
+support setting this information on a per-user basis, and on a per-
+project basis. Convenience commands to set these attributes vary,
+but all allow direct editing of configuration files.</p>
+<p>Some VCSs support end-of-line (EOL) conversions on checkout/checkin.</p>
+<section id="svn">
+<h4><a class="toc-backref" href="#id75">svn</a><a class="headerlink" href="#svn" title="Permalink to this headline">¶</a></h4>
+<p>None required, but it is recommended you follow the
+<a class="reference external" href="http://www.python.org/dev/faq/#what-configuration-settings-should-i-use">guidelines</a>
+in the dev FAQ.</p>
+</section>
+<section id="bzr">
+<h4><a class="toc-backref" href="#id76">bzr</a><a class="headerlink" href="#bzr" title="Permalink to this headline">¶</a></h4>
+<p>No setup is required, but for much quicker and space-efficient local
+branching, you should create a shared repository to hold all your
+Python branches. A shared repository is really just a parent
+directory containing a .bzr directory. When bzr commits a revision,
+it searches from the local directory on up the file system for a .bzr
+directory to hold the revision. By sharing revisions across multiple
+branches, you cut down on the amount of disk space used. Do this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">~/</span><span class="n">projects</span>
+<span class="n">bzr</span> <span class="n">init</span><span class="o">-</span><span class="n">repo</span> <span class="n">python</span>
+<span class="n">cd</span> <span class="n">python</span>
+</pre></div>
+</div>
+<p>Now, all your Python branches should be created inside of
+<code class="docutils literal notranslate"><span class="pre">~/projects/python</span></code>.</p>
+<p>There are also some settings you can put in your
+<code class="docutils literal notranslate"><span class="pre">~/.bzr/bazaar.conf</span></code>
+and <code class="docutils literal notranslate"><span class="pre">~/.bzr/locations.conf</span></code> file to set up defaults for interacting
+with Python code. None of them are required, although some are
+recommended. E.g. I would suggest gpg signing all commits, but that
+might be too high a barrier for developers. Also, you can set up
+default push locations depending on where you want to push branches
+by default. If you have write access to the master branches, that
+push location could be code.python.org. Otherwise, it might be a
+free Bazaar code hosting service such as Launchpad. If Bazaar is
+chosen, we should decide what the policies and recommendations are.</p>
+<p>At a minimum, I would set up your email address:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bzr</span> <span class="n">whoami</span> <span class="s2">&quot;Firstname Lastname &lt;email.address@example.com&gt;&quot;</span>
+</pre></div>
+</div>
+<p>As with hg and git below, there are ways to set your email address (or really,
+just about any parameter) on a
+per-repository basis.  You do this with settings in your
+<code class="docutils literal notranslate"><span class="pre">$HOME/.bazaar/locations.conf</span></code> file, which has an ini-style format as does
+the other DVCSs.  See the Bazaar documentation for details,
+which mostly aren’t relevant for this discussion.</p>
+</section>
+<section id="hg">
+<h4><a class="toc-backref" href="#id77">hg</a><a class="headerlink" href="#hg" title="Permalink to this headline">¶</a></h4>
+<p>Minimally, you should set your user name. To do so, create the file
+<code class="docutils literal notranslate"><span class="pre">.hgrc</span></code> in your home directory and add the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">ui</span><span class="p">]</span>
+<span class="n">username</span> <span class="o">=</span> <span class="n">Firstname</span> <span class="n">Lastname</span> <span class="o">&lt;</span><span class="n">email</span><span class="o">.</span><span class="n">address</span><span class="nd">@example</span><span class="o">.</span><span class="n">com</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>If you are using Windows and your tools do not support Unix-style newlines,
+you can enable automatic newline translation by adding to your configuration:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">extensions</span><span class="p">]</span>
+<span class="n">win32text</span> <span class="o">=</span>
+</pre></div>
+</div>
+<p>These options can also be set locally to a given repository by
+customizing <code class="docutils literal notranslate"><span class="pre">&lt;repo&gt;/.hg/hgrc</span></code>, instead of <code class="docutils literal notranslate"><span class="pre">~/.hgrc</span></code>.</p>
+</section>
+<section id="id1">
+<h4><a class="toc-backref" href="#id78">git</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h4>
+<p>None needed. However, git supports a number of features that can
+smooth your work, with a little preparation. git supports setting
+defaults at the workspace, user, and system levels. The system
+level is out of scope of this PEP. The user configuration file is
+<code class="docutils literal notranslate"><span class="pre">$HOME/.gitconfig</span></code> on Unix-like systems, and the workspace
+configuration file is <code class="docutils literal notranslate"><span class="pre">$REPOSITORY/.git/config</span></code>.</p>
+<p>You can use the <code class="docutils literal notranslate"><span class="pre">git-config</span></code> tool to set preferences for user.name and
+user.email either globally (for your system login account) or
+locally (to a given git working copy), or you can edit the
+configuration files (which have the same format as shown in the
+Mercurial section above).:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># my full name doesn&#39;t change</span>
+<span class="c1"># note &quot;--global&quot; flag means per user</span>
+<span class="c1"># (system-wide configuration is set with &quot;--system&quot;)</span>
+<span class="n">git</span> <span class="n">config</span> <span class="o">--</span><span class="k">global</span> <span class="n">user</span><span class="o">.</span><span class="n">name</span> <span class="s1">&#39;Firstname Lastname&#39;</span>
+<span class="c1"># but use my Pythonic email address</span>
+<span class="n">cd</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">python</span><span class="o">/</span><span class="n">repository</span>
+<span class="n">git</span> <span class="n">config</span> <span class="n">user</span><span class="o">.</span><span class="n">email</span> <span class="n">email</span><span class="o">.</span><span class="n">address</span><span class="nd">@python</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span>
+</pre></div>
+</div>
+<p>If you are using Windows, you probably want to set the core.autocrlf
+and core.safecrlf preferences to true using <code class="docutils literal notranslate"><span class="pre">git-config</span></code>.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># check out files with CRLF line endings rather than Unix-style LF only</span>
+<span class="n">git</span> <span class="n">config</span> <span class="o">--</span><span class="k">global</span> <span class="n">core</span><span class="o">.</span><span class="n">autocrlf</span> <span class="n">true</span>
+<span class="c1"># scream if a transformation would be ambiguous</span>
+<span class="c1"># (eg, a working file contains both naked LF and CRLF)</span>
+<span class="c1"># and check them back in with the reverse transformation</span>
+<span class="n">git</span> <span class="n">config</span> <span class="o">--</span><span class="k">global</span> <span class="n">core</span><span class="o">.</span><span class="n">safecrlf</span> <span class="n">true</span>
+</pre></div>
+</div>
+<p>Although the repository will usually contain a .gitignore file
+specifying file names that rarely if ever should be registered in the
+VCS, you may have personal conventions (e.g., always editing log
+messages in a temporary file named “.msg”) that you may wish to
+specify.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># tell git where my personal ignores are</span>
+<span class="n">git</span> <span class="n">config</span> <span class="o">--</span><span class="k">global</span> <span class="n">core</span><span class="o">.</span><span class="n">excludesfile</span> <span class="o">~/.</span><span class="n">gitignore</span>
+<span class="c1"># I use .msg for my long commit logs, and Emacs makes backups in</span>
+<span class="c1"># files ending with ~</span>
+<span class="c1"># these are globs, not regular expressions</span>
+<span class="n">echo</span> <span class="s1">&#39;*~&#39;</span> <span class="o">&gt;&gt;</span> <span class="o">~/.</span><span class="n">gitignore</span>
+<span class="n">echo</span> <span class="s1">&#39;.msg&#39;</span> <span class="o">&gt;&gt;</span> <span class="o">~/.</span><span class="n">gitignore</span>
+</pre></div>
+</div>
+<p>If you use multiple branches, as with the other VCSes, you can save a
+lot of space by putting all objects in a common object store. This
+also can save download time, if the origins of the branches were in
+different repositories, because objects are shared across branches in
+your repository even if they were not present in the upstream
+repositories.  git is very space- and time-efficient and applies a
+number of optimizations automatically, so this configuration is
+optional.  (Examples are omitted.)</p>
+</section>
+</section>
+<section id="one-off-checkout">
+<h3><a class="toc-backref" href="#id79">One-Off Checkout</a><a class="headerlink" href="#one-off-checkout" title="Permalink to this headline">¶</a></h3>
+<p>As a non-core developer, I want to create and publish a one-off patch
+that fixes a bug, so that a core developer can review it for
+inclusion in the mainline.</p>
+<ul class="simple">
+<li><p>Checkout/branch/clone trunk.</p></li>
+<li><p>Edit some code.</p></li>
+<li><p>Generate a patch (based on what is best supported by the VCS, e.g.
+branch history).</p></li>
+<li><p>Receive reviewer comments and address the issues.</p></li>
+<li><p>Generate a second patch for the core developer to commit.</p></li>
+</ul>
+<section id="id2">
+<h4><a class="toc-backref" href="#id80">svn</a><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">svn</span> <span class="n">checkout</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">svn</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">projects</span><span class="o">/</span><span class="n">python</span><span class="o">/</span><span class="n">trunk</span>
+<span class="n">cd</span> <span class="n">trunk</span>
+<span class="c1"># Edit some code.</span>
+<span class="n">echo</span> <span class="s2">&quot;The cake is a lie!&quot;</span> <span class="o">&gt;</span> <span class="n">README</span>
+<span class="c1"># Since svn lacks support for local commits, we fake it with patches.</span>
+<span class="n">svn</span> <span class="n">diff</span> <span class="o">&gt;&gt;</span> <span class="n">commit</span><span class="o">-</span><span class="mf">1.</span><span class="n">diff</span>
+<span class="n">svn</span> <span class="n">diff</span> <span class="o">&gt;&gt;</span> <span class="n">patch</span><span class="o">-</span><span class="mf">1.</span><span class="n">diff</span>
+<span class="c1"># Upload the patch-1 to bugs.python.org.</span>
+<span class="c1"># Receive reviewer comments.</span>
+<span class="c1"># Edit some code.</span>
+<span class="n">echo</span> <span class="s2">&quot;The cake is real!&quot;</span> <span class="o">&gt;</span> <span class="n">README</span>
+<span class="c1"># Since svn lacks support for local commits, we fake it with patches.</span>
+<span class="n">svn</span> <span class="n">diff</span> <span class="o">&gt;&gt;</span> <span class="n">commit</span><span class="o">-</span><span class="mf">2.</span><span class="n">diff</span>
+<span class="n">svn</span> <span class="n">diff</span> <span class="o">&gt;&gt;</span> <span class="n">patch</span><span class="o">-</span><span class="mf">2.</span><span class="n">diff</span>
+<span class="c1"># Upload patch-2 to bugs.python.org</span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h4><a class="toc-backref" href="#id81">bzr</a><a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bzr</span> <span class="n">branch</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">code</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">python</span><span class="o">/</span><span class="n">trunk</span>
+<span class="n">cd</span> <span class="n">trunk</span>
+<span class="c1"># Edit some code.</span>
+<span class="n">bzr</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s1">&#39;Stuff I did&#39;</span>
+<span class="n">bzr</span> <span class="n">send</span> <span class="o">-</span><span class="n">o</span> <span class="n">bundle</span>
+<span class="c1"># Upload bundle to bugs.python.org</span>
+<span class="c1"># Receive reviewer comments</span>
+<span class="c1"># Edit some code</span>
+<span class="n">bzr</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s1">&#39;Respond to reviewer comments&#39;</span>
+<span class="n">bzr</span> <span class="n">send</span> <span class="o">-</span><span class="n">o</span> <span class="n">bundle</span>
+<span class="c1"># Upload updated bundle to bugs.python.org</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">bundle</span></code> file is like a super-patch.  It can be read by <code class="docutils literal notranslate"><span class="pre">patch(1)</span></code> but
+it contains additional metadata so that it can be fed to <code class="docutils literal notranslate"><span class="pre">bzr</span> <span class="pre">merge</span></code> to
+produce a fully usable branch completely with history.  See <a class="reference internal" href="#patch-review">Patch Review</a>
+section below.</p>
+</section>
+<section id="id4">
+<h4><a class="toc-backref" href="#id82">hg</a><a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hg</span> <span class="n">clone</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">code</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">hg</span><span class="o">/</span><span class="n">trunk</span>
+<span class="n">cd</span> <span class="n">trunk</span>
+<span class="c1"># Edit some code.</span>
+<span class="n">hg</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Stuff I did&quot;</span>
+<span class="n">hg</span> <span class="n">outgoing</span> <span class="o">-</span><span class="n">p</span> <span class="o">&gt;</span> <span class="n">fixes</span><span class="o">.</span><span class="n">patch</span>
+<span class="c1"># Upload patch to bugs.python.org</span>
+<span class="c1"># Receive reviewer comments</span>
+<span class="c1"># Edit some code</span>
+<span class="n">hg</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Address reviewer comments.&quot;</span>
+<span class="n">hg</span> <span class="n">outgoing</span> <span class="o">-</span><span class="n">p</span> <span class="o">&gt;</span> <span class="n">additional</span><span class="o">-</span><span class="n">fixes</span><span class="o">.</span><span class="n">patch</span>
+<span class="c1"># Upload patch to bugs.python.org</span>
+</pre></div>
+</div>
+<p>While <code class="docutils literal notranslate"><span class="pre">hg</span> <span class="pre">outgoing</span></code> does not have the flag for it, most Mercurial
+commands support git’s extended patch format through a <code class="docutils literal notranslate"><span class="pre">--git</span></code>
+command. This can be set in one’s <code class="docutils literal notranslate"><span class="pre">.hgrc</span></code> file so that all commands
+that generate a patch use the extended format.</p>
+</section>
+<section id="id5">
+<h4><a class="toc-backref" href="#id83">git</a><a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h4>
+<p>The patches could be created with
+<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">diff</span> <span class="pre">master</span> <span class="pre">&gt;</span> <span class="pre">stuff-i-did.patch</span></code>, too, but
+<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">format-patch</span> <span class="pre">|</span> <span class="pre">git</span> <span class="pre">am</span></code> knows some tricks
+(empty files, renames, etc) that ordinary patch can’t handle. git
+grabs “Stuff I did” out of the commit message to create the file
+name 0001-Stuff-I-did.patch. See Patch Review below for a
+description of the git-format-patch format.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the mainline code.</span>
+<span class="n">git</span> <span class="n">clone</span> <span class="n">git</span><span class="p">:</span><span class="o">//</span><span class="n">code</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">python</span><span class="o">/</span><span class="n">trunk</span>
+<span class="n">cd</span> <span class="n">trunk</span>
+<span class="c1"># Edit some code.</span>
+<span class="n">git</span> <span class="n">commit</span> <span class="o">-</span><span class="n">a</span> <span class="o">-</span><span class="n">m</span> <span class="s1">&#39;Stuff I did.&#39;</span>
+<span class="c1"># Create patch for my changes (i.e, relative to master).</span>
+<span class="n">git</span> <span class="nb">format</span><span class="o">-</span><span class="n">patch</span> <span class="n">master</span>
+<span class="n">git</span> <span class="n">tag</span> <span class="n">stuff</span><span class="o">-</span><span class="n">v1</span>
+<span class="c1"># Upload 0001-Stuff-I-did.patch to bugs.python.org.</span>
+<span class="c1"># Time passes ... receive reviewer comments.</span>
+<span class="c1"># Edit more code.</span>
+<span class="n">git</span> <span class="n">commit</span> <span class="o">-</span><span class="n">a</span> <span class="o">-</span><span class="n">m</span> <span class="s1">&#39;Address reviewer comments.&#39;</span>
+<span class="c1"># Make an add-on patch to apply on top of the original.</span>
+<span class="n">git</span> <span class="nb">format</span><span class="o">-</span><span class="n">patch</span> <span class="n">stuff</span><span class="o">-</span><span class="n">v1</span>
+<span class="c1"># Upload 0001-Address-reviewer-comments.patch to bugs.python.org.</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="backing-out-changes">
+<h3><a class="toc-backref" href="#id84">Backing Out Changes</a><a class="headerlink" href="#backing-out-changes" title="Permalink to this headline">¶</a></h3>
+<p>As a core developer, I want to undo a change that was not ready for
+inclusion in the mainline.</p>
+<ul class="simple">
+<li><p>Back out the unwanted change.</p></li>
+<li><p>Push patch to server.</p></li>
+</ul>
+<section id="id6">
+<h4><a class="toc-backref" href="#id85">svn</a><a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assume the change to revert is in revision 40</span>
+<span class="n">svn</span> <span class="n">merge</span> <span class="o">-</span><span class="n">c</span> <span class="o">-</span><span class="mi">40</span> <span class="o">.</span>
+<span class="c1"># Resolve conflicts, if any.</span>
+<span class="n">svn</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Reverted revision 40&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="id7">
+<h4><a class="toc-backref" href="#id86">bzr</a><a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assume the change to revert is in revision 40</span>
+<span class="n">bzr</span> <span class="n">merge</span> <span class="o">-</span><span class="n">r</span> <span class="mf">40..39</span>
+<span class="c1"># Resolve conflicts, if any.</span>
+<span class="n">bzr</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Reverted revision 40&quot;</span>
+</pre></div>
+</div>
+<p>Note that if the change you want revert is the last one that was
+made, you can just use <code class="docutils literal notranslate"><span class="pre">bzr</span> <span class="pre">uncommit</span></code>.</p>
+</section>
+<section id="id8">
+<h4><a class="toc-backref" href="#id87">hg</a><a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assume the change to revert is in revision 9150dd9c6d30</span>
+<span class="n">hg</span> <span class="n">backout</span> <span class="o">--</span><span class="n">merge</span> <span class="o">-</span><span class="n">r</span> <span class="mi">9150</span><span class="n">dd9c6d30</span>
+<span class="c1"># Resolve conflicts, if any.</span>
+<span class="n">hg</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Reverted changeset 9150dd9c6d30&quot;</span>
+<span class="n">hg</span> <span class="n">push</span>
+</pre></div>
+</div>
+<p>Note, you can use “hg rollback” and “hg strip” to revert changes you committed
+in your local repository, but did not yet push to other repositories.</p>
+</section>
+<section id="id9">
+<h4><a class="toc-backref" href="#id88">git</a><a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assume the change to revert is the grandfather of a revision tagged &quot;newhotness&quot;.</span>
+<span class="n">git</span> <span class="n">revert</span> <span class="n">newhotness</span><span class="o">~</span><span class="mi">2</span>
+<span class="c1"># Resolve conflicts if any.  If there are no conflicts, the commit</span>
+<span class="c1"># will be done automatically by &quot;git revert&quot;, which prompts for a log.</span>
+<span class="n">git</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Reverted changeset 9150dd9c6d30.&quot;</span>
+<span class="n">git</span> <span class="n">push</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="patch-review">
+<h3><a class="toc-backref" href="#id89">Patch Review</a><a class="headerlink" href="#patch-review" title="Permalink to this headline">¶</a></h3>
+<p>As a core developer, I want to review patches submitted by other
+people, so that I can make sure that only approved changes are added
+to Python.</p>
+<p>Core developers have to review patches as submitted by other people.
+This requires applying the patch, testing it, and then tossing away
+the changes. The assumption can be made that a core developer already
+has a checkout/branch/clone of the trunk.</p>
+<ul class="simple">
+<li><p>Branch off of trunk.</p></li>
+<li><p>Apply patch w/o any comments as generated by the patch submitter.</p></li>
+<li><p>Push patch to server.</p></li>
+<li><p>Delete now-useless branch.</p></li>
+</ul>
+<section id="id10">
+<h4><a class="toc-backref" href="#id90">svn</a><a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h4>
+<p>Subversion does not exactly fit into this development style very well
+as there are no such thing as a “branch” as has been defined in this
+PEP. Instead a developer either needs to create another checkout for
+testing a patch or create a branch on the server. Up to this point,
+core developers have not taken the “branch on the server” approach to
+dealing with individual patches. For this scenario the assumption
+will be the developer creates a local checkout of the trunk to work
+with.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cp</span> <span class="o">-</span><span class="n">r</span> <span class="n">trunk</span> <span class="n">issue0000</span>
+<span class="n">cd</span> <span class="n">issue0000</span>
+<span class="n">patch</span> <span class="o">-</span><span class="n">p0</span> <span class="o">&lt;</span> <span class="n">__patch__</span>
+<span class="c1"># Review patch.</span>
+<span class="n">svn</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Some patch.&quot;</span>
+<span class="n">cd</span> <span class="o">..</span>
+<span class="n">rm</span> <span class="o">-</span><span class="n">r</span> <span class="n">issue0000</span>
+</pre></div>
+</div>
+<p>Another option is to only have a single checkout running at any one
+time and use <code class="docutils literal notranslate"><span class="pre">svn</span> <span class="pre">diff</span></code> along with <code class="docutils literal notranslate"><span class="pre">svn</span> <span class="pre">revert</span> <span class="pre">-R</span></code> to store away
+independent changes you may have made.</p>
+</section>
+<section id="id11">
+<h4><a class="toc-backref" href="#id91">bzr</a><a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bzr</span> <span class="n">branch</span> <span class="n">trunk</span> <span class="n">issueNNNN</span>
+<span class="c1"># Download `patch` bundle from Roundup</span>
+<span class="n">bzr</span> <span class="n">merge</span> <span class="n">patch</span>
+<span class="c1"># Review patch</span>
+<span class="n">bzr</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span><span class="s1">&#39;Patch NNN by So N. So&#39;</span> <span class="o">--</span><span class="n">fixes</span> <span class="n">python</span><span class="p">:</span><span class="n">NNNN</span>
+<span class="n">bzr</span> <span class="n">push</span> <span class="n">bzr</span><span class="o">+</span><span class="n">ssh</span><span class="p">:</span><span class="o">//</span><span class="n">me</span><span class="nd">@code</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">trunk</span>
+<span class="n">rm</span> <span class="o">-</span><span class="n">rf</span> <span class="o">../</span><span class="n">issueNNNN</span>
+</pre></div>
+</div>
+<p>Alternatively, since you’re probably going to commit these changes to
+the trunk, you could just do a checkout. That would give you a local
+working tree while the branch (i.e. all revisions) would continue to
+live on the server. This is similar to the svn model and might allow
+you to more quickly review the patch. There’s no need for the push
+in this case.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bzr</span> <span class="n">checkout</span> <span class="n">trunk</span> <span class="n">issueNNNN</span>
+<span class="c1"># Download `patch` bundle from Roundup</span>
+<span class="n">bzr</span> <span class="n">merge</span> <span class="n">patch</span>
+<span class="c1"># Review patch</span>
+<span class="n">bzr</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span><span class="s1">&#39;Patch NNNN by So N. So&#39;</span> <span class="o">--</span><span class="n">fixes</span> <span class="n">python</span><span class="p">:</span><span class="n">NNNN</span>
+<span class="n">rm</span> <span class="o">-</span><span class="n">rf</span> <span class="o">../</span><span class="n">issueNNNN</span>
+</pre></div>
+</div>
+</section>
+<section id="id12">
+<h4><a class="toc-backref" href="#id92">hg</a><a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hg</span> <span class="n">clone</span> <span class="n">trunk</span> <span class="n">issue0000</span>
+<span class="n">cd</span> <span class="n">issue0000</span>
+<span class="c1"># If the patch was generated using hg export, the user name of the</span>
+<span class="c1"># submitter is automatically recorded. Otherwise,</span>
+<span class="c1"># use hg import --no-commit submitted.diff and commit with</span>
+<span class="c1"># hg commit -u &quot;Firstname Lastname &lt;email.address@example.com&gt;&quot;</span>
+<span class="n">hg</span> <span class="kn">import</span> <span class="nn">submitted.diff</span>
+<span class="c1"># Review patch.</span>
+<span class="n">hg</span> <span class="n">push</span> <span class="n">ssh</span><span class="p">:</span><span class="o">//</span><span class="n">alexandre</span><span class="nd">@code</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">hg</span><span class="o">/</span><span class="n">trunk</span><span class="o">/</span>
+</pre></div>
+</div>
+</section>
+<section id="id13">
+<h4><a class="toc-backref" href="#id93">git</a><a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h4>
+<p>We assume a patch created by git-format-patch. This is a Unix mbox
+file containing one or more patches, each formatted as an <a class="reference external" href="https://tools.ietf.org/html/rfc2822.html">RFC 2822</a>
+message. git-am interprets each message as a commit as follows. The
+author of the patch is taken from the From: header, the date from the
+Date header. The commit log is created by concatenating the content
+of the subject line, a blank line, and the message body up to the
+start of the patch.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">trunk</span>
+<span class="c1"># Create a branch in case we don&#39;t like the patch.</span>
+<span class="c1"># This checkout takes zero time, since the workspace is left in</span>
+<span class="c1"># the same state as the master branch.</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="o">-</span><span class="n">b</span> <span class="n">patch</span><span class="o">-</span><span class="n">review</span>
+<span class="c1"># Download patch from bugs.python.org to submitted.patch.</span>
+<span class="n">git</span> <span class="n">am</span> <span class="o">&lt;</span> <span class="n">submitted</span><span class="o">.</span><span class="n">patch</span>
+<span class="c1"># Review and approve patch.</span>
+<span class="c1"># Merge into master and push.</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="n">master</span>
+<span class="n">git</span> <span class="n">merge</span> <span class="n">patch</span><span class="o">-</span><span class="n">review</span>
+<span class="n">git</span> <span class="n">push</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="backport">
+<h3><a class="toc-backref" href="#id94">Backport</a><a class="headerlink" href="#backport" title="Permalink to this headline">¶</a></h3>
+<p>As a core developer, I want to apply a patch to 2.6, 2.7, 3.0, and 3.1
+so that I can fix a problem in all three versions.</p>
+<p>Thanks to always having the cutting-edge and the latest release
+version under development, Python currently has four branches being
+worked on simultaneously. That makes it important for a change to
+propagate easily through various branches.</p>
+<section id="id14">
+<h4><a class="toc-backref" href="#id95">svn</a><a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h4>
+<p>Because of Python’s use of svnmerge, changes start with the trunk
+(2.7) and then get merged to the release version of 2.6. To get the
+change into the 3.x series, the change is merged into 3.1, fixed up,
+and then merged into 3.0 (2.7 -&gt; 2.6; 2.7 -&gt; 3.1 -&gt; 3.0).</p>
+<p>This is in contrast to a port-forward strategy where the patch would
+have been added to 2.6 and then pulled forward into newer versions
+(2.6 -&gt; 2.7 -&gt; 3.0 -&gt; 3.1).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assume patch applied to 2.7 in revision 0000.</span>
+<span class="n">cd</span> <span class="n">release26</span><span class="o">-</span><span class="n">maint</span>
+<span class="n">svnmerge</span> <span class="n">merge</span> <span class="o">-</span><span class="n">r</span> <span class="mi">0000</span>
+<span class="c1"># Resolve merge conflicts and make sure patch works.</span>
+<span class="n">svn</span> <span class="n">commit</span> <span class="o">-</span><span class="n">F</span> <span class="n">svnmerge</span><span class="o">-</span><span class="n">commit</span><span class="o">-</span><span class="n">message</span><span class="o">.</span><span class="n">txt</span>  <span class="c1"># revision 0001.</span>
+<span class="n">cd</span> <span class="o">../</span><span class="n">py3k</span>
+<span class="n">svnmerge</span> <span class="n">merge</span> <span class="o">-</span><span class="n">r</span> <span class="mi">0000</span>
+<span class="c1"># Same as for 2.6, except Misc/NEWS changes are reverted.</span>
+<span class="n">svn</span> <span class="n">revert</span> <span class="n">Misc</span><span class="o">/</span><span class="n">NEWS</span>
+<span class="n">svn</span> <span class="n">commit</span> <span class="o">-</span><span class="n">F</span> <span class="n">svnmerge</span><span class="o">-</span><span class="n">commit</span><span class="o">-</span><span class="n">message</span><span class="o">.</span><span class="n">txt</span>  <span class="c1"># revision 0002.</span>
+<span class="n">cd</span> <span class="o">../</span><span class="n">release30</span><span class="o">-</span><span class="n">maint</span>
+<span class="n">svnmerge</span> <span class="n">merge</span> <span class="o">-</span><span class="n">r</span> <span class="mi">0002</span>
+<span class="n">svn</span> <span class="n">commit</span> <span class="o">-</span><span class="n">F</span> <span class="n">svnmerge</span><span class="o">-</span><span class="n">commit</span><span class="o">-</span><span class="n">message</span><span class="o">.</span><span class="n">txt</span>  <span class="c1"># revision 0003.</span>
+</pre></div>
+</div>
+</section>
+<section id="id15">
+<h4><a class="toc-backref" href="#id96">bzr</a><a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h4>
+<p>Bazaar is pretty straightforward here, since it supports cherry
+picking revisions manually. In the example below, we could have
+given a revision id instead of a revision number, but that’s usually
+not necessary. Martin Pool suggests “We’d generally recommend doing
+the fix first in the oldest supported branch, and then merging it
+forward to the later releases.”:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assume patch applied to 2.7 in revision 0000</span>
+<span class="n">cd</span> <span class="n">release26</span><span class="o">-</span><span class="n">maint</span>
+<span class="n">bzr</span> <span class="n">merge</span> <span class="o">../</span><span class="n">trunk</span> <span class="o">-</span><span class="n">c</span> <span class="mi">0000</span>
+<span class="c1"># Resolve conflicts and make sure patch works</span>
+<span class="n">bzr</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s1">&#39;Back port patch NNNN&#39;</span>
+<span class="n">bzr</span> <span class="n">push</span> <span class="n">bzr</span><span class="o">+</span><span class="n">ssh</span><span class="p">:</span><span class="o">//</span><span class="n">me</span><span class="nd">@code</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">trunk</span>
+<span class="n">cd</span> <span class="o">../</span><span class="n">py3k</span>
+<span class="n">bzr</span> <span class="n">merge</span> <span class="o">../</span><span class="n">trunk</span> <span class="o">-</span><span class="n">r</span> <span class="mi">0000</span>
+<span class="c1"># Same as for 2.6 except Misc/NEWS changes are reverted</span>
+<span class="n">bzr</span> <span class="n">revert</span> <span class="n">Misc</span><span class="o">/</span><span class="n">NEWS</span>
+<span class="n">bzr</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s1">&#39;Forward port patch NNNN&#39;</span>
+<span class="n">bzr</span> <span class="n">push</span> <span class="n">bzr</span><span class="o">+</span><span class="n">ssh</span><span class="p">:</span><span class="o">//</span><span class="n">me</span><span class="nd">@code</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">py3k</span>
+</pre></div>
+</div>
+</section>
+<section id="id16">
+<h4><a class="toc-backref" href="#id97">hg</a><a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h4>
+<p>Mercurial, like other DVCS, does not well support the current
+workflow used by Python core developers to backport patches. Right
+now, bug fixes are first applied to the development mainline
+(i.e., trunk), then back-ported to the maintenance branches and
+forward-ported, as necessary, to the py3k branch. This workflow
+requires the ability to cherry-pick individual changes. Mercurial’s
+transplant extension provides this ability. Here is an example of
+the scenario using this workflow:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">release26</span><span class="o">-</span><span class="n">maint</span>
+<span class="c1"># Assume patch applied to 2.7 in revision 0000</span>
+<span class="n">hg</span> <span class="n">transplant</span> <span class="o">-</span><span class="n">s</span> <span class="o">../</span><span class="n">trunk</span> <span class="mi">0000</span>
+<span class="c1"># Resolve conflicts, if any.</span>
+<span class="n">cd</span> <span class="o">../</span><span class="n">py3k</span>
+<span class="n">hg</span> <span class="n">pull</span> <span class="o">../</span><span class="n">trunk</span>
+<span class="n">hg</span> <span class="n">merge</span>
+<span class="n">hg</span> <span class="n">revert</span> <span class="n">Misc</span><span class="o">/</span><span class="n">NEWS</span>
+<span class="n">hg</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Merged trunk&quot;</span>
+<span class="n">hg</span> <span class="n">push</span>
+</pre></div>
+</div>
+<p>In the above example, transplant acts much like the current svnmerge
+command. When transplant is invoked without the revision, the command
+launches an interactive loop useful for transplanting multiple
+changes. Another useful feature is the –filter option which can be
+used to modify changesets programmatically (e.g., it could be used
+for removing changes to Misc/NEWS automatically).</p>
+<p>Alternatively to the traditional workflow, we could avoid
+transplanting changesets by committing bug fixes to the oldest
+supported release, then merge these fixes upward to the more recent
+branches.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">release25</span><span class="o">-</span><span class="n">maint</span>
+<span class="n">hg</span> <span class="kn">import</span> <span class="nn">fix_some_bug.diff</span>
+<span class="c1"># Review patch and run test suite. Revert if failure.</span>
+<span class="n">hg</span> <span class="n">push</span>
+<span class="n">cd</span> <span class="o">../</span><span class="n">release26</span><span class="o">-</span><span class="n">maint</span>
+<span class="n">hg</span> <span class="n">pull</span> <span class="o">../</span><span class="n">release25</span><span class="o">-</span><span class="n">maint</span>
+<span class="n">hg</span> <span class="n">merge</span>
+<span class="c1"># Resolve conflicts, if any. Then, review patch and run test suite.</span>
+<span class="n">hg</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Merged patches from release25-maint.&quot;</span>
+<span class="n">hg</span> <span class="n">push</span>
+<span class="n">cd</span> <span class="o">../</span><span class="n">trunk</span>
+<span class="n">hg</span> <span class="n">pull</span> <span class="o">../</span><span class="n">release26</span><span class="o">-</span><span class="n">maint</span>
+<span class="n">hg</span> <span class="n">merge</span>
+<span class="c1"># Resolve conflicts, if any, then review.</span>
+<span class="n">hg</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Merged patches from release26-maint.&quot;</span>
+<span class="n">hg</span> <span class="n">push</span>
+</pre></div>
+</div>
+<p>Although this approach makes the history non-linear and slightly
+more difficult to follow, it encourages fixing bugs across all
+supported releases. Furthermore, it scales better when there is many
+changes to backport, because we do not need to seek the specific
+revision IDs to merge.</p>
+</section>
+<section id="id17">
+<h4><a class="toc-backref" href="#id98">git</a><a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h4>
+<p>In git I would have a workspace which contains all of
+the relevant master repository branches. git cherry-pick doesn’t
+work across repositories; you need to have the branches in the same
+repository.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assume patch applied to 2.7 in revision release27~3 (4th patch back from tip).</span>
+<span class="n">cd</span> <span class="n">integration</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="n">release26</span>
+<span class="n">git</span> <span class="n">cherry</span><span class="o">-</span><span class="n">pick</span> <span class="n">release27</span><span class="o">~</span><span class="mi">3</span>
+<span class="c1"># If there are conflicts, resolve them, and commit those changes.</span>
+<span class="c1"># git commit -a -m &quot;Resolve conflicts.&quot;</span>
+<span class="c1"># Run test suite. If fixes are necessary, record as a separate commit.</span>
+<span class="c1"># git commit -a -m &quot;Fix code causing test failures.&quot;</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="n">master</span>
+<span class="n">git</span> <span class="n">cherry</span><span class="o">-</span><span class="n">pick</span> <span class="n">release27</span><span class="o">~</span><span class="mi">3</span>
+<span class="c1"># Do any conflict resolution and test failure fixups.</span>
+<span class="c1"># Revert Misc/NEWS changes.</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="n">HEAD</span><span class="o">^</span> <span class="o">--</span> <span class="n">Misc</span><span class="o">/</span><span class="n">NEWS</span>
+<span class="n">git</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s1">&#39;Revert cherry-picked Misc/NEWS changes.&#39;</span> <span class="n">Misc</span><span class="o">/</span><span class="n">NEWS</span>
+<span class="c1"># Push both ports.</span>
+<span class="n">git</span> <span class="n">push</span> <span class="n">release26</span> <span class="n">master</span>
+</pre></div>
+</div>
+<p>If you are regularly merging (rather than cherry-picking) from a
+given branch, then you can block a given commit from being
+accidentally merged in the future by merging, then reverting it.
+This does not prevent a cherry-pick from pulling in the unwanted
+patch, and this technique requires blocking everything that you don’t
+want merged. I’m not sure if this differs from svn on this point.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">trunk</span>
+<span class="c1"># Merge in the alpha tested code.</span>
+<span class="n">git</span> <span class="n">merge</span> <span class="n">experimental</span><span class="o">-</span><span class="n">branch</span>
+<span class="c1"># We don&#39;t want the 3rd-to-last commit from the experimental-branch,</span>
+<span class="c1"># and we don&#39;t want it to ever be merged.</span>
+<span class="c1"># The notation &quot;^N&quot; means Nth parent of the current commit. Thus HEAD^2^1^1</span>
+<span class="c1"># means the first parent of the first parent of the second parent of HEAD.</span>
+<span class="n">git</span> <span class="n">revert</span> <span class="n">HEAD</span><span class="o">^</span><span class="mi">2</span><span class="o">^</span><span class="mi">1</span><span class="o">^</span><span class="mi">1</span>
+<span class="c1"># Propagate the merge and the prohibition to the public repository.</span>
+<span class="n">git</span> <span class="n">push</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="coordinated-development-of-a-new-feature">
+<h3><a class="toc-backref" href="#id99">Coordinated Development of a New Feature</a><a class="headerlink" href="#coordinated-development-of-a-new-feature" title="Permalink to this headline">¶</a></h3>
+<p>Sometimes core developers end up working on a major feature with
+several developers. As a core developer, I want to be able to
+publish feature branches to a common public location so that I can
+collaborate with other developers.</p>
+<p>This requires creating a branch on a server that other developers
+can access. All of the DVCSs support creating new repositories on
+hosts where the developer is already able to commit, with
+appropriate configuration of the repository host. This is
+similar in concept to the existing sandbox in svn, although details
+of repository initialization may differ.</p>
+<p>For non-core developers, there are various more-or-less public-access
+repository-hosting services.
+Bazaar has
+<a class="reference external" href="http://www.launchpad.net/">Launchpad</a> <a class="footnote-reference brackets" href="#id40" id="id41">6</a>,
+Mercurial has
+<a class="reference external" href="http://www.bitbucket.org/">bitbucket.org</a> <a class="footnote-reference brackets" href="#id42" id="id43">7</a>,
+and git has
+<a class="reference external" href="http://www.github.com/">GitHub</a> <a class="footnote-reference brackets" href="#id44" id="id45">8</a>.
+All also have easy-to-use
+CGI interfaces for developers who maintain their own servers.</p>
+<ul class="simple">
+<li><p>Branch trunk.</p></li>
+<li><p>Pull from branch on the server.</p></li>
+<li><p>Pull from trunk.</p></li>
+<li><p>Push merge to trunk.</p></li>
+</ul>
+<section id="id18">
+<h4><a class="toc-backref" href="#id100">svn</a><a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create branch.</span>
+<span class="n">svn</span> <span class="n">copy</span> <span class="n">svn</span><span class="o">+</span><span class="n">ssh</span><span class="p">:</span><span class="o">//</span><span class="n">pythondev</span><span class="nd">@svn</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">python</span><span class="o">/</span><span class="n">trunk</span> <span class="n">svn</span><span class="o">+</span><span class="n">ssh</span><span class="p">:</span><span class="o">//</span><span class="n">pythondev</span><span class="nd">@svn</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">python</span><span class="o">/</span><span class="n">branches</span><span class="o">/</span><span class="n">NewHotness</span>
+<span class="n">svn</span> <span class="n">checkout</span> <span class="n">svn</span><span class="o">+</span><span class="n">ssh</span><span class="p">:</span><span class="o">//</span><span class="n">pythondev</span><span class="nd">@svn</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">python</span><span class="o">/</span><span class="n">branches</span><span class="o">/</span><span class="n">NewHotness</span>
+<span class="n">cd</span> <span class="n">NewHotness</span>
+<span class="n">svnmerge</span> <span class="n">init</span>
+<span class="n">svn</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Initialize svnmerge.&quot;</span>
+<span class="c1"># Pull in changes from other developers.</span>
+<span class="n">svn</span> <span class="n">update</span>
+<span class="c1"># Pull in trunk and merge to the branch.</span>
+<span class="n">svnmerge</span> <span class="n">merge</span>
+<span class="n">svn</span> <span class="n">commit</span> <span class="o">-</span><span class="n">F</span> <span class="n">svnmerge</span><span class="o">-</span><span class="n">commit</span><span class="o">-</span><span class="n">message</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+<p>This scenario is incomplete as the decision for what DVCS to go with
+was made before the work was complete.</p>
+</section>
+</section>
+<section id="separation-of-issue-dependencies">
+<h3><a class="toc-backref" href="#id101">Separation of Issue Dependencies</a><a class="headerlink" href="#separation-of-issue-dependencies" title="Permalink to this headline">¶</a></h3>
+<p>Sometimes, while working on an issue, it becomes apparent that the
+problem being worked on is actually a compound issue of various
+smaller issues. Being able to take the current work and then begin
+working on a separate issue is very helpful to separate out issues
+into individual units of work instead of compounding them into a
+single, large unit.</p>
+<ul class="simple">
+<li><p>Create a branch A (e.g. urllib has a bug).</p></li>
+<li><p>Edit some code.</p></li>
+<li><p>Create a new branch B that branch A depends on (e.g. the urllib
+bug exposes a socket bug).</p></li>
+<li><p>Edit some code in branch B.</p></li>
+<li><p>Commit branch B.</p></li>
+<li><p>Edit some code in branch A.</p></li>
+<li><p>Commit branch A.</p></li>
+<li><p>Clean up.</p></li>
+</ul>
+<section id="id19">
+<h4><a class="toc-backref" href="#id102">svn</a><a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h4>
+<p>To make up for svn’s lack of cheap branching, it has a changelist
+option to associate a file with a single changelist. This is not as
+powerful as being able to associate at the commit level. There is
+also no way to express dependencies between changelists.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cp</span> <span class="o">-</span><span class="n">r</span> <span class="n">trunk</span> <span class="n">issue0000</span>
+<span class="n">cd</span> <span class="n">issue0000</span>
+<span class="c1"># Edit some code.</span>
+<span class="n">echo</span> <span class="s2">&quot;The cake is a lie!&quot;</span> <span class="o">&gt;</span> <span class="n">README</span>
+<span class="n">svn</span> <span class="n">changelist</span> <span class="n">A</span> <span class="n">README</span>
+<span class="c1"># Edit some other code.</span>
+<span class="n">echo</span> <span class="s2">&quot;I own Python!&quot;</span> <span class="o">&gt;</span> <span class="n">LICENSE</span>
+<span class="n">svn</span> <span class="n">changelist</span> <span class="n">B</span> <span class="n">LICENSE</span>
+<span class="n">svn</span> <span class="n">ci</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Tell it how it is.&quot;</span> <span class="o">--</span><span class="n">changelist</span> <span class="n">B</span>
+<span class="c1"># Edit changelist A some more.</span>
+<span class="n">svn</span> <span class="n">ci</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Speak the truth.&quot;</span> <span class="o">--</span><span class="n">changelist</span> <span class="n">A</span>
+<span class="n">cd</span> <span class="o">..</span>
+<span class="n">rm</span> <span class="o">-</span><span class="n">rf</span> <span class="n">issue0000</span>
+</pre></div>
+</div>
+</section>
+<section id="id20">
+<h4><a class="toc-backref" href="#id103">bzr</a><a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h4>
+<p>Here’s an approach that uses bzr shelf (now a standard part of bzr)
+to squirrel away some changes temporarily while you take a detour to
+fix the socket bugs.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bzr</span> <span class="n">branch</span> <span class="n">trunk</span> <span class="n">bug</span><span class="o">-</span><span class="mi">0000</span>
+<span class="n">cd</span> <span class="n">bug</span><span class="o">-</span><span class="mi">0000</span>
+<span class="c1"># Edit some code. Dang, we need to fix the socket module.</span>
+<span class="n">bzr</span> <span class="n">shelve</span> <span class="o">--</span><span class="nb">all</span>
+<span class="c1"># Edit some code.</span>
+<span class="n">bzr</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Socket module fixes&quot;</span>
+<span class="c1"># Detour over, now resume fixing urllib</span>
+<span class="n">bzr</span> <span class="n">unshelve</span>
+<span class="c1"># Edit some code</span>
+</pre></div>
+</div>
+<p>Another approach uses the loom plugin. Looms can
+greatly simplify working on dependent branches because they
+automatically take care of the stacking dependencies for you.
+Imagine looms as a stack of dependent branches (called “threads” in
+loom parlance), with easy ways to move up and down the stack of
+threads, merge changes up the stack to descendant threads, create
+diffs between threads, etc. Occasionally, you may need or want to
+export your loom threads into separate branches, either for review
+or commit. Higher threads incorporate all the changes in the lower
+threads, automatically.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bzr</span> <span class="n">branch</span> <span class="n">trunk</span> <span class="n">bug</span><span class="o">-</span><span class="mi">0000</span>
+<span class="n">cd</span> <span class="n">bug</span><span class="o">-</span><span class="mi">0000</span>
+<span class="n">bzr</span> <span class="n">loomify</span> <span class="o">--</span><span class="n">base</span> <span class="n">trunk</span>
+<span class="n">bzr</span> <span class="n">create</span><span class="o">-</span><span class="n">thread</span> <span class="n">fix</span><span class="o">-</span><span class="n">urllib</span>
+<span class="c1"># Edit some code. Dang, we need to fix the socket module first.</span>
+<span class="n">bzr</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Checkpointing my work so far&quot;</span>
+<span class="n">bzr</span> <span class="n">down</span><span class="o">-</span><span class="n">thread</span>
+<span class="n">bzr</span> <span class="n">create</span><span class="o">-</span><span class="n">thread</span> <span class="n">fix</span><span class="o">-</span><span class="n">socket</span>
+<span class="c1"># Edit some code</span>
+<span class="n">bzr</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Socket module fixes&quot;</span>
+<span class="n">bzr</span> <span class="n">up</span><span class="o">-</span><span class="n">thread</span>
+<span class="c1"># Manually resolve conflicts if necessary</span>
+<span class="n">bzr</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s1">&#39;Merge in socket fixes&#39;</span>
+<span class="c1"># Edit me some more code</span>
+<span class="n">bzr</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Now that socket is fixed, complete the urllib fixes&quot;</span>
+<span class="n">bzr</span> <span class="n">record</span> <span class="n">done</span>
+</pre></div>
+</div>
+<p>For bonus points, let’s say someone else fixes the socket module in
+exactly the same way you just did. Perhaps this person even grabbed your
+fix-socket thread and applied just that to the trunk. You’d like to
+be able to merge their changes into your loom and delete your
+now-redundant fix-socket thread.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bzr</span> <span class="n">down</span><span class="o">-</span><span class="n">thread</span> <span class="n">trunk</span>
+<span class="c1"># Get all new revisions to the trunk. If you&#39;ve done things</span>
+<span class="c1"># correctly, this will succeed without conflict.</span>
+<span class="n">bzr</span> <span class="n">pull</span>
+<span class="n">bzr</span> <span class="n">up</span><span class="o">-</span><span class="n">thread</span>
+<span class="c1"># See? The fix-socket thread is now identical to the trunk</span>
+<span class="n">bzr</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s1">&#39;Merge in trunk changes&#39;</span>
+<span class="n">bzr</span> <span class="n">diff</span> <span class="o">-</span><span class="n">r</span> <span class="n">thread</span><span class="p">:</span> <span class="o">|</span> <span class="n">wc</span> <span class="o">-</span><span class="n">l</span> <span class="c1"># returns 0</span>
+<span class="n">bzr</span> <span class="n">combine</span><span class="o">-</span><span class="n">thread</span>
+<span class="n">bzr</span> <span class="n">up</span><span class="o">-</span><span class="n">thread</span>
+<span class="c1"># Resolve any conflicts</span>
+<span class="n">bzr</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s1">&#39;Merge trunk&#39;</span>
+<span class="c1"># Now our top-thread has an up-to-date trunk and just the urllib fix.</span>
+</pre></div>
+</div>
+</section>
+<section id="id21">
+<h4><a class="toc-backref" href="#id104">hg</a><a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h4>
+<p>One approach is to use the shelve extension; this extension is not included
+with Mercurial, but it is easy to install. With shelve, you can select changes
+to put temporarily aside.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hg</span> <span class="n">clone</span> <span class="n">trunk</span> <span class="n">issue0000</span>
+<span class="n">cd</span> <span class="n">issue0000</span>
+<span class="c1"># Edit some code (e.g. urllib).</span>
+<span class="n">hg</span> <span class="n">shelve</span>
+<span class="c1"># Select changes to put aside</span>
+<span class="c1"># Edit some other code (e.g. socket).</span>
+<span class="n">hg</span> <span class="n">commit</span>
+<span class="n">hg</span> <span class="n">unshelve</span>
+<span class="c1"># Complete initial fix.</span>
+<span class="n">hg</span> <span class="n">commit</span>
+<span class="n">cd</span> <span class="o">../</span><span class="n">trunk</span>
+<span class="n">hg</span> <span class="n">pull</span> <span class="o">../</span><span class="n">issue0000</span>
+<span class="n">hg</span> <span class="n">merge</span>
+<span class="n">hg</span> <span class="n">commit</span>
+<span class="n">rm</span> <span class="o">-</span><span class="n">rf</span> <span class="o">../</span><span class="n">issue0000</span>
+</pre></div>
+</div>
+<p>Several other way to approach this scenario with Mercurial. Alexander Solovyov
+presented a few <a class="reference external" href="http://selenic.com/pipermail/mercurial/2009-January/023710.html">alternative approaches</a> <a class="footnote-reference brackets" href="#id46" id="id47">9</a> on Mercurial’s mailing list.</p>
+</section>
+<section id="id22">
+<h4><a class="toc-backref" href="#id105">git</a><a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">trunk</span>
+<span class="c1"># Edit some code in urllib.</span>
+<span class="c1"># Discover a bug in socket, want to fix that first.</span>
+<span class="c1"># So save away our current work.</span>
+<span class="n">git</span> <span class="n">stash</span>
+<span class="c1"># Edit some code, commit some changes.</span>
+<span class="n">git</span> <span class="n">commit</span> <span class="o">-</span><span class="n">a</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Completed fix of socket.&quot;</span>
+<span class="c1"># Restore the in-progress work on urllib.</span>
+<span class="n">git</span> <span class="n">stash</span> <span class="n">apply</span>
+<span class="c1"># Edit me some more code, commit some more fixes.</span>
+<span class="n">git</span> <span class="n">commit</span> <span class="o">-</span><span class="n">a</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;Complete urllib fixes.&quot;</span>
+<span class="c1"># And push both patches to the public repository.</span>
+<span class="n">git</span> <span class="n">push</span>
+</pre></div>
+</div>
+<p>Bonus points: suppose you took your time, and someone else fixes
+socket in the same way you just did, and landed that in the trunk.  In
+that case, your push will fail because your branch is not up-to-date.
+If the fix was a one-liner, there’s a very good chance that it’s
+<em>exactly</em> the same, character for character.  git would notice that,
+and you are done; git will silently merge them.</p>
+<p>Suppose we’re not so lucky:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Update your branch.</span>
+<span class="n">git</span> <span class="n">pull</span> <span class="n">git</span><span class="p">:</span><span class="o">//</span><span class="n">code</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">public</span><span class="o">/</span><span class="n">trunk</span> <span class="n">master</span>
+
+<span class="c1"># git has fetched all the necessary data, but reports that the</span>
+<span class="c1"># merge failed.  We discover the nearly-duplicated patch.</span>
+<span class="c1"># Neither our version of the master branch nor the workspace has</span>
+<span class="c1"># been touched.  Revert our socket patch and pull again:</span>
+<span class="n">git</span> <span class="n">revert</span> <span class="n">HEAD</span><span class="o">^</span>
+<span class="n">git</span> <span class="n">pull</span> <span class="n">git</span><span class="p">:</span><span class="o">//</span><span class="n">code</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">public</span><span class="o">/</span><span class="n">trunk</span> <span class="n">master</span>
+</pre></div>
+</div>
+<p>Like Bazaar and Mercurial, git has extensions to manage stacks of
+patches.  You can use the original Quilt by Andrew Morton, or there is
+StGit (“stacked git”) which integrates patch-tracking for large sets
+of patches into the VCS in a way similar to Mercurial Queues or Bazaar
+looms.</p>
+</section>
+</section>
+<section id="doing-a-python-release">
+<h3><a class="toc-backref" href="#id106">Doing a Python Release</a><a class="headerlink" href="#doing-a-python-release" title="Permalink to this headline">¶</a></h3>
+<p>How does <a class="reference external" href="pep-0101.html">PEP 101</a> change when using a DVCS?</p>
+<section id="id23">
+<h4><a class="toc-backref" href="#id107">bzr</a><a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h4>
+<p>It will change, but not substantially so. When doing the
+maintenance branch, we’ll just push to the new location instead of
+doing an svn cp. Tags are totally different, since in svn they are
+directory copies, but in bzr (and I’m guessing hg), they are just
+symbolic names for revisions on a particular branch. The release.py
+script will have to change to use bzr commands instead. It’s
+possible that because DVCS (in particular, bzr) does cherry picking
+and merging well enough that we’ll be able to create the maint
+branches sooner. It would be a useful exercise to try to do a
+release off the bzr/hg mirrors.</p>
+</section>
+<section id="id24">
+<h4><a class="toc-backref" href="#id108">hg</a><a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h4>
+<p>Clearly, details specific to Subversion in <a class="reference external" href="pep-0101.html">PEP 101</a> and in the
+release script will need to be updated. In particular, release
+tagging and maintenance branches creation process will have to be
+modified to use Mercurial’s features; this will simplify and
+streamline certain aspects of the release process. For example,
+tagging and re-tagging a release will become a trivial operation
+since a tag, in Mercurial, is simply a symbolic name for a given
+revision.</p>
+</section>
+<section id="id25">
+<h4><a class="toc-backref" href="#id109">git</a><a class="headerlink" href="#id25" title="Permalink to this headline">¶</a></h4>
+<p>It will change, but not substantially so. When doing the
+maintenance branch, we’ll just git push to the new location instead
+of doing an svn cp. Tags are totally different, since in svn they
+are directory copies, but in git they are just symbolic names for
+revisions, as are branches. (The difference between a tag and a
+branch is that tags refer to a particular commit, and will never
+change unless you use git tag -f to force them to move. The
+checked-out branch, on the other hand, is automatically updated by
+git commit.) The release.py script will have to change to use git
+commands instead. With git I would create a (local) maintenance
+branch as soon as the release engineer is chosen. Then I’d “git
+pull” until I didn’t like a patch, when it would be “git pull; git
+revert ugly-patch”, until it started to look like the sensible thing
+is to fork off, and start doing “git cherry-pick” on the good
+patches.</p>
+</section>
+</section>
+</section>
+<section id="platform-tool-support">
+<h2><a class="toc-backref" href="#id110">Platform/Tool Support</a><a class="headerlink" href="#platform-tool-support" title="Permalink to this headline">¶</a></h2>
+<section id="operating-systems">
+<h3><a class="toc-backref" href="#id111">Operating Systems</a><a class="headerlink" href="#operating-systems" title="Permalink to this headline">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 3%" />
+<col style="width: 33%" />
+<col style="width: 38%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>DVCS</p></th>
+<th class="head"><p>Windows</p></th>
+<th class="head"><p>OS X</p></th>
+<th class="head"><p>UNIX</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>bzr</p></td>
+<td><p>yes (installer) w/ tortoise</p></td>
+<td><p>yes (installer, fink or MacPorts)</p></td>
+<td><p>yes (various package formats)</p></td>
+</tr>
+<tr class="row-odd"><td><p>hg</p></td>
+<td><p>yes (third-party installer) w/ tortoise</p></td>
+<td><p>yes (third-party installer, fink or MacPorts)</p></td>
+<td><p>yes (various package formats)</p></td>
+</tr>
+<tr class="row-even"><td><p>git</p></td>
+<td><p>yes (third-party installer)</p></td>
+<td><p>yes (third-party installer, fink or MacPorts)</p></td>
+<td><p>yes (.deb or .rpm)</p></td>
+</tr>
+</tbody>
+</table>
+<p>As the above table shows, all three DVCSs are available on all three
+major OS platforms. But what it also shows is that Bazaar is the
+only DVCS that directly supports Windows with a binary installer
+while Mercurial and git require you to rely on a third-party for
+binaries. Both bzr and hg have a tortoise version while git does not.</p>
+<p>Bazaar and Mercurial also has the benefit of being available in pure
+Python with optional extensions available for performance.</p>
+</section>
+<section id="crlf-lf-support">
+<h3><a class="toc-backref" href="#id112">CRLF -&gt; LF Support</a><a class="headerlink" href="#crlf-lf-support" title="Permalink to this headline">¶</a></h3>
+<dl class="simple">
+<dt>bzr</dt><dd><p>My understanding is that support for this is being worked on as
+I type, landing in a version RSN. I will try to dig up details.</p>
+</dd>
+<dt>hg</dt><dd><p>Supported via the win32text extension.</p>
+</dd>
+<dt>git</dt><dd><p>I can’t say from personal experience, but it looks like there’s
+pretty good support via the core.autocrlf and core.safecrlf
+configuration attributes.</p>
+</dd>
+</dl>
+</section>
+<section id="case-insensitive-filesystem-support">
+<h3><a class="toc-backref" href="#id113">Case-insensitive filesystem support</a><a class="headerlink" href="#case-insensitive-filesystem-support" title="Permalink to this headline">¶</a></h3>
+<dl class="simple">
+<dt>bzr</dt><dd><p>Should be OK. I share branches between Linux and OS X all the
+time. I’ve done case changes (e.g. <code class="docutils literal notranslate"><span class="pre">bzr</span> <span class="pre">mv</span> <span class="pre">Mailman</span> <span class="pre">mailman</span></code>) and
+as long as I did it on Linux (obviously), when I pulled in the
+changes on OS X everything was hunky dory.</p>
+</dd>
+<dt>hg</dt><dd><p>Mercurial uses a case safe repository mechanism and detects case
+folding collisions.</p>
+</dd>
+<dt>git</dt><dd><p>Since OS X preserves case, you can do case changes there too.
+git does not have a problem with renames in either direction.
+However, case-insensitive filesystem support is usually taken
+to mean complaining about collisions on case-sensitive files
+systems. git does not do that.</p>
+</dd>
+</dl>
+</section>
+<section id="tools">
+<h3><a class="toc-backref" href="#id114">Tools</a><a class="headerlink" href="#tools" title="Permalink to this headline">¶</a></h3>
+<p>In terms of code review tools such as <a class="reference external" href="http://www.review-board.org/">Review Board</a> <a class="footnote-reference brackets" href="#id48" id="id49">10</a> and <a class="reference external" href="http://code.google.com/p/rietveld/">Rietveld</a> <a class="footnote-reference brackets" href="#id50" id="id51">11</a>,
+the former supports all three while the latter supports hg and git but
+not bzr. Bazaar does not yet have an online review board, but it
+has several ways to manage email based reviews and trunk merging.
+There’s <a class="reference external" href="http://code.aaronbentley.com/bundlebuggy/">Bundle Buggy</a> <a class="footnote-reference brackets" href="#id52" id="id53">12</a>, <a class="reference external" href="http://bazaar-vcs.org/PatchQueueManager">Patch Queue Manager</a> <a class="footnote-reference brackets" href="#id54" id="id55">13</a> (PQM), and
+<a class="reference external" href="https://launchpad.net/+tour/code-review">Launchpad’s code reviews</a>.</p>
+<p>All three have some web site online that provides basic hosting
+support for people who want to put a repository online. Bazaar has
+Launchpad, Mercurial has bitbucket.org, and git has GitHub. Google
+Code also has instructions on how to use git with the service, both
+to hold a repository and how to act as a read-only mirror.</p>
+<p>All three also <a class="reference external" href="http://buildbot.net/repos/release/docs/buildbot.html#How-Different-VC-Systems-Specify-Sources">appear to be supported</a>
+by <a class="reference external" href="http://buildbot.net">Buildbot</a> <a class="footnote-reference brackets" href="#id56" id="id57">14</a>.</p>
+</section>
+</section>
+<section id="usage-on-top-of-subversion">
+<h2><a class="toc-backref" href="#id115">Usage On Top Of Subversion</a><a class="headerlink" href="#usage-on-top-of-subversion" title="Permalink to this headline">¶</a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 4%" />
+<col style="width: 96%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>DVCS</p></th>
+<th class="head"><p>svn support</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>bzr</p></td>
+<td><p><a class="reference external" href="http://bazaar-vcs.org/BzrForeignBranches/Subversion">bzr-svn</a> <a class="footnote-reference brackets" href="#id58" id="id59">15</a> (third-party)</p></td>
+</tr>
+<tr class="row-odd"><td><p>hg</p></td>
+<td><p><a class="reference external" href="http://www.selenic.com/mercurial/wiki/index.cgi/WorkingWithSubversion">multiple third-parties</a></p></td>
+</tr>
+<tr class="row-even"><td><p>git</p></td>
+<td><p><a class="reference external" href="http://www.kernel.org/pub/software/scm/git/docs/git-svn.html">git-svn</a> <a class="footnote-reference brackets" href="#id60" id="id61">16</a></p></td>
+</tr>
+</tbody>
+</table>
+<p>All three DVCSs have svn support, although git is the only one to
+come with that support out-of-the-box.</p>
+</section>
+<section id="server-support">
+<h2><a class="toc-backref" href="#id116">Server Support</a><a class="headerlink" href="#server-support" title="Permalink to this headline">¶</a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 82%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>DVCS</p></th>
+<th class="head"><p>Web page interface</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>bzr</p></td>
+<td><p><a class="reference external" href="https://launchpad.net/loggerhead">loggerhead</a> <a class="footnote-reference brackets" href="#id62" id="id63">17</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>hg</p></td>
+<td><p><a class="reference external" href="http://www.selenic.com/mercurial/wiki/index.cgi/HgWebDirStepByStep">hgweb</a> <a class="footnote-reference brackets" href="#id64" id="id65">18</a></p></td>
+</tr>
+<tr class="row-even"><td><p>git</p></td>
+<td><p><a class="reference external" href="http://git.or.cz/gitwiki/Gitweb">gitweb</a> <a class="footnote-reference brackets" href="#id66" id="id67">19</a></p></td>
+</tr>
+</tbody>
+</table>
+<p>All three DVCSs support various hooks on the client and server side
+for e.g. pre/post-commit verifications.</p>
+</section>
+<section id="development">
+<h2><a class="toc-backref" href="#id117">Development</a><a class="headerlink" href="#development" title="Permalink to this headline">¶</a></h2>
+<p>All three projects are under active development. Git seems to be on a
+monthly release schedule. Bazaar is on a time-released monthly
+schedule. Mercurial is on a 4-month, timed release schedule.</p>
+</section>
+<section id="special-features">
+<h2><a class="toc-backref" href="#id118">Special Features</a><a class="headerlink" href="#special-features" title="Permalink to this headline">¶</a></h2>
+<section id="id26">
+<h3><a class="toc-backref" href="#id119">bzr</a><a class="headerlink" href="#id26" title="Permalink to this headline">¶</a></h3>
+<p>Martin Pool adds: “bzr has a stable Python scripting interface, with
+a distinction between public and private interfaces and a
+deprecation window for APIs that are changing. Some plugins are
+listed in <a class="reference external" href="https://edge.launchpad.net/bazaar">https://edge.launchpad.net/bazaar</a> and
+<a class="reference external" href="http://bazaar-vcs.org/Documentation">http://bazaar-vcs.org/Documentation</a>”.</p>
+</section>
+<section id="id27">
+<h3><a class="toc-backref" href="#id120">hg</a><a class="headerlink" href="#id27" title="Permalink to this headline">¶</a></h3>
+<p>Alexander Solovyov comments:</p>
+<blockquote>
+<div><p>Mercurial has easy to use extensive API with hooks for main events
+and ability to extend commands. Also there is the mq (mercurial
+queues) extension, distributed with Mercurial, which simplifies
+work with patches.</p>
+</div></blockquote>
+</section>
+<section id="id28">
+<h3><a class="toc-backref" href="#id121">git</a><a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h3>
+<p>git has a cvsserver mode, ie, you can check out a tree from git
+using CVS. You can even commit to the tree, but features like
+merging are absent, and branches are handled as CVS modules, which
+is likely to shock a veteran CVS user.</p>
+</section>
+</section>
+<section id="tests-impressions">
+<h2><a class="toc-backref" href="#id122">Tests/Impressions</a><a class="headerlink" href="#tests-impressions" title="Permalink to this headline">¶</a></h2>
+<p>As I (Brett Cannon) am left with the task of making the final
+decision of which/any DVCS to go with and not my co-authors, I felt
+it only fair to write down what tests I ran and my impressions as I
+evaluate the various tools so as to be as transparent as possible.</p>
+<section id="barrier-to-entry">
+<h3><a class="toc-backref" href="#id123">Barrier to Entry</a><a class="headerlink" href="#barrier-to-entry" title="Permalink to this headline">¶</a></h3>
+<p>The amount of time and effort it takes to get a checkout of Python’s
+repository is critical. If the difficulty or time is too great then a
+person wishing to contribute to Python may very well give up. That
+cannot be allowed to happen.</p>
+<p>I measured the checking out of the 2.x trunk as if I was a non-core
+developer. Timings were done using the <code class="docutils literal notranslate"><span class="pre">time</span></code> command in zsh and
+space was calculated with <code class="docutils literal notranslate"><span class="pre">du</span> <span class="pre">-c</span> <span class="pre">-h</span></code>.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 43%" />
+<col style="width: 24%" />
+<col style="width: 14%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>DVCS</p></th>
+<th class="head"><p>San Francisco</p></th>
+<th class="head"><p>Vancouver</p></th>
+<th class="head"><p>Space</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>svn</p></td>
+<td><p>1:04</p></td>
+<td><p>2:59</p></td>
+<td><p>139 M</p></td>
+</tr>
+<tr class="row-odd"><td><p>bzr</p></td>
+<td><p>10:45</p></td>
+<td><p>16:04</p></td>
+<td><p>276 M</p></td>
+</tr>
+<tr class="row-even"><td><p>hg</p></td>
+<td><p>2:30</p></td>
+<td><p>5:24</p></td>
+<td><p>171 M</p></td>
+</tr>
+<tr class="row-odd"><td><p>git</p></td>
+<td><p>2:54</p></td>
+<td><p>5:28</p></td>
+<td><p>134 M</p></td>
+</tr>
+</tbody>
+</table>
+<p>When comparing these numbers to svn, it is important to realize that
+it is not a 1:1 comparison. Svn does not pull down the entire revision
+history like all of the DVCSs do. That means svn can perform an
+initial checkout much faster than the DVCS purely based on the fact
+that it has less information to download for the network.</p>
+</section>
+<section id="performance-of-basic-information-functionality">
+<h3><a class="toc-backref" href="#id124">Performance of basic information functionality</a><a class="headerlink" href="#performance-of-basic-information-functionality" title="Permalink to this headline">¶</a></h3>
+<p>To see how the tools did for performing a command that required
+querying the history, the log for the <code class="docutils literal notranslate"><span class="pre">README</span></code> file was timed.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 44%" />
+<col style="width: 56%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>DVCS</p></th>
+<th class="head"><p>Time</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>bzr</p></td>
+<td><p>4.5 s</p></td>
+</tr>
+<tr class="row-odd"><td><p>hg</p></td>
+<td><p>1.1 s</p></td>
+</tr>
+<tr class="row-even"><td><p>git</p></td>
+<td><p>1.5 s</p></td>
+</tr>
+</tbody>
+</table>
+<p>One thing of note during this test was that git took longer than the
+other three tools to figure out how to get the log without it using a
+pager. While the pager use is a nice touch in general, not having it
+automatically turn on took some time (turns out the main <code class="docutils literal notranslate"><span class="pre">git</span></code>
+command has a <code class="docutils literal notranslate"><span class="pre">--no-pager</span></code> flag to disable use of the pager).</p>
+</section>
+<section id="figuring-out-what-command-to-use-from-built-in-help">
+<h3><a class="toc-backref" href="#id125">Figuring out what command to use from built-in help</a><a class="headerlink" href="#figuring-out-what-command-to-use-from-built-in-help" title="Permalink to this headline">¶</a></h3>
+<p>I ended up trying to find out what the command was to see what URL the
+repository was cloned from. To do this I used nothing more than the
+help provided by the tool itself or its man pages.</p>
+<p>Bzr was the easiest: <code class="docutils literal notranslate"><span class="pre">bzr</span> <span class="pre">info</span></code>. Running <code class="docutils literal notranslate"><span class="pre">bzr</span> <span class="pre">help</span></code> didn’t show
+what I wanted, but mentioned <code class="docutils literal notranslate"><span class="pre">bzr</span> <span class="pre">help</span> <span class="pre">commands</span></code>. That list had the
+command with a description that made sense.</p>
+<p>Git was the second easiest. The command <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">help</span></code> didn’t show much
+and did not have a way of listing all commands. That is when I viewed
+the man page. Reading through the various commands I discovered <code class="docutils literal notranslate"><span class="pre">git</span>
+<span class="pre">remote</span></code>. The command itself spit out nothing more than <code class="docutils literal notranslate"><span class="pre">origin</span></code>.
+Trying <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">remote</span> <span class="pre">origin</span></code> said it was an error and printed out the
+command usage. That is when I noticed <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">remote</span> <span class="pre">show</span></code>. Running
+<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">remote</span> <span class="pre">show</span> <span class="pre">origin</span></code> gave me the information I wanted.</p>
+<p>For hg, I never found the information I wanted on my own. It turns out
+I wanted <code class="docutils literal notranslate"><span class="pre">hg</span> <span class="pre">paths</span></code>, but that was not obvious from the description
+of “show definition of symbolic path names” as printed by <code class="docutils literal notranslate"><span class="pre">hg</span> <span class="pre">help</span></code>
+(it should be noted that reporting this in the PEP did lead to the
+Mercurial developers to clarify the wording to make the use of the
+<code class="docutils literal notranslate"><span class="pre">hg</span> <span class="pre">paths</span></code> command clearer).</p>
+</section>
+<section id="updating-a-checkout">
+<h3><a class="toc-backref" href="#id126">Updating a checkout</a><a class="headerlink" href="#updating-a-checkout" title="Permalink to this headline">¶</a></h3>
+<p>To see how long it takes to update an outdated repository I timed both
+updating a repository 700 commits behind and 50 commits behind (three
+weeks stale and 1 week stale, respectively).</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 44%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>DVCS</p></th>
+<th class="head"><p>700 commits</p></th>
+<th class="head"><p>50 commits</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>bzr</p></td>
+<td><p>39 s</p></td>
+<td><p>7 s</p></td>
+</tr>
+<tr class="row-odd"><td><p>hg</p></td>
+<td><p>17 s</p></td>
+<td><p>3 s</p></td>
+</tr>
+<tr class="row-even"><td><p>git</p></td>
+<td><p>N/A</p></td>
+<td><p>4 s</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Git lacks a value for the <em>700 commits</em> scenario as it does
+not seem to allow checking out a repository at a specific
+revision.</p>
+</div>
+<p>Git deserves special mention for its output from <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">pull</span></code>. It
+not only lists the delta change information for each file but also
+color-codes the information.</p>
+</section>
+</section>
+<section id="decision">
+<h2><a class="toc-backref" href="#id127">Decision</a><a class="headerlink" href="#decision" title="Permalink to this headline">¶</a></h2>
+<p>At PyCon 2009 the decision was made to go with Mercurial.</p>
+<section id="why-mercurial-over-subversion">
+<h3><a class="toc-backref" href="#id128">Why Mercurial over Subversion</a><a class="headerlink" href="#why-mercurial-over-subversion" title="Permalink to this headline">¶</a></h3>
+<p>While svn has served the development team well, it needs to be
+admitted that svn does not serve the needs of non-committers as well
+as a DVCS does. Because svn only provides its features such as version
+control, branching, etc. to people with commit privileges on the
+repository it can be a hindrance for people who lack commit
+privileges. But DVCSs have no such limitiation as anyone can create a
+local branch of Python and perform their own local commits without the
+burden that comes with cloning the entire svn repository. Allowing
+anyone to have the same workflow as the core developers was the key
+reason to switch from svn to hg.</p>
+<p>Orthogonal to the benefits of allowing anyone to easily commit locally
+to their own branches is offline, fast operations. Because hg stores
+all data locally there is no need to send requests to a server
+remotely and instead work off of the local disk. This improves
+response times tremendously. It also allows for offline usage for when
+one lacks an Internet connection. But this benefit is minor and
+considered simply a side-effect benefit instead of a driving factor
+for switching off of Subversion.</p>
+</section>
+<section id="why-mercurial-over-other-dvcss">
+<h3><a class="toc-backref" href="#id129">Why Mercurial over other DVCSs</a><a class="headerlink" href="#why-mercurial-over-other-dvcss" title="Permalink to this headline">¶</a></h3>
+<p>Git was not chosen for three key reasons (see the <a class="reference external" href="http://pycon.blip.tv/file/1947231/">PyCon 2009
+lightning talk</a> where Brett
+Cannon lists these exact reasons; talk started at 3:45). First, git’s
+Windows support is the weakest out of the three DVCSs being considered
+which is unacceptable as Python needs to support development on any
+platform it runs on. Since Python runs on Windows and some people do
+develop on the platform it needs solid support. And while git’s
+support is improving, as of this moment it is the weakest by a large
+enough margin to warrant considering it a problem.</p>
+<p>Second, and just as important as the first issue, is that the Python
+core developers liked git the least out of the three DVCS options by a
+wide margin. If you look at the following table you will see the
+results of a survey taken of the core developers and how by a large
+margin git is the least favorite version control system.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 9%" />
+<col style="width: 22%" />
+<col style="width: 9%" />
+<col style="width: 43%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>DVCS</p></th>
+<th class="head"><p>++</p></th>
+<th class="head"><p>equal</p></th>
+<th class="head"><p>–</p></th>
+<th class="head"><p>Uninformed</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>git</p></td>
+<td><p>5</p></td>
+<td><p>1</p></td>
+<td><p>8</p></td>
+<td><p>13</p></td>
+</tr>
+<tr class="row-odd"><td><p>bzr</p></td>
+<td><p>10</p></td>
+<td><p>3</p></td>
+<td><p>2</p></td>
+<td><p>12</p></td>
+</tr>
+<tr class="row-even"><td><p>hg</p></td>
+<td><p>15</p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+<td><p>10</p></td>
+</tr>
+</tbody>
+</table>
+<p>Lastly, all things being equal (which they are not
+as shown by the previous two issues), it is preferable to
+use and support a tool written in Python and not one written in C and
+shell. We are pragmatic enough to not choose a tool simply because it
+is written in Python, but we do see the usefulness in promoting tools
+that do use it when it is reasonable to do so as it is in this case.</p>
+<p>As for why Mercurial was chosen over Bazaar, it came down to
+popularity.  As the core developer survey shows, hg was preferred over
+bzr. But the community also appears to prefer hg as was shown at PyCon
+after git’s removal from consideration was announced. Many people came
+up to Brett and said in various ways that they wanted hg to be chosen.
+While no one said they did not want bzr chosen, no one said they did
+either.</p>
+<p>Based on all of this information, Guido and Brett decided Mercurial
+was to be the next version control system for Python.</p>
+</section>
+</section>
+<section id="transition-plan">
+<h2><a class="toc-backref" href="#id130">Transition Plan</a><a class="headerlink" href="#transition-plan" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="pep-0385.html">PEP 385</a> outlines the transition from svn to hg.</p>
+</section>
+<section id="id29">
+<h2><a class="toc-backref" href="#id131">References</a><a class="headerlink" href="#id29" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id30"><span class="brackets"><a class="fn-backref" href="#id31">1</a></span></dt>
+<dd><p><a class="reference external" href="http://bazaar-vcs.org/">http://bazaar-vcs.org/</a></p>
+</dd>
+<dt class="label" id="id32"><span class="brackets"><a class="fn-backref" href="#id33">2</a></span></dt>
+<dd><p><a class="reference external" href="http://www.selenic.com/mercurial/">http://www.selenic.com/mercurial/</a></p>
+</dd>
+<dt class="label" id="id34"><span class="brackets"><a class="fn-backref" href="#id35">3</a></span></dt>
+<dd><p><a class="reference external" href="http://www.git-scm.com/">http://www.git-scm.com/</a></p>
+</dd>
+<dt class="label" id="id36"><span class="brackets"><a class="fn-backref" href="#id37">4</a></span></dt>
+<dd><p><a class="reference external" href="http://repo.or.cz/r/fast-export.git/.git/description">http://repo.or.cz/r/fast-export.git/.git/description</a></p>
+</dd>
+<dt class="label" id="id38"><span class="brackets"><a class="fn-backref" href="#id39">5</a></span></dt>
+<dd><p><a class="reference external" href="http://progetti.arstecnica.it/tailor/">http://progetti.arstecnica.it/tailor/</a></p>
+</dd>
+<dt class="label" id="id40"><span class="brackets"><a class="fn-backref" href="#id41">6</a></span></dt>
+<dd><p><a class="reference external" href="http://www.launchpad.net/">http://www.launchpad.net/</a></p>
+</dd>
+<dt class="label" id="id42"><span class="brackets"><a class="fn-backref" href="#id43">7</a></span></dt>
+<dd><p><a class="reference external" href="http://www.bitbucket.org/">http://www.bitbucket.org/</a></p>
+</dd>
+<dt class="label" id="id44"><span class="brackets"><a class="fn-backref" href="#id45">8</a></span></dt>
+<dd><p><a class="reference external" href="http://www.github.com/">http://www.github.com/</a></p>
+</dd>
+<dt class="label" id="id46"><span class="brackets"><a class="fn-backref" href="#id47">9</a></span></dt>
+<dd><p><a class="reference external" href="http://selenic.com/pipermail/mercurial/2009-January/023710.html">http://selenic.com/pipermail/mercurial/2009-January/023710.html</a></p>
+</dd>
+<dt class="label" id="id48"><span class="brackets"><a class="fn-backref" href="#id49">10</a></span></dt>
+<dd><p><a class="reference external" href="http://www.review-board.org/">http://www.review-board.org/</a></p>
+</dd>
+<dt class="label" id="id50"><span class="brackets"><a class="fn-backref" href="#id51">11</a></span></dt>
+<dd><p><a class="reference external" href="http://code.google.com/p/rietveld/">http://code.google.com/p/rietveld/</a></p>
+</dd>
+<dt class="label" id="id52"><span class="brackets"><a class="fn-backref" href="#id53">12</a></span></dt>
+<dd><p><a class="reference external" href="http://code.aaronbentley.com/bundlebuggy/">http://code.aaronbentley.com/bundlebuggy/</a></p>
+</dd>
+<dt class="label" id="id54"><span class="brackets"><a class="fn-backref" href="#id55">13</a></span></dt>
+<dd><p><a class="reference external" href="http://bazaar-vcs.org/PatchQueueManager">http://bazaar-vcs.org/PatchQueueManager</a></p>
+</dd>
+<dt class="label" id="id56"><span class="brackets"><a class="fn-backref" href="#id57">14</a></span></dt>
+<dd><p><a class="reference external" href="http://buildbot.net">http://buildbot.net</a></p>
+</dd>
+<dt class="label" id="id58"><span class="brackets"><a class="fn-backref" href="#id59">15</a></span></dt>
+<dd><p><a class="reference external" href="http://bazaar-vcs.org/BzrForeignBranches/Subversion">http://bazaar-vcs.org/BzrForeignBranches/Subversion</a></p>
+</dd>
+<dt class="label" id="id60"><span class="brackets"><a class="fn-backref" href="#id61">16</a></span></dt>
+<dd><p><a class="reference external" href="http://www.kernel.org/pub/software/scm/git/docs/git-svn.html">http://www.kernel.org/pub/software/scm/git/docs/git-svn.html</a></p>
+</dd>
+<dt class="label" id="id62"><span class="brackets"><a class="fn-backref" href="#id63">17</a></span></dt>
+<dd><p><a class="reference external" href="https://launchpad.net/loggerhead">https://launchpad.net/loggerhead</a></p>
+</dd>
+<dt class="label" id="id64"><span class="brackets"><a class="fn-backref" href="#id65">18</a></span></dt>
+<dd><p><a class="reference external" href="http://www.selenic.com/mercurial/wiki/index.cgi/HgWebDirStepByStep">http://www.selenic.com/mercurial/wiki/index.cgi/HgWebDirStepByStep</a></p>
+</dd>
+<dt class="label" id="id66"><span class="brackets"><a class="fn-backref" href="#id67">19</a></span></dt>
+<dd><p><a class="reference external" href="http://git.or.cz/gitwiki/Gitweb">http://git.or.cz/gitwiki/Gitweb</a></p>
+</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#id132">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0374.txt">https://github.com/python/peps/blob/master/pep-0374.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0374.txt">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0001/">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0100/">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0101/">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0391/">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0423/">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0451/">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0471/">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0479/">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0495/">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0558/">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0570/">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0584/">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0586/">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0594/">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3118/">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-0373/" title="previous chapter">PEP 373 – Python 2.7 Release Schedule</a></li>
+      <li>Next: <a href="../pep-0375/" title="next chapter">PEP 375 – Python 3.1 Release Schedule</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-0374.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

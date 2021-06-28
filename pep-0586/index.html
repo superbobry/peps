@@ -1,0 +1,1442 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 586 – Literal Types &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 587 – Python Initialization Configuration" href="../pep-0587/" />
+    <link rel="prev" title="PEP 585 – Type Hinting Generics In Standard Collections" href="../pep-0585/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pep-586-literal-types">
+<h1 class="page-title">PEP 586 – Literal Types<a class="headerlink" href="#pep-586-literal-types" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>586</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>Literal Types</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Michael Lee &lt;<a class="reference external" href="mailto:michael&#46;lee&#46;0x2a&#37;&#52;&#48;gmail&#46;com?subject=PEP%20-1">michael.lee.0x2a&#32;&#97;t&#32;gmail.com</a>&gt;, Ivan Levkivskyi &lt;<a class="reference external" href="mailto:levkivskyi&#37;&#52;&#48;gmail&#46;com?subject=PEP%20-1">levkivskyi&#32;&#97;t&#32;gmail.com</a>&gt;, Jukka Lehtosalo &lt;<a class="reference external" href="mailto:jukka&#46;lehtosalo&#37;&#52;&#48;iki&#46;fi?subject=PEP%20-1">jukka.lehtosalo&#32;&#97;t&#32;iki.fi</a>&gt;</p>
+</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even"><p>Guido van Rossum &lt;<a class="reference external" href="mailto:guido&#37;&#52;&#48;python&#46;org?subject=PEP%20-1">guido&#32;&#97;t&#32;python.org</a>&gt;</p>
+</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><p>Typing-Sig &lt;<a class="reference external" href="mailto:typing-sig&#37;&#52;&#48;python&#46;org">typing-sig<span>&#64;</span>python<span>&#46;</span>org</a>&gt;</p>
+</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even"><p>Accepted</p>
+</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Standards Track</p>
+</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even"><p>14-Mar-2019</p>
+</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd"><p>3.8</p>
+</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p>14-Mar-2019</p>
+</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://mail.python.org/archives/list/typing-sig&#64;python.org/message/FDO4KFYWYQEP3U2HVVBEBR3SXPHQSHYR/">https://mail.python.org/archives/list/typing-sig&#64;python.org/message/FDO4KFYWYQEP3U2HVVBEBR3SXPHQSHYR/</a></p>
+</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#abstract" id="id17">Abstract</a></p></li>
+<li><p><a class="reference internal" href="#motivation-and-rationale" id="id18">Motivation and Rationale</a></p></li>
+<li><p><a class="reference internal" href="#core-semantics" id="id19">Core Semantics</a></p>
+<ul>
+<li><p><a class="reference internal" href="#core-behavior" id="id20">Core behavior</a></p></li>
+<li><p><a class="reference internal" href="#equivalence-of-two-literals" id="id21">Equivalence of two Literals</a></p></li>
+<li><p><a class="reference internal" href="#shortening-unions-of-literals" id="id22">Shortening unions of literals</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#legal-and-illegal-parameterizations" id="id23">Legal and illegal parameterizations</a></p>
+<ul>
+<li><p><a class="reference internal" href="#legal-parameters-for-literal-at-type-check-time" id="id24">Legal parameters for <code class="docutils literal notranslate"><span class="pre">Literal</span></code> at type check time</a></p></li>
+<li><p><a class="reference internal" href="#illegal-parameters-for-literal-at-type-check-time" id="id25">Illegal parameters for <code class="docutils literal notranslate"><span class="pre">Literal</span></code> at type check time</a></p></li>
+<li><p><a class="reference internal" href="#parameters-at-runtime" id="id26">Parameters at runtime</a></p></li>
+<li><p><a class="reference internal" href="#literals-enums-and-forward-references" id="id27">Literals, enums, and forward references</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#type-inference" id="id28">Type inference</a></p>
+<ul>
+<li><p><a class="reference internal" href="#backwards-compatibility" id="id29">Backwards compatibility</a></p></li>
+<li><p><a class="reference internal" href="#using-non-literals-in-literal-contexts" id="id30">Using non-Literals in Literal contexts</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#interactions-with-other-types-and-features" id="id31">Interactions with other types and features</a></p>
+<ul>
+<li><p><a class="reference internal" href="#intelligent-indexing-of-structured-data" id="id32">Intelligent indexing of structured data</a></p></li>
+<li><p><a class="reference internal" href="#interactions-with-overloads" id="id33">Interactions with overloads</a></p></li>
+<li><p><a class="reference internal" href="#interactions-with-generics" id="id34">Interactions with generics</a></p></li>
+<li><p><a class="reference internal" href="#interactions-with-enums-and-exhaustiveness-checks" id="id35">Interactions with enums and exhaustiveness checks</a></p></li>
+<li><p><a class="reference internal" href="#interactions-with-narrowing" id="id36">Interactions with narrowing</a></p></li>
+<li><p><a class="reference internal" href="#interactions-with-final" id="id37">Interactions with Final</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#rejected-or-out-of-scope-ideas" id="id38">Rejected or out-of-scope ideas</a></p>
+<ul>
+<li><p><a class="reference internal" href="#true-dependent-types-integer-generics" id="id39">True dependent types/integer generics</a></p></li>
+<li><p><a class="reference internal" href="#adding-more-concise-syntax" id="id40">Adding more concise syntax</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#backporting-the-literal-type" id="id41">Backporting the <code class="docutils literal notranslate"><span class="pre">Literal</span></code> type</a></p></li>
+<li><p><a class="reference internal" href="#implementation" id="id42">Implementation</a></p></li>
+<li><p><a class="reference internal" href="#related-work" id="id43">Related work</a></p></li>
+<li><p><a class="reference internal" href="#acknowledgements" id="id44">Acknowledgements</a></p></li>
+<li><p><a class="reference internal" href="#id1" id="id45">References</a></p></li>
+<li><p><a class="reference internal" href="#copyright" id="id46">Copyright</a></p></li>
+</ul>
+</div>
+<section id="abstract">
+<h2><a class="toc-backref" href="#id17">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes adding <em>Literal types</em> to the <a class="reference external" href="pep-0484.html">PEP 484</a> ecosystem.
+Literal types indicate that some expression has literally a
+specific value. For example, the following function will accept
+only expressions that have literally the value “4”:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="k">def</span> <span class="nf">accepts_only_four</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="n">accepts_only_four</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>   <span class="c1"># OK</span>
+<span class="n">accepts_only_four</span><span class="p">(</span><span class="mi">19</span><span class="p">)</span>  <span class="c1"># Rejected</span>
+</pre></div>
+</div>
+</section>
+<section id="motivation-and-rationale">
+<h2><a class="toc-backref" href="#id18">Motivation and Rationale</a><a class="headerlink" href="#motivation-and-rationale" title="Permalink to this headline">¶</a></h2>
+<p>Python has many APIs that return different types depending on the
+value of some argument provided. For example:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">open(filename,</span> <span class="pre">mode)</span></code> returns either <code class="docutils literal notranslate"><span class="pre">IO[bytes]</span></code> or <code class="docutils literal notranslate"><span class="pre">IO[Text]</span></code>
+depending on whether the second argument is something like <code class="docutils literal notranslate"><span class="pre">r</span></code> or
+<code class="docutils literal notranslate"><span class="pre">rb</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">subprocess.check_output(...)</span></code> returns either bytes or text
+depending on whether the <code class="docutils literal notranslate"><span class="pre">universal_newlines</span></code> keyword argument is
+set to <code class="docutils literal notranslate"><span class="pre">True</span></code> or not.</p></li>
+</ul>
+<p>This pattern is also fairly common in many popular 3rd party libraries.
+For example, here are just two examples from pandas and numpy respectively:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pandas.concat(...)</span></code> will return either <code class="docutils literal notranslate"><span class="pre">Series</span></code> or
+<code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> depending on whether the <code class="docutils literal notranslate"><span class="pre">axis</span></code> argument is set to
+0 or 1.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">numpy.unique</span></code> will return either a single array or a tuple containing
+anywhere from two to four arrays depending on three boolean flag values.</p></li>
+</ul>
+<p>The typing issue tracker contains some
+<a class="reference external" href="https://github.com/python/typing/issues/478">additional examples and discussion</a> <a class="footnote-reference brackets" href="#id2" id="id3">1</a>.</p>
+<p>There is currently no way of expressing the type signatures of these
+functions: <a class="reference external" href="pep-0484.html">PEP 484</a> does not include any mechanism for writing signatures
+where the return type varies depending on the value passed in.
+Note that this problem persists even if we redesign these APIs to
+instead accept enums: <code class="docutils literal notranslate"><span class="pre">MyEnum.FOO</span></code> and <code class="docutils literal notranslate"><span class="pre">MyEnum.BAR</span></code> are both
+considered to be of type <code class="docutils literal notranslate"><span class="pre">MyEnum</span></code>.</p>
+<p>Currently, type checkers work around this limitation by adding ad hoc
+extensions for important builtins and standard library functions. For
+example, mypy comes bundled with a plugin that attempts to infer more
+precise types for <code class="docutils literal notranslate"><span class="pre">open(...)</span></code>. While this approach works for standard
+library functions, it’s unsustainable in general: it’s not reasonable to
+expect 3rd party library authors to maintain plugins for N different
+type checkers.</p>
+<p>We propose adding <em>Literal types</em> to address these gaps.</p>
+</section>
+<section id="core-semantics">
+<h2><a class="toc-backref" href="#id19">Core Semantics</a><a class="headerlink" href="#core-semantics" title="Permalink to this headline">¶</a></h2>
+<p>This section outlines the baseline behavior of literal types.</p>
+<section id="core-behavior">
+<h3><a class="toc-backref" href="#id20">Core behavior</a><a class="headerlink" href="#core-behavior" title="Permalink to this headline">¶</a></h3>
+<p>Literal types indicate that a variable has a specific and
+concrete value. For example, if we define some variable <code class="docutils literal notranslate"><span class="pre">foo</span></code> to have
+type <code class="docutils literal notranslate"><span class="pre">Literal[3]</span></code>, we are declaring that <code class="docutils literal notranslate"><span class="pre">foo</span></code> must be exactly equal
+to <code class="docutils literal notranslate"><span class="pre">3</span></code> and no other value.</p>
+<p>Given some value <code class="docutils literal notranslate"><span class="pre">v</span></code> that is a member of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, the type
+<code class="docutils literal notranslate"><span class="pre">Literal[v]</span></code> shall be treated as a subtype of <code class="docutils literal notranslate"><span class="pre">T</span></code>. For example,
+<code class="docutils literal notranslate"><span class="pre">Literal[3]</span></code> is a subtype of <code class="docutils literal notranslate"><span class="pre">int</span></code>.</p>
+<p>All methods from the parent type will be directly inherited by the
+literal type. So, if we have some variable <code class="docutils literal notranslate"><span class="pre">foo</span></code> of type <code class="docutils literal notranslate"><span class="pre">Literal[3]</span></code>
+it’s safe to do things like <code class="docutils literal notranslate"><span class="pre">foo</span> <span class="pre">+</span> <span class="pre">5</span></code> since <code class="docutils literal notranslate"><span class="pre">foo</span></code> inherits int’s
+<code class="docutils literal notranslate"><span class="pre">__add__</span></code> method. The resulting type of <code class="docutils literal notranslate"><span class="pre">foo</span> <span class="pre">+</span> <span class="pre">5</span></code> is <code class="docutils literal notranslate"><span class="pre">int</span></code>.</p>
+<p>This “inheriting” behavior is identical to how we
+<a class="reference external" href="https://www.python.org/dev/peps/pep-0484/#newtype-helper-function">handle NewTypes.</a> <a class="footnote-reference brackets" href="#id11" id="id12">5</a>.</p>
+</section>
+<section id="equivalence-of-two-literals">
+<h3><a class="toc-backref" href="#id21">Equivalence of two Literals</a><a class="headerlink" href="#equivalence-of-two-literals" title="Permalink to this headline">¶</a></h3>
+<p>Two types <code class="docutils literal notranslate"><span class="pre">Literal[v1]</span></code> and <code class="docutils literal notranslate"><span class="pre">Literal[v2]</span></code> are equivalent when
+both of the following conditions are true:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">type(v1)</span> <span class="pre">==</span> <span class="pre">type(v2)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">v1</span> <span class="pre">==</span> <span class="pre">v2</span></code></p></li>
+</ol>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">Literal[20]</span></code> and <code class="docutils literal notranslate"><span class="pre">Literal[0x14]</span></code> are equivalent.
+However, <code class="docutils literal notranslate"><span class="pre">Literal[0]</span></code> and <code class="docutils literal notranslate"><span class="pre">Literal[False]</span></code> is <em>not</em> equivalent
+despite that <code class="docutils literal notranslate"><span class="pre">0</span> <span class="pre">==</span> <span class="pre">False</span></code> evaluates to ‘true’ at runtime: <code class="docutils literal notranslate"><span class="pre">0</span></code>
+has type <code class="docutils literal notranslate"><span class="pre">int</span></code> and <code class="docutils literal notranslate"><span class="pre">False</span></code> has type <code class="docutils literal notranslate"><span class="pre">bool</span></code>.</p>
+</section>
+<section id="shortening-unions-of-literals">
+<h3><a class="toc-backref" href="#id22">Shortening unions of literals</a><a class="headerlink" href="#shortening-unions-of-literals" title="Permalink to this headline">¶</a></h3>
+<p>Literals are parameterized with one or more values. When a Literal is
+parameterized with more than one value, it’s treated as exactly equivalent
+to the union of those types. That is, <code class="docutils literal notranslate"><span class="pre">Literal[v1,</span> <span class="pre">v2,</span> <span class="pre">v3]</span></code> is equivalent
+to <code class="docutils literal notranslate"><span class="pre">Union[Literal[v1],</span> <span class="pre">Literal[v2],</span> <span class="pre">Literal[v3]]</span></code>.</p>
+<p>This shortcut helps make writing signatures for functions that accept
+many different literals more ergonomic — for example, functions like
+<code class="docutils literal notranslate"><span class="pre">open(...)</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: this is a simplification of the true type signature.</span>
+<span class="n">_PathType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+
+<span class="nd">@overload</span>
+<span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">_PathType</span><span class="p">,</span>
+         <span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;r+&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">,</span> <span class="s2">&quot;a+&quot;</span><span class="p">,</span> <span class="s2">&quot;x+&quot;</span><span class="p">],</span>
+         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">[</span><span class="n">Text</span><span class="p">]:</span> <span class="o">...</span>
+<span class="nd">@overload</span>
+<span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">_PathType</span><span class="p">,</span>
+         <span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">,</span> <span class="s2">&quot;ab&quot;</span><span class="p">,</span> <span class="s2">&quot;xb&quot;</span><span class="p">,</span> <span class="s2">&quot;r+b&quot;</span><span class="p">,</span> <span class="s2">&quot;w+b&quot;</span><span class="p">,</span> <span class="s2">&quot;a+b&quot;</span><span class="p">,</span> <span class="s2">&quot;x+b&quot;</span><span class="p">],</span>
+         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span> <span class="o">...</span>
+
+<span class="c1"># Fallback overload for when the user isn&#39;t using literal types</span>
+<span class="nd">@overload</span>
+<span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">_PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>The provided values do not all have to be members of the same type.
+For example, <code class="docutils literal notranslate"><span class="pre">Literal[42,</span> <span class="pre">&quot;foo&quot;,</span> <span class="pre">True]</span></code> is a legal type.</p>
+<p>However, Literal <strong>must</strong> be parameterized with at least one type.
+Types like <code class="docutils literal notranslate"><span class="pre">Literal[]</span></code> or <code class="docutils literal notranslate"><span class="pre">Literal</span></code> are illegal.</p>
+</section>
+</section>
+<section id="legal-and-illegal-parameterizations">
+<h2><a class="toc-backref" href="#id23">Legal and illegal parameterizations</a><a class="headerlink" href="#legal-and-illegal-parameterizations" title="Permalink to this headline">¶</a></h2>
+<p>This section describes what exactly constitutes a legal <code class="docutils literal notranslate"><span class="pre">Literal[...]</span></code> type:
+what values may and may not be used as parameters.</p>
+<p>In short, a <code class="docutils literal notranslate"><span class="pre">Literal[...]</span></code> type may be parameterized by one or more literal
+expressions, and nothing else.</p>
+<section id="legal-parameters-for-literal-at-type-check-time">
+<h3><a class="toc-backref" href="#id24">Legal parameters for <code class="docutils literal notranslate"><span class="pre">Literal</span></code> at type check time</a><a class="headerlink" href="#legal-parameters-for-literal-at-type-check-time" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">Literal</span></code> may be parameterized with literal ints, byte and unicode strings,
+bools, Enum values and <code class="docutils literal notranslate"><span class="pre">None</span></code>. So for example, all of
+the following would be legal:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Literal</span><span class="p">[</span><span class="mi">26</span><span class="p">]</span>
+<span class="n">Literal</span><span class="p">[</span><span class="mh">0x1A</span><span class="p">]</span>  <span class="c1"># Exactly equivalent to Literal[26]</span>
+<span class="n">Literal</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>
+<span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;hello world&quot;</span><span class="p">]</span>
+<span class="n">Literal</span><span class="p">[</span><span class="sa">b</span><span class="s2">&quot;hello world&quot;</span><span class="p">]</span>
+<span class="n">Literal</span><span class="p">[</span><span class="sa">u</span><span class="s2">&quot;hello world&quot;</span><span class="p">]</span>
+<span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span>
+<span class="n">Literal</span><span class="p">[</span><span class="n">Color</span><span class="o">.</span><span class="n">RED</span><span class="p">]</span>  <span class="c1"># Assuming Color is some enum</span>
+<span class="n">Literal</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+</pre></div>
+</div>
+<p><strong>Note:</strong> Since the type <code class="docutils literal notranslate"><span class="pre">None</span></code> is inhabited by just a single
+value, the types <code class="docutils literal notranslate"><span class="pre">None</span></code> and <code class="docutils literal notranslate"><span class="pre">Literal[None]</span></code> are exactly equivalent.
+Type checkers may simplify <code class="docutils literal notranslate"><span class="pre">Literal[None]</span></code> into just <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Literal</span></code> may also be parameterized by other literal types, or type aliases
+to other literal types. For example, the following is legal:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ReadOnlyMode</span>         <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s2">&quot;r+&quot;</span><span class="p">]</span>
+<span class="n">WriteAndTruncateMode</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">,</span> <span class="s2">&quot;wt&quot;</span><span class="p">,</span> <span class="s2">&quot;w+t&quot;</span><span class="p">]</span>
+<span class="n">WriteNoTruncateMode</span>  <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;r+&quot;</span><span class="p">,</span> <span class="s2">&quot;r+t&quot;</span><span class="p">]</span>
+<span class="n">AppendMode</span>           <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;a+&quot;</span><span class="p">,</span> <span class="s2">&quot;at&quot;</span><span class="p">,</span> <span class="s2">&quot;a+t&quot;</span><span class="p">]</span>
+
+<span class="n">AllModes</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="n">ReadOnlyMode</span><span class="p">,</span> <span class="n">WriteAndTruncateMode</span><span class="p">,</span>
+                   <span class="n">WriteNoTruncateMode</span><span class="p">,</span> <span class="n">AppendMode</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>This feature is again intended to help make using and reusing literal types
+more ergonomic.</p>
+<p><strong>Note:</strong> As a consequence of the above rules, type checkers are also expected
+to support types that look like the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Literal</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="s2">&quot;foo&quot;</span><span class="p">],</span> <span class="mi">5</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>This should be exactly equivalent to the following type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>…and also to the following type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">]]</span>
+</pre></div>
+</div>
+<p><strong>Note:</strong> String literal types like <code class="docutils literal notranslate"><span class="pre">Literal[&quot;foo&quot;]</span></code> should subtype either
+bytes or unicode in the same way regular string literals do at runtime.</p>
+<p>For example, in Python 3, the type <code class="docutils literal notranslate"><span class="pre">Literal[&quot;foo&quot;]</span></code> is equivalent to
+<code class="docutils literal notranslate"><span class="pre">Literal[u&quot;foo&quot;]</span></code>, since <code class="docutils literal notranslate"><span class="pre">&quot;foo&quot;</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">u&quot;foo&quot;</span></code> in Python 3.</p>
+<p>Similarly, in Python 2, the type <code class="docutils literal notranslate"><span class="pre">Literal[&quot;foo&quot;]</span></code> is equivalent to
+<code class="docutils literal notranslate"><span class="pre">Literal[b&quot;foo&quot;]</span></code> – unless the file includes a
+<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">__future__</span> <span class="pre">import</span> <span class="pre">unicode_literals</span></code> import, in which case it would be
+equivalent to <code class="docutils literal notranslate"><span class="pre">Literal[u&quot;foo&quot;]</span></code>.</p>
+</section>
+<section id="illegal-parameters-for-literal-at-type-check-time">
+<h3><a class="toc-backref" href="#id25">Illegal parameters for <code class="docutils literal notranslate"><span class="pre">Literal</span></code> at type check time</a><a class="headerlink" href="#illegal-parameters-for-literal-at-type-check-time" title="Permalink to this headline">¶</a></h3>
+<p>The following parameters are intentionally disallowed by design:</p>
+<ul class="simple">
+<li><p>Arbitrary expressions like <code class="docutils literal notranslate"><span class="pre">Literal[3</span> <span class="pre">+</span> <span class="pre">4]</span></code> or
+<code class="docutils literal notranslate"><span class="pre">Literal[&quot;foo&quot;.replace(&quot;o&quot;,</span> <span class="pre">&quot;b&quot;)]</span></code>.</p>
+<ul>
+<li><p>Rationale: Literal types are meant to be a
+minimal extension to the <a class="reference external" href="pep-0484.html">PEP 484</a> typing ecosystem and requiring type
+checkers to interpret potentially expressions inside types adds too
+much complexity. Also see <a class="reference internal" href="#rejected-or-out-of-scope-ideas">Rejected or out-of-scope ideas</a>.</p></li>
+<li><p>As a consequence, complex numbers like <code class="docutils literal notranslate"><span class="pre">Literal[4</span> <span class="pre">+</span> <span class="pre">3j]</span></code> and
+<code class="docutils literal notranslate"><span class="pre">Literal[-4</span> <span class="pre">+</span> <span class="pre">2j]</span></code> are also prohibited. For consistency, literals like
+<code class="docutils literal notranslate"><span class="pre">Literal[4j]</span></code> that contain just a single complex number are also
+prohibited.</p></li>
+<li><p>The only exception to this rule is the unary <code class="docutils literal notranslate"><span class="pre">-</span></code> (minus) for ints: types
+like <code class="docutils literal notranslate"><span class="pre">Literal[-5]</span></code> are <em>accepted</em>.</p></li>
+</ul>
+</li>
+<li><p>Tuples containing valid literal types like <code class="docutils literal notranslate"><span class="pre">Literal[(1,</span> <span class="pre">&quot;foo&quot;,</span> <span class="pre">&quot;bar&quot;)]</span></code>.
+The user could always express this type as
+<code class="docutils literal notranslate"><span class="pre">Tuple[Literal[1],</span> <span class="pre">Literal[&quot;foo&quot;],</span> <span class="pre">Literal[&quot;bar&quot;]]</span></code> instead. Also,
+tuples are likely to be confused with the <code class="docutils literal notranslate"><span class="pre">Literal[1,</span> <span class="pre">2,</span> <span class="pre">3]</span></code>
+shortcut.</p></li>
+<li><p>Mutable literal data structures like dict literals, list literals, or
+set literals: literals are always implicitly final and immutable. So,
+<code class="docutils literal notranslate"><span class="pre">Literal[{&quot;a&quot;:</span> <span class="pre">&quot;b&quot;,</span> <span class="pre">&quot;c&quot;:</span> <span class="pre">&quot;d&quot;}]</span></code> is illegal.</p></li>
+<li><p>Any other types: for example, <code class="docutils literal notranslate"><span class="pre">Literal[Path]</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">Literal[some_object_instance]</span></code> are illegal. This includes typevars: if
+<code class="docutils literal notranslate"><span class="pre">T</span></code> is a typevar,  <code class="docutils literal notranslate"><span class="pre">Literal[T]</span></code> is not allowed. Typevars can vary over
+only types, never over values.</p></li>
+</ul>
+<p>The following are provisionally disallowed for simplicity. We can consider
+allowing them in future extensions of this PEP.</p>
+<ul class="simple">
+<li><p>Floats: e.g. <code class="docutils literal notranslate"><span class="pre">Literal[3.14]</span></code>. Representing Literals of infinity or NaN
+in a clean way is tricky; real-world APIs are unlikely to vary their
+behavior based on a float parameter.</p></li>
+<li><p>Any: e.g. <code class="docutils literal notranslate"><span class="pre">Literal[Any]</span></code>. <code class="docutils literal notranslate"><span class="pre">Any</span></code> is a type, and <code class="docutils literal notranslate"><span class="pre">Literal[...]</span></code> is
+meant to contain values only. It is also unclear what <code class="docutils literal notranslate"><span class="pre">Literal[Any]</span></code>
+would actually semantically mean.</p></li>
+</ul>
+</section>
+<section id="parameters-at-runtime">
+<h3><a class="toc-backref" href="#id26">Parameters at runtime</a><a class="headerlink" href="#parameters-at-runtime" title="Permalink to this headline">¶</a></h3>
+<p>Although the set of parameters <code class="docutils literal notranslate"><span class="pre">Literal[...]</span></code> may contain at type check time
+is very small, the actual implementation of <code class="docutils literal notranslate"><span class="pre">typing.Literal</span></code> will not perform
+any checks at runtime. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_function</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">3</span>
+
+<span class="n">x</span><span class="p">:</span> <span class="n">Literal</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">y</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="n">my_function</span><span class="p">]</span> <span class="o">=</span> <span class="n">my_function</span>
+</pre></div>
+</div>
+<p>The type checker should reject this program: all three uses of
+<code class="docutils literal notranslate"><span class="pre">Literal</span></code> are <em>invalid</em> according to this spec. However, Python itself
+should execute this program with no errors.</p>
+<p>This is partly to help us preserve flexibility in case we want to expand the
+scope of what <code class="docutils literal notranslate"><span class="pre">Literal</span></code> can be used for in the future, and partly because
+it is not possible to detect all illegal parameters at runtime to begin with.
+For example, it is impossible to distinguish between <code class="docutils literal notranslate"><span class="pre">Literal[1</span> <span class="pre">+</span> <span class="pre">2]</span></code> and
+<code class="docutils literal notranslate"><span class="pre">Literal[3]</span></code> at runtime.</p>
+</section>
+<section id="literals-enums-and-forward-references">
+<h3><a class="toc-backref" href="#id27">Literals, enums, and forward references</a><a class="headerlink" href="#literals-enums-and-forward-references" title="Permalink to this headline">¶</a></h3>
+<p>One potential ambiguity is between literal strings and forward
+references to literal enum members. For example, suppose we have the
+type <code class="docutils literal notranslate"><span class="pre">Literal[&quot;Color.RED&quot;]</span></code>. Does this literal type
+contain a string literal or a forward reference to some <code class="docutils literal notranslate"><span class="pre">Color.RED</span></code>
+enum member?</p>
+<p>In cases like these, we always assume the user meant to construct a
+literal string. If the user wants a forward reference, they must wrap
+the entire literal type in a string – e.g. <code class="docutils literal notranslate"><span class="pre">&quot;Literal[Color.RED]&quot;</span></code>.</p>
+</section>
+</section>
+<section id="type-inference">
+<h2><a class="toc-backref" href="#id28">Type inference</a><a class="headerlink" href="#type-inference" title="Permalink to this headline">¶</a></h2>
+<p>This section describes a few rules regarding type inference and
+literals, along with some examples.</p>
+<section id="backwards-compatibility">
+<h3><a class="toc-backref" href="#id29">Backwards compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h3>
+<p>When type checkers add support for Literal, it’s important they do so
+in a way that maximizes backwards-compatibility. Type checkers should
+ensure that code that used to type check continues to do so after support
+for Literal is added on a best-effort basis.</p>
+<p>This is particularly important when performing type inference. For
+example, given the statement <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">&quot;blue&quot;</span></code>, should the inferred
+type of <code class="docutils literal notranslate"><span class="pre">x</span></code> be <code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">Literal[&quot;blue&quot;]</span></code>?</p>
+<p>One naive strategy would be to always assume expressions are intended
+to be Literal types. So, <code class="docutils literal notranslate"><span class="pre">x</span></code> would always have an inferred type of
+<code class="docutils literal notranslate"><span class="pre">Literal[&quot;blue&quot;]</span></code> in the example above. This naive strategy is almost
+certainly too disruptive – it would cause programs like the following
+to start failing when they previously did not:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># If a type checker infers &#39;var&#39; has type Literal[3]</span>
+<span class="c1"># and my_list has type List[Literal[3]]...</span>
+<span class="n">var</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">my_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">var</span><span class="p">]</span>
+
+<span class="c1"># ...this call would be a type-error.</span>
+<span class="n">my_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Another example of when this strategy would fail is when setting fields
+in objects:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyObject</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># If a type checker infers MyObject.field has type Literal[3]...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field</span> <span class="o">=</span> <span class="mi">3</span>
+
+<span class="n">m</span> <span class="o">=</span> <span class="n">MyObject</span><span class="p">()</span>
+
+<span class="c1"># ...this assignment would no longer type check</span>
+<span class="n">m</span><span class="o">.</span><span class="n">field</span> <span class="o">=</span> <span class="mi">4</span>
+</pre></div>
+</div>
+<p>An alternative strategy that <em>does</em> maintain compatibility in every case would
+be to always assume expressions are <em>not</em> Literal types unless they are
+explicitly annotated otherwise. A type checker using this strategy would
+always infer that <code class="docutils literal notranslate"><span class="pre">x</span></code> is of type <code class="docutils literal notranslate"><span class="pre">str</span></code> in the first example above.</p>
+<p>This is not the only viable strategy: type checkers should feel free to experiment
+with more sophisticated inference techniques. This PEP does not mandate any
+particular strategy; it only emphasizes the importance of backwards compatibility.</p>
+</section>
+<section id="using-non-literals-in-literal-contexts">
+<h3><a class="toc-backref" href="#id30">Using non-Literals in Literal contexts</a><a class="headerlink" href="#using-non-literals-in-literal-contexts" title="Permalink to this headline">¶</a></h3>
+<p>Literal types follow the existing rules regarding subtyping with no additional
+special-casing. For example, programs like the following are type safe:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">expects_str</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+<span class="n">var</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;foo&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;foo&quot;</span>
+
+<span class="c1"># Legal: Literal[&quot;foo&quot;] is a subtype of str</span>
+<span class="n">expects_str</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This also means non-Literal expressions in general should not automatically
+be cast to Literal. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">expects_literal</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;foo&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">runner</span><span class="p">(</span><span class="n">my_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="c1"># ILLEGAL: str is not a subclass of Literal[&quot;foo&quot;]</span>
+    <span class="n">expects_literal</span><span class="p">(</span><span class="n">my_str</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Note:</strong> If the user wants their API to support accepting both literals
+<em>and</em> the original type – perhaps for legacy purposes – they should
+implement a fallback overload. See <a class="reference internal" href="#interactions-with-overloads">Interactions with overloads</a>.</p>
+</section>
+</section>
+<section id="interactions-with-other-types-and-features">
+<h2><a class="toc-backref" href="#id31">Interactions with other types and features</a><a class="headerlink" href="#interactions-with-other-types-and-features" title="Permalink to this headline">¶</a></h2>
+<p>This section discusses how Literal types interact with other existing types.</p>
+<section id="intelligent-indexing-of-structured-data">
+<h3><a class="toc-backref" href="#id32">Intelligent indexing of structured data</a><a class="headerlink" href="#intelligent-indexing-of-structured-data" title="Permalink to this headline">¶</a></h3>
+<p>Literals can be used to “intelligently index” into structured types like
+tuples, NamedTuple, and classes. (Note: this is not an exhaustive list).</p>
+<p>For example, type checkers should infer the correct value type when
+indexing into a tuple using an int key that corresponds a valid index:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">b</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
+
+<span class="n">some_tuple</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;abc&quot;</span><span class="p">,</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">])</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">some_tuple</span><span class="p">[</span><span class="n">a</span><span class="p">])</span>   <span class="c1"># Revealed type is &#39;int&#39;</span>
+<span class="n">some_tuple</span><span class="p">[</span><span class="n">b</span><span class="p">]</span>                <span class="c1"># Error: 5 is not a valid index into the tuple</span>
+</pre></div>
+</div>
+<p>We expect similar behavior when using functions like getattr:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Test</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">myfield</span> <span class="o">=</span> <span class="n">param</span>
+
+    <span class="k">def</span> <span class="nf">mymethod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+
+<span class="n">a</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;myfield&quot;</span><span class="p">]</span>  <span class="o">=</span> <span class="s2">&quot;myfield&quot;</span>
+<span class="n">b</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;mymethod&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;mymethod&quot;</span>
+<span class="n">c</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;blah&quot;</span><span class="p">]</span>     <span class="o">=</span> <span class="s2">&quot;blah&quot;</span>
+
+<span class="n">t</span> <span class="o">=</span> <span class="n">Test</span><span class="p">()</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">a</span><span class="p">))</span>  <span class="c1"># Revealed type is &#39;int&#39;</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>  <span class="c1"># Revealed type is &#39;Callable[[int], str]&#39;</span>
+<span class="nb">getattr</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>               <span class="c1"># Error: No attribute named &#39;blah&#39; in Test</span>
+</pre></div>
+</div>
+<p><strong>Note:</strong> See <a class="reference internal" href="#interactions-with-final">Interactions with Final</a> for a proposal on how we can
+express the variable declarations above in a more compact manner.</p>
+</section>
+<section id="interactions-with-overloads">
+<h3><a class="toc-backref" href="#id33">Interactions with overloads</a><a class="headerlink" href="#interactions-with-overloads" title="Permalink to this headline">¶</a></h3>
+<p>Literal types and overloads do not need to interact in  a special
+way: the existing rules work fine.</p>
+<p>However, one important use case type checkers must take care to
+support is the ability to use a <em>fallback</em> when the user is not using literal
+types. For example, consider <code class="docutils literal notranslate"><span class="pre">open</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">_PathType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+
+<span class="nd">@overload</span>
+<span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">_PathType</span><span class="p">,</span>
+         <span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;r+&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">,</span> <span class="s2">&quot;a+&quot;</span><span class="p">,</span> <span class="s2">&quot;x+&quot;</span><span class="p">],</span>
+         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">[</span><span class="n">Text</span><span class="p">]:</span> <span class="o">...</span>
+<span class="nd">@overload</span>
+<span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">_PathType</span><span class="p">,</span>
+         <span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">,</span> <span class="s2">&quot;ab&quot;</span><span class="p">,</span> <span class="s2">&quot;xb&quot;</span><span class="p">,</span> <span class="s2">&quot;r+b&quot;</span><span class="p">,</span> <span class="s2">&quot;w+b&quot;</span><span class="p">,</span> <span class="s2">&quot;a+b&quot;</span><span class="p">,</span> <span class="s2">&quot;x+b&quot;</span><span class="p">],</span>
+         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span> <span class="o">...</span>
+
+<span class="c1"># Fallback overload for when the user isn&#39;t using literal types</span>
+<span class="nd">@overload</span>
+<span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">_PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IO</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>If we were to change the signature of <code class="docutils literal notranslate"><span class="pre">open</span></code> to use just the first two overloads,
+we would break any code that does not pass in a literal string expression.
+For example, code like this would be broken:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">pick_file_mode</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="c1"># f should continue to be of type IO[Any] here</span>
+</pre></div>
+</div>
+<p>A little more broadly: we propose adding a policy to typeshed that
+mandates that whenever we add literal types to some existing API, we also
+always include a fallback overload to maintain backwards-compatibility.</p>
+</section>
+<section id="interactions-with-generics">
+<h3><a class="toc-backref" href="#id34">Interactions with generics</a><a class="headerlink" href="#interactions-with-generics" title="Permalink to this headline">¶</a></h3>
+<p>Types like <code class="docutils literal notranslate"><span class="pre">Literal[3]</span></code> are meant to be just plain old subclasses of
+<code class="docutils literal notranslate"><span class="pre">int</span></code>. This means you can use types like <code class="docutils literal notranslate"><span class="pre">Literal[3]</span></code> anywhere
+you could use normal types, such as with generics.</p>
+<p>This means that it is legal to parameterize generic functions or
+classes using Literal types:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">A</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+<span class="c1"># A simplified definition for Matrix[row, column]</span>
+<span class="k">class</span> <span class="nc">Matrix</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">]):</span>
+    <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Matrix</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Matrix</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">]:</span> <span class="o">...</span>
+    <span class="k">def</span> <span class="fm">__matmul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Matrix</span><span class="p">[</span><span class="n">B</span><span class="p">,</span> <span class="n">C</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Matrix</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">C</span><span class="p">]:</span> <span class="o">...</span>
+    <span class="k">def</span> <span class="nf">transpose</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Matrix</span><span class="p">[</span><span class="n">B</span><span class="p">,</span> <span class="n">A</span><span class="p">]:</span> <span class="o">...</span>
+
+<span class="n">foo</span><span class="p">:</span> <span class="n">Matrix</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">3</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Matrix</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">bar</span><span class="p">:</span> <span class="n">Matrix</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">7</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Matrix</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">baz</span> <span class="o">=</span> <span class="n">foo</span> <span class="o">@</span> <span class="n">bar</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">baz</span><span class="p">)</span>  <span class="c1"># Revealed type is &#39;Matrix[Literal[2], Literal[7]]&#39;</span>
+</pre></div>
+</div>
+<p>Similarly, it is legal to construct TypeVars with value restrictions
+or bounds involving Literal types:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">,</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">],</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;b&quot;</span><span class="p">],</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;c&quot;</span><span class="p">])</span>
+<span class="n">S</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;S&#39;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;foo&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>…although it is unclear when it would ever be useful to construct a
+TypeVar with a Literal upper bound. For example, the <code class="docutils literal notranslate"><span class="pre">S</span></code> TypeVar in
+the above example is essentially pointless: we can get equivalent behavior
+by using <code class="docutils literal notranslate"><span class="pre">S</span> <span class="pre">=</span> <span class="pre">Literal[&quot;foo&quot;]</span></code> instead.</p>
+<p><strong>Note:</strong> Literal types and generics deliberately interact in only very
+basic and limited ways. In particular, libraries that want to type check
+code containing a heavy amount of numeric or numpy-style manipulation will
+almost certainly likely find Literal types as proposed in this PEP to be
+insufficient for their needs.</p>
+<p>We considered several different proposals for fixing this, but ultimately
+decided to defer the problem of integer generics to a later date. See
+<a class="reference internal" href="#rejected-or-out-of-scope-ideas">Rejected or out-of-scope ideas</a> for more details.</p>
+</section>
+<section id="interactions-with-enums-and-exhaustiveness-checks">
+<h3><a class="toc-backref" href="#id35">Interactions with enums and exhaustiveness checks</a><a class="headerlink" href="#interactions-with-enums-and-exhaustiveness-checks" title="Permalink to this headline">¶</a></h3>
+<p>Type checkers should be capable of performing exhaustiveness checks when
+working Literal types that have a closed number of variants, such as
+enums. For example, the type checker should be capable of inferring that
+the final <code class="docutils literal notranslate"><span class="pre">else</span></code> statement must be of type <code class="docutils literal notranslate"><span class="pre">str</span></code>, since all three
+values of the <code class="docutils literal notranslate"><span class="pre">Status</span></code> enum have already been exhausted:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Status</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">SUCCESS</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">INVALID_DATA</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">FATAL_ERROR</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="k">def</span> <span class="nf">parse_status</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Status</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">s</span> <span class="ow">is</span> <span class="n">Status</span><span class="o">.</span><span class="n">SUCCESS</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Success!&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">s</span> <span class="ow">is</span> <span class="n">Status</span><span class="o">.</span><span class="n">INVALID_DATA</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The given data is invalid because...&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">s</span> <span class="ow">is</span> <span class="n">Status</span><span class="o">.</span><span class="n">FATAL_ERROR</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Unexpected fatal error...&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># &#39;s&#39; must be of type &#39;str&#39; since all other options are exhausted</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Got custom status: &quot;</span> <span class="o">+</span> <span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The interaction described above is not new: it’s already
+<a class="reference external" href="https://www.python.org/dev/peps/pep-0484/#support-for-singleton-types-in-unions">already codified within PEP 484</a> <a class="footnote-reference brackets" href="#id13" id="id14">6</a>. However, many type
+checkers (such as mypy) do not yet implement this due to the expected
+complexity of the implementation work.</p>
+<p>Some of this complexity will be alleviated once Literal types are introduced:
+rather than entirely special-casing enums, we can instead treat them as being
+approximately equivalent to the union of their values and take advantage of any
+existing logic regarding unions, exhaustibility, type narrowing, reachability,
+and so forth the type checker might have already implemented.</p>
+<p>So here, the <code class="docutils literal notranslate"><span class="pre">Status</span></code> enum could be treated as being approximately equivalent
+to <code class="docutils literal notranslate"><span class="pre">Literal[Status.SUCCESS,</span> <span class="pre">Status.INVALID_DATA,</span> <span class="pre">Status.FATAL_ERROR]</span></code>
+and the type of <code class="docutils literal notranslate"><span class="pre">s</span></code> narrowed accordingly.</p>
+</section>
+<section id="interactions-with-narrowing">
+<h3><a class="toc-backref" href="#id36">Interactions with narrowing</a><a class="headerlink" href="#interactions-with-narrowing" title="Permalink to this headline">¶</a></h3>
+<p>Type checkers may optionally perform additional analysis for both enum and
+non-enum Literal types beyond what is described in the section above.</p>
+<p>For example, it may be useful to perform narrowing based on things like
+containment or equality checks:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">parse_status</span><span class="p">(</span><span class="n">status</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">status</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;MALFORMED&quot;</span><span class="p">,</span> <span class="s2">&quot;ABORTED&quot;</span><span class="p">):</span>
+        <span class="c1"># Type checker could narrow &#39;status&#39; to type</span>
+        <span class="c1"># Literal[&quot;MALFORMED&quot;, &quot;ABORTED&quot;] here.</span>
+        <span class="k">return</span> <span class="n">expects_bad_status</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+
+    <span class="c1"># Similarly, type checker could narrow &#39;status&#39; to Literal[&quot;PENDING&quot;]</span>
+    <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="s2">&quot;PENDING&quot;</span><span class="p">:</span>
+        <span class="n">expects_pending_status</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>It may also be useful to perform narrowing taking into account expressions
+involving Literal bools. For example, we can combine <code class="docutils literal notranslate"><span class="pre">Literal[True]</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Literal[False]</span></code>, and overloads to construct “custom type guards”:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@overload</span>
+<span class="k">def</span> <span class="nf">is_int_like</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">]:</span> <span class="o">...</span>
+<span class="nd">@overload</span>
+<span class="k">def</span> <span class="nf">is_int_like</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
+<span class="k">def</span> <span class="nf">is_int_like</span><span class="p">(</span><span class="n">x</span><span class="p">):</span> <span class="o">...</span>
+
+<span class="n">vector</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+<span class="k">if</span> <span class="n">is_int_like</span><span class="p">(</span><span class="n">vector</span><span class="p">):</span>
+    <span class="n">vector</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">vector</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;bad&quot;</span><span class="p">)</span>   <span class="c1"># This branch is inferred to be unreachable</span>
+
+<span class="n">scalar</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+<span class="k">if</span> <span class="n">is_int_like</span><span class="p">(</span><span class="n">scalar</span><span class="p">):</span>
+    <span class="n">scalar</span> <span class="o">+=</span> <span class="mi">3</span>      <span class="c1"># Type checks: type of &#39;scalar&#39; is narrowed to &#39;int&#39;</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">scalar</span> <span class="o">+=</span> <span class="s2">&quot;foo&quot;</span>  <span class="c1"># Type checks: type of &#39;scalar&#39; is narrowed to &#39;str&#39;</span>
+</pre></div>
+</div>
+</section>
+<section id="interactions-with-final">
+<h3><a class="toc-backref" href="#id37">Interactions with Final</a><a class="headerlink" href="#interactions-with-final" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference external" href="https://www.python.org/dev/peps/pep-0591/">PEP 591</a> <a class="footnote-reference brackets" href="#id15" id="id16">7</a> proposes adding a “Final” qualifier to the typing
+ecosystem. This qualifier can be used to declare that some variable or
+attribute cannot be reassigned:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">foo</span><span class="p">:</span> <span class="n">Final</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">foo</span> <span class="o">=</span> <span class="mi">4</span>           <span class="c1"># Error: &#39;foo&#39; is declared to be Final</span>
+</pre></div>
+</div>
+<p>Note that in the example above, we know that <code class="docutils literal notranslate"><span class="pre">foo</span></code> will always be equal to
+exactly <code class="docutils literal notranslate"><span class="pre">3</span></code>. A type checker can use this information to deduce that <code class="docutils literal notranslate"><span class="pre">foo</span></code>
+is valid to use in any context that expects a <code class="docutils literal notranslate"><span class="pre">Literal[3]</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">expects_three</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+
+<span class="n">expects_three</span><span class="p">(</span><span class="n">foo</span><span class="p">)</span>  <span class="c1"># Type checks, since &#39;foo&#39; is Final and equal to 3</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">Final</span></code> qualifier serves as a shorthand for declaring that a variable
+is <em>effectively Literal</em>.</p>
+<p>If both this PEP and <a class="reference external" href="pep-0591.html">PEP 591</a> are accepted, type checkers are expected to
+support this shortcut. Specifically, given a variable or attribute assignment
+of the form <code class="docutils literal notranslate"><span class="pre">var:</span> <span class="pre">Final</span> <span class="pre">=</span> <span class="pre">value</span></code> where <code class="docutils literal notranslate"><span class="pre">value</span></code> is a valid parameter for
+<code class="docutils literal notranslate"><span class="pre">Literal[...]</span></code>, type checkers should understand that <code class="docutils literal notranslate"><span class="pre">var</span></code> may be used in
+any context that expects a <code class="docutils literal notranslate"><span class="pre">Literal[value]</span></code>.</p>
+<p>Type checkers are not obligated to understand any other uses of Final. For
+example, whether or not the following program type checks is left unspecified:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: The assignment does not exactly match the form &#39;var: Final = value&#39;.</span>
+<span class="n">bar1</span><span class="p">:</span> <span class="n">Final</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">expects_three</span><span class="p">(</span><span class="n">bar1</span><span class="p">)</span>  <span class="c1"># May or may not be accepted by type checkers</span>
+
+<span class="c1"># Note: &quot;Literal[1 + 2]&quot; is not a legal type.</span>
+<span class="n">bar2</span><span class="p">:</span> <span class="n">Final</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span>
+<span class="n">expects_three</span><span class="p">(</span><span class="n">bar2</span><span class="p">)</span>  <span class="c1"># May or may not be accepted by type checkers</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="rejected-or-out-of-scope-ideas">
+<h2><a class="toc-backref" href="#id38">Rejected or out-of-scope ideas</a><a class="headerlink" href="#rejected-or-out-of-scope-ideas" title="Permalink to this headline">¶</a></h2>
+<p>This section outlines some potential features that are explicitly out-of-scope.</p>
+<section id="true-dependent-types-integer-generics">
+<h3><a class="toc-backref" href="#id39">True dependent types/integer generics</a><a class="headerlink" href="#true-dependent-types-integer-generics" title="Permalink to this headline">¶</a></h3>
+<p>This proposal is essentially describing adding a very simplified
+dependent type system to the <a class="reference external" href="pep-0484.html">PEP 484</a> ecosystem. One obvious extension
+would be to implement a full-fledged dependent type system that lets users
+predicate types based on their values in arbitrary ways. That would
+let us write signatures like the below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># A vector has length &#39;n&#39;, containing elements of type &#39;T&#39;</span>
+<span class="k">class</span> <span class="nc">Vector</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">]):</span> <span class="o">...</span>
+
+<span class="c1"># The type checker will statically verify our function genuinely does</span>
+<span class="c1"># construct a vector that is equal in length to &quot;len(vec1) + len(vec2)&quot;</span>
+<span class="c1"># and will throw an error if it does not.</span>
+<span class="k">def</span> <span class="nf">concat</span><span class="p">(</span><span class="n">vec1</span><span class="p">:</span> <span class="n">Vector</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">T</span><span class="p">],</span> <span class="n">vec2</span><span class="p">:</span> <span class="n">Vector</span><span class="p">[</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Vector</span><span class="p">[</span><span class="n">A</span> <span class="o">+</span> <span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">]:</span>
+    <span class="c1"># ...snip...</span>
+</pre></div>
+</div>
+<p>At the very least, it would be useful to add some form of integer generics.</p>
+<p>Although such a type system would certainly be useful, it’s out of scope
+for this PEP: it would require a far more substantial amount of implementation
+work, discussion, and research to complete compared to the current proposal.</p>
+<p>It’s entirely possible we’ll circle back and revisit this topic in the future:
+we very likely will need some form of dependent typing along with other
+extensions like variadic generics to support popular libraries like numpy.</p>
+<p>This PEP should be seen as a stepping stone towards this goal,
+rather than an attempt at providing a comprehensive solution.</p>
+</section>
+<section id="adding-more-concise-syntax">
+<h3><a class="toc-backref" href="#id40">Adding more concise syntax</a><a class="headerlink" href="#adding-more-concise-syntax" title="Permalink to this headline">¶</a></h3>
+<p>One objection to this PEP is that having to explicitly write <code class="docutils literal notranslate"><span class="pre">Literal[...]</span></code>
+feels verbose. For example, instead of writing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foobar</span><span class="p">(</span><span class="n">arg1</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">arg2</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+<p>…it would be nice to instead write:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foobar</span><span class="p">(</span><span class="n">arg1</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">:</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+<p>Unfortunately, these abbreviations simply will not work with the
+existing implementation of <code class="docutils literal notranslate"><span class="pre">typing</span></code> at runtime. For example, the
+following snippet crashes when run using Python 3.7:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+
+<span class="c1"># Supposed to accept tuple containing the literals 1 and 2</span>
+<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+<p>Running this yields the following exception:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ne">TypeError</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">t0</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span> <span class="n">each</span> <span class="n">t</span> <span class="n">must</span> <span class="n">be</span> <span class="n">a</span> <span class="nb">type</span><span class="o">.</span> <span class="n">Got</span> <span class="mf">1.</span>
+</pre></div>
+</div>
+<p>We don’t want users to have to memorize exactly when it’s ok to elide
+<code class="docutils literal notranslate"><span class="pre">Literal</span></code>, so we require <code class="docutils literal notranslate"><span class="pre">Literal</span></code> to always be present.</p>
+<p>A little more broadly, we feel overhauling the syntax of types in
+Python is not within the scope of this PEP: it would be best to have
+that discussion in a separate PEP, instead of attaching it to this one.
+So, this PEP deliberately does not try and innovate Python’s type syntax.</p>
+</section>
+</section>
+<section id="backporting-the-literal-type">
+<h2><a class="toc-backref" href="#id41">Backporting the <code class="docutils literal notranslate"><span class="pre">Literal</span></code> type</a><a class="headerlink" href="#backporting-the-literal-type" title="Permalink to this headline">¶</a></h2>
+<p>Once this PEP is accepted, the <code class="docutils literal notranslate"><span class="pre">Literal</span></code> type will need to be backported for
+Python versions that come bundled with older versions of the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module.
+We plan to do this by adding <code class="docutils literal notranslate"><span class="pre">Literal</span></code> to the <code class="docutils literal notranslate"><span class="pre">typing_extensions</span></code> 3rd party
+module, which contains a variety of other backported types.</p>
+</section>
+<section id="implementation">
+<h2><a class="toc-backref" href="#id42">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>The mypy type checker currently has implemented a large subset of the behavior
+described in this spec, with the exception of enum Literals and some of the
+more complex narrowing interactions described above.</p>
+</section>
+<section id="related-work">
+<h2><a class="toc-backref" href="#id43">Related work</a><a class="headerlink" href="#related-work" title="Permalink to this headline">¶</a></h2>
+<p>This proposal was written based on the discussion that took place in the
+following threads:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/python/typing/issues/478">Check that literals belong to/are excluded from a set of values</a> <a class="footnote-reference brackets" href="#id2" id="id4">1</a></p></li>
+<li><p><a class="reference external" href="https://github.com/python/mypy/issues/3062">Simple dependent types</a> <a class="footnote-reference brackets" href="#id5" id="id6">2</a></p></li>
+<li><p><a class="reference external" href="https://github.com/python/typing/issues/513">Typing for multi-dimensional arrays</a> <a class="footnote-reference brackets" href="#id7" id="id8">3</a></p></li>
+</ul>
+<p>The overall design of this proposal also ended up converging into
+something similar to how
+<a class="reference external" href="https://www.typescriptlang.org/docs/handbook/advanced-types.html#string-literal_types">literal types are handled in TypeScript</a> <a class="footnote-reference brackets" href="#id9" id="id10">4</a>.</p>
+</section>
+<section id="acknowledgements">
+<h2><a class="toc-backref" href="#id44">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>Thanks to Mark Mendoza, Ran Benita, Rebecca Chen, and the other members of
+typing-sig for their comments on this PEP.</p>
+<p>Additional thanks to the various participants in the mypy and typing issue
+trackers, who helped provide a lot of the motivation and reasoning behind
+this PEP.</p>
+</section>
+<section id="id1">
+<h2><a class="toc-backref" href="#id45">References</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets">1</span><span class="fn-backref">(<a href="#id3">1</a>,<a href="#id4">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://github.com/python/typing/issues/478">https://github.com/python/typing/issues/478</a></p>
+</dd>
+<dt class="label" id="id5"><span class="brackets"><a class="fn-backref" href="#id6">2</a></span></dt>
+<dd><p><a class="reference external" href="https://github.com/python/mypy/issues/3062">https://github.com/python/mypy/issues/3062</a></p>
+</dd>
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id8">3</a></span></dt>
+<dd><p><a class="reference external" href="https://github.com/python/typing/issues/513">https://github.com/python/typing/issues/513</a></p>
+</dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id10">4</a></span></dt>
+<dd><p><a class="reference external" href="https://www.typescriptlang.org/docs/handbook/advanced-types.html#string-literal_types">https://www.typescriptlang.org/docs/handbook/advanced-types.html#string-literal_types</a></p>
+</dd>
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id12">5</a></span></dt>
+<dd><p><a class="reference external" href="https://www.python.org/dev/peps/pep-0484/#newtype-helper-function">https://www.python.org/dev/peps/pep-0484/#newtype-helper-function</a></p>
+</dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id14">6</a></span></dt>
+<dd><p><a class="reference external" href="https://www.python.org/dev/peps/pep-0484/#support-for-singleton-types-in-unions">https://www.python.org/dev/peps/pep-0484/#support-for-singleton-types-in-unions</a></p>
+</dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id16">7</a></span></dt>
+<dd><p><a class="reference external" href="https://www.python.org/dev/peps/pep-0591/">https://www.python.org/dev/peps/pep-0591/</a></p>
+</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#id46">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0586.rst">https://github.com/python/peps/blob/master/pep-0586.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0586.rst">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0001/">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0100/">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0101/">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0374/">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0391/">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0423/">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0451/">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0471/">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0479/">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0495/">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0558/">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0570/">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0584/">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0594/">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3118/">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-0585/" title="previous chapter">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+      <li>Next: <a href="../pep-0587/" title="next chapter">PEP 587 – Python Initialization Configuration</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-0586.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,1609 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 101 – Doing Python Releases 101 &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 102 – Doing Python Micro Releases" href="../pep-0102/" />
+    <link rel="prev" title="PEP 100 – Python Unicode Integration" href="../pep-0100/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pep-101-doing-python-releases-101">
+<h1 class="page-title">PEP 101 – Doing Python Releases 101<a class="headerlink" href="#pep-101-doing-python-releases-101" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>101</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>Doing Python Releases 101</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Barry Warsaw &lt;<a class="reference external" href="mailto:barry&#37;&#52;&#48;python&#46;org?subject=PEP%20-1">barry&#32;&#97;t&#32;python.org</a>&gt;, Guido van Rossum &lt;<a class="reference external" href="mailto:guido&#37;&#52;&#48;python&#46;org?subject=PEP%20-1">guido&#32;&#97;t&#32;python.org</a>&gt;</p>
+</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even"><p>Active</p>
+</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Informational</p>
+</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even"><p>22-Aug-2001</p>
+</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+<dt class="field-even">Replaces</dt>
+<dd class="field-even"><p><a class="reference external" href="pep-0102.html">102</a></p>
+</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#abstract" id="id6">Abstract</a></p></li>
+<li><p><a class="reference internal" href="#things-you-ll-need" id="id7">Things You’ll Need</a></p></li>
+<li><p><a class="reference internal" href="#types-of-releases" id="id8">Types of Releases</a></p></li>
+<li><p><a class="reference internal" href="#how-to-make-a-release" id="id9">How to Make A Release</a></p></li>
+<li><p><a class="reference internal" href="#what-next" id="id10">What Next?</a></p></li>
+<li><p><a class="reference internal" href="#moving-to-end-of-life" id="id11">Moving to End-of-life</a></p></li>
+<li><p><a class="reference internal" href="#windows-notes" id="id12">Windows Notes</a></p></li>
+<li><p><a class="reference internal" href="#id1" id="id13">References</a></p></li>
+<li><p><a class="reference internal" href="#copyright" id="id14">Copyright</a></p></li>
+</ul>
+</div>
+<section id="abstract">
+<h2><a class="toc-backref" href="#id6">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Making a Python release is a thrilling and crazy process.  You’ve heard
+the expression “herding cats”?  Imagine trying to also saddle those
+purring little creatures up, and ride them into town, with some of their
+buddies firmly attached to your bare back, anchored by newly sharpened
+claws.  At least they’re cute, you remind yourself.</p>
+<p>Actually, no that’s a slight exaggeration &lt;wink&gt;.  The Python release
+process has steadily improved over the years and now, with the help of our
+amazing community, is really not too difficult.  This PEP attempts to
+collect, in one place, all the steps needed to make a Python release.  It
+is organized as a recipe and you can actually print this out and check
+items off as you complete them.</p>
+</section>
+<section id="things-you-ll-need">
+<h2><a class="toc-backref" href="#id7">Things You’ll Need</a><a class="headerlink" href="#things-you-ll-need" title="Permalink to this headline">¶</a></h2>
+<p>As a release manager there are a lot of resources you’ll need to access.
+Here’s a hopefully-complete list.</p>
+<ul>
+<li><p>A GPG key.</p>
+<p>Python releases are digitally signed with GPG; you’ll need a key,
+which hopefully will be on the “web of trust” with at least one of
+the other release managers.</p>
+</li>
+<li><p>A bunch of software:</p>
+<ul class="simple">
+<li><p>“release.py”, the Python release manager’s friend.  It’s in the
+python/release-tools repo on GitHub.  It doesn’t pip install
+or have any sort of install process–you’ll have to put it on
+your path yourself, or just run it with a relative path, or
+whatever.</p></li>
+<li><p>“blurb”, the Misc/NEWS management tool.  The release process
+currently uses three blurb subcommands:
+release, merge, and export.  Installable via pip3.</p></li>
+<li><p>“virtualenv”. The release script installs Sphinx in a virtualenv
+when building the docs (for 2.7 and 3.5+).</p></li>
+<li><p>A fairly complete installation of a recent TeX distribution,
+such as texlive.  You need that for building the PDF docs.</p></li>
+</ul>
+</li>
+<li><p>Access to <code class="docutils literal notranslate"><span class="pre">downloads.nyc1.psf.io</span></code>, the server that hosts download files,
+and <code class="docutils literal notranslate"><span class="pre">docs.nyc1.psf.io</span></code>, the server that hosts the documentation.
+You’ll be uploading files directly here.</p></li>
+<li><p>Administrator access to <code class="docutils literal notranslate"><span class="pre">https://github.com/python/cpython</span></code>.</p></li>
+<li><p>An administrator account on www.python.org, including an “API key”.</p></li>
+<li><p>Write access to the PEP repository.</p>
+<p>If you’re reading this, you probably already have this–the first
+task of any release manager is to draft the release schedule.  But
+in case you just signed up… sucker!  I mean, uh, congratulations!</p>
+</li>
+<li><p>Posting access to <a class="reference external" href="http://blog.python.org">http://blog.python.org</a>, a Blogger-hosted weblog.
+The RSS feed from this blog is used for the ‘Python News’ section
+on www.python.org.</p></li>
+<li><p>A subscription to the super secret release manager mailing list, which may
+or may not be called <code class="docutils literal notranslate"><span class="pre">python-cabal</span></code>. Bug Barry about this.</p></li>
+</ul>
+</section>
+<section id="types-of-releases">
+<h2><a class="toc-backref" href="#id8">Types of Releases</a><a class="headerlink" href="#types-of-releases" title="Permalink to this headline">¶</a></h2>
+<p>There are several types of releases you will need to make.  These include:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">alpha</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">beta</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">release</span> <span class="pre">candidate</span> <span class="pre">1</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">release</span> <span class="pre">candidate</span> <span class="pre">2+</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">final</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">new</span> <span class="pre">branch</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">begin</span> <span class="pre">bugfix</span> <span class="pre">mode</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">begin</span> <span class="pre">security-only</span> <span class="pre">mode</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">end-of-life</span></code></p></li>
+</ul>
+<p>Some of these release types actually involve more than
+one release branch. In particular, a <strong>new branch</strong> is that point in the
+release cycle when a new feature release cycle begins.  Under the current
+organization of the cpython git repository, the <em>main</em> branch is always
+the target for new features.  At some point in the release cycle of the
+next feature release, a <strong>new branch</strong> release is made which creates a
+new separate branch for stabilization and later maintenance of the
+current in-progress feature release (x.y.0) and the <em>main</em> branch is modified
+to build a new version (which will eventually be released as x.y+1.0).
+While the <strong>new branch</strong> release step could occur at one of several points
+in the release cycle, current practice is for it to occur at feature code
+cutoff for the release which is scheduled for the first beta release.</p>
+<p>In the descriptions that follow, steps specific to release types are
+labeled accordingly, for now, <strong>new branch</strong> and <strong>final</strong>.</p>
+</section>
+<section id="how-to-make-a-release">
+<h2><a class="toc-backref" href="#id9">How to Make A Release</a><a class="headerlink" href="#how-to-make-a-release" title="Permalink to this headline">¶</a></h2>
+<p>Here are the steps taken to make a Python release.  Some steps are more
+fuzzy than others because there’s little that can be automated (e.g.
+writing the NEWS entries).  Where a step is usually performed by An
+Expert, the role of that expert is given.  Otherwise, assume the step is
+done by the Release Manager (RM), the designated person performing the
+release.  The roles and their current experts are:</p>
+<ul>
+<li><p>RM = Release Manager</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Łukasz Langa &lt;<a class="reference external" href="mailto:lukasz&#37;&#52;&#48;python&#46;org">lukasz<span>&#64;</span>python<span>&#46;</span>org</a>&gt; (Central Europe)</p></li>
+<li><p>Ned Deily &lt;<a class="reference external" href="mailto:nad&#37;&#52;&#48;python&#46;org">nad<span>&#64;</span>python<span>&#46;</span>org</a>&gt; (US)</p></li>
+<li><p>Pablo Galindo Salgado &lt;<a class="reference external" href="mailto:pablogsal&#37;&#52;&#48;python&#46;org">pablogsal<span>&#64;</span>python<span>&#46;</span>org</a>&gt; (UK)</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>WE = Windows - Steve Dower &lt;<a class="reference external" href="mailto:steve&#46;dower&#37;&#52;&#48;python&#46;org">steve<span>&#46;</span>dower<span>&#64;</span>python<span>&#46;</span>org</a>&gt;</p></li>
+<li><p>ME = Mac - Ned Deily &lt;<a class="reference external" href="mailto:nad&#37;&#52;&#48;python&#46;org">nad<span>&#64;</span>python<span>&#46;</span>org</a>&gt; (US)</p></li>
+<li><p>DE = Docs - Julien Palard &lt;<a class="reference external" href="mailto:julien&#37;&#52;&#48;python&#46;org">julien<span>&#64;</span>python<span>&#46;</span>org</a>&gt; (Central Europe)</p></li>
+<li><p>IE = Idle Expert - Terry Reedy &lt;<a class="reference external" href="mailto:tjreedy&#37;&#52;&#48;udel&#46;edu">tjreedy<span>&#64;</span>udel<span>&#46;</span>edu</a>&gt; (US)</p>
+<blockquote>
+<div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is highly recommended that the RM contact the Experts the day
+before the release.  Because the world is round and everyone lives
+in different timezones, the RM must ensure that the release tag is
+created in enough time for the Experts to cut binary releases.</p>
+<p>You should not make the release public (by updating the website and
+sending announcements) before all experts have updated their bits.
+In rare cases where the expert for Windows or Mac is MIA, you may add
+a message “(Platform) binaries will be provided shortly” and proceed.</p>
+</div>
+</div></blockquote>
+</li>
+</ul>
+<p>XXX: We should include a dependency graph to illustrate the steps that can
+be taken in parallel, or those that depend on other steps.</p>
+<p>As much as possible, the release steps are automated and guided by the
+release script, which is available in a separate repository:</p>
+<blockquote>
+<div><p><a class="reference external" href="https://github.com/python/release-tools">https://github.com/python/release-tools</a></p>
+</div></blockquote>
+<p>We use the following conventions in the examples below.  Where a release
+number is given, it is of the form <code class="docutils literal notranslate"><span class="pre">X.Y.ZaN</span></code>, e.g. 3.3.0a3 for Python 3.3.0
+alpha 3, where “a” == alpha, “b” == beta, “rc” == release candidate.</p>
+<p>Release tags are named <code class="docutils literal notranslate"><span class="pre">vX.Y.ZaN</span></code>.  The branch name for minor release
+maintenance branches is <code class="docutils literal notranslate"><span class="pre">X.Y</span></code>.</p>
+<p>This helps by performing several automatic editing steps, and guides you
+to perform some manual editing steps.</p>
+<ul>
+<li><p>Log into irc.freenode.net and join the #python-dev channel.</p>
+<p>You probably need to coordinate with other people around the world.
+This IRC channel is where we’ve arranged to meet.</p>
+</li>
+<li><p>Check to see if there are any showstopper bugs.</p>
+<p>Go to <a class="reference external" href="https://bugs.python.org">https://bugs.python.org</a> and look for any open bugs that can block
+this release.  You’re looking at the Priority of the open bugs for the
+release you’re making; here are the relevant definitions:</p>
+<dl class="simple">
+<dt>release blocker</dt><dd><p>Stops the release dead in its tracks.  You may not
+make any release with any open release blocker bugs.</p>
+</dd>
+<dt>deferred blocker</dt><dd><p>Doesn’t block this release, but it will block a
+future release.  You may not make a final or
+candidate release with any open deferred blocker
+bugs.</p>
+</dd>
+<dt>critical</dt><dd><p>Important bugs that should be fixed, but which does not block
+a release.</p>
+</dd>
+</dl>
+<p>Review the release blockers and either resolve them, bump them down to
+deferred, or stop the release and ask for community assistance.  If
+you’re making a final or candidate release, do the same with any open
+deferred.</p>
+</li>
+<li><p>Check the stable buildbots.</p>
+<p>Go to <a class="reference external" href="https://buildbot.python.org/all/#/release_status">https://buildbot.python.org/all/#/release_status</a></p>
+<p>Look at the buildbots for the release
+you’re making.  Ignore any that are offline (or inform the community so
+they can be restarted).  If what remains are (mostly) green buildbots,
+you’re good to go.  If you have non-offline red buildbots, you may want
+to hold up the release until they are fixed.  Review the problems and
+use your judgement, taking into account whether you are making an alpha,
+beta, or final release.</p>
+</li>
+<li><p>Make a release clone.</p>
+<p>On a fork of the cpython repository on GitHub, create a release branch
+within it (called the “release clone” from now on).  You can use the same
+GitHub fork you use for cpython development.  Using the standard setup
+recommended in the Python Developer’s Guide, your fork would be referred
+to as <cite>origin</cite> and the standard cpython repo as <cite>upstream</cite>.  You will
+use the branch on your fork to do the release engineering work, including
+tagging the release, and you will use it to share with the other experts
+for making the binaries.</p>
+<p>For a <strong>final</strong> or <strong>release candidate 2+</strong> release, if you are going
+to cherry-pick a subset of changes for the next rc or final from all those
+merged since the last rc, you should create a release
+engineering branch starting from the most recent release candidate tag,
+i.e. <code class="docutils literal notranslate"><span class="pre">v3.8.0rc1</span></code>. You will then cherry-pick changes from the standard
+release branch as necessary into the release engineering branch and
+then proceed as usual.  If you are going to take all of the changes
+since the previous rc, you can proceed as normal.</p>
+</li>
+<li><p>Make sure the current branch of your release clone is the branch you
+want to release from.  (<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">status</span></code>)</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">blurb</span> <span class="pre">release</span> <span class="pre">&lt;version&gt;</span></code> specifying the version number
+(e.g. <code class="docutils literal notranslate"><span class="pre">blurb</span> <span class="pre">release</span> <span class="pre">3.4.7rc1</span></code>).  This merges all the recent news
+blurbs into a single file marked with this release’s version number.</p></li>
+<li><p>Regenerate Lib/pydoc-topics.py.</p>
+<p>While still in the Doc directory, run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">pydoc-topics</span></code>.  Then copy
+<code class="docutils literal notranslate"><span class="pre">build/pydoc-topics/topics.py</span></code> to <code class="docutils literal notranslate"><span class="pre">../Lib/pydoc_data/topics.py</span></code>.</p>
+</li>
+<li><p>Commit your changes to <code class="docutils literal notranslate"><span class="pre">pydoc_topics.py</span></code>
+(and any fixes you made in the docs).</p></li>
+<li><p>Consider running <code class="docutils literal notranslate"><span class="pre">autoconf</span></code> using the currently accepted standard version
+in case <code class="docutils literal notranslate"><span class="pre">configure</span></code> or other autoconf-generated files were last
+committed with a newer or older version and may contain spurious or
+harmful differences.  Currently, autoconf 2.69 is our de facto standard.
+if there are differences, commit them.</p></li>
+<li><p>Make sure the <code class="docutils literal notranslate"><span class="pre">SOURCE_URI</span></code> in <code class="docutils literal notranslate"><span class="pre">Doc/tools/extensions/pyspecific.py</span></code>
+points to the right branch in the git repository (<code class="docutils literal notranslate"><span class="pre">main</span></code> or <code class="docutils literal notranslate"><span class="pre">X.Y</span></code>).
+For a <strong>new branch</strong> release, change the branch in the file from <em>main</em>
+to the new release branch you are about to create (<code class="docutils literal notranslate"><span class="pre">X.Y</span></code>).</p></li>
+<li><p>Bump version numbers via the release script:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ .../release-tools/release.py --bump X.Y.ZaN
+</pre></div>
+</div>
+<p>Reminder: X, Y, Z, and N should be integers.
+a should be one of “a”, “b”, or “rc” (e.g. “3.4.3rc1”).
+For <strong>final</strong> releases omit the aN (“3.4.3”).  For the first
+release of a new version Z should be 0 (“3.6.0”).</p>
+<p>This automates updating various release numbers, but you will have to
+modify a few files manually.  If your $EDITOR environment variable is
+set up correctly, release.py will pop up editor windows with the files
+you need to edit.</p>
+<p>Review the blurb-generated Misc/NEWS file and edit as necessary.</p>
+</li>
+<li><p>Make sure all changes have been committed.  (<code class="docutils literal notranslate"><span class="pre">release.py</span> <span class="pre">--bump</span></code>
+doesn’t check in its changes for you.)</p></li>
+<li><p>Check the years on the copyright notice.  If the last release
+was some time last year, add the current year to the copyright
+notice in several places:</p>
+<ul class="simple">
+<li><p>README</p></li>
+<li><p>LICENSE (make sure to change on trunk and the branch)</p></li>
+<li><p>Python/getcopyright.c</p></li>
+<li><p>Doc/copyright.rst</p></li>
+<li><p>Doc/license.rst</p></li>
+<li><p>PC/python_ver_rc.h sets up the DLL version resource for Windows
+(displayed when you right-click on the DLL and select
+Properties).  This isn’t a C include file, it’s a Windows
+“resource file” include file.</p></li>
+</ul>
+</li>
+<li><p>Check with the IE (if there is one &lt;wink&gt;) to be sure that
+Lib/idlelib/NEWS.txt has been similarly updated.</p></li>
+<li><p>For a <strong>final</strong> major release, edit the first paragraph of
+Doc/whatsnew/X.Y.rst to include the actual release date; e.g. “Python
+2.5 was released on August 1, 2003.”  There’s no need to edit this for
+alpha or beta releases.</p></li>
+<li><p>Do a “git status” in this directory.</p>
+<p>You should not see any files.  I.e. you better not have any uncommitted
+changes in your working directory.</p>
+</li>
+<li><p>Tag the release for X.Y.ZaN:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ .../release-tools/release.py --tag X.Y.ZaN
+</pre></div>
+</div>
+<p>This executes a <cite>git tag</cite> command with the <cite>-s</cite> option so that the
+release tag in the repo is signed with your gpg key.  When prompted
+choose the private key you use for signing release tarballs etc.</p>
+</li>
+<li><p>For a <strong>new branch</strong> release, add it to the <code class="docutils literal notranslate"><span class="pre">VERSIONS</span></code> list of
+<a class="reference external" href="https://github.com/python/docsbuild-scripts/blob/main/build_docs.py">docsbuild scripts</a> <a class="footnote-reference brackets" href="#id2" id="id3">1</a>, so that the new maintenance branch is now
+<code class="docutils literal notranslate"><span class="pre">pre-release</span></code> and add the new <code class="docutils literal notranslate"><span class="pre">in</span> <span class="pre">development</span></code> version.</p></li>
+<li><p>For a <strong>final</strong> major release, update the <code class="docutils literal notranslate"><span class="pre">VERSIONS</span></code> list of
+<a class="reference external" href="https://github.com/python/docsbuild-scripts/blob/main/build_docs.py">docsbuild scripts</a> <a class="footnote-reference brackets" href="#id2" id="id4">1</a>: the release branch must be changed from
+<code class="docutils literal notranslate"><span class="pre">pre-release</span></code> to <code class="docutils literal notranslate"><span class="pre">stable</span></code>.</p></li>
+<li><p>For <strong>begin security-only mode</strong> and <strong>end-of-life</strong> releases, review the
+two files and update the versions accordingly in all active branches.</p></li>
+<li><p>Time to build the source tarball.  Use the release script to create
+the source gzip and xz tarballs,
+documentation tar and zip files, and gpg signature files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ .../release-tools/release.py --export X.Y.ZaN
+</pre></div>
+</div>
+<p>This can take a while for <strong>final</strong> releases, and it will leave all the
+tarballs and signatures in a subdirectory called <code class="docutils literal notranslate"><span class="pre">X.Y.ZaN/src</span></code>, and the
+built docs in <code class="docutils literal notranslate"><span class="pre">X.Y.ZaN/docs</span></code> (for <strong>final</strong> releases).</p>
+</li>
+<li><p>Now you want to perform the very important step of checking the
+tarball you just created, to make sure a completely clean,
+virgin build passes the regression test.  Here are the best
+steps to take:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd /tmp
+$ tar xvf /path/to/your/release/clone/&lt;version&gt;//Python-3.2rc2.tgz
+$ cd Python-3.2rc2
+$ ls
+(Do things look reasonable?)
+$ ls Lib
+(Are there stray .pyc files?)
+$ ./configure
+(Loads of configure output)
+$ make test
+(Do all the expected tests pass?)
+</pre></div>
+</div>
+<p>If you’re feeling lucky and have some time to kill, or if you are making
+a release candidate or <strong>final</strong> release, run the full test suite:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ make testall
+</pre></div>
+</div>
+<p>If the tests pass, then you can feel good that the tarball is
+fine.  If some of the tests fail, or anything else about the
+freshly unpacked directory looks weird, you better stop now and
+figure out what the problem is.</p>
+</li>
+<li><p>Push your commits to the remote release branch in your GitHub fork.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># Do a dry run first.
+$ git push --dry-run --tags origin
+# Make sure you are pushing to your GitHub fork, *not* to the main
+# python/cpython repo!
+$ git push --tags origin
+</pre></div>
+</div>
+</li>
+<li><p>Notify the experts that they can start building binaries.</p></li>
+<li><p>STOP STOP STOP STOP STOP STOP STOP STOP</p>
+<p>At this point you must receive the “green light” from other experts in
+order to create the release.  There are things you can do while you wait
+though, so keep reading until you hit the next STOP.</p>
+</li>
+<li><p>The WE generates and publishes the Windows files using the Azure
+Pipelines build scripts in <code class="docutils literal notranslate"><span class="pre">.azure-pipelines/windows-release/</span></code>,
+currently set up at <a class="reference external" href="https://dev.azure.com/Python/cpython/_build?definitionId=21">https://dev.azure.com/Python/cpython/_build?definitionId=21</a>.</p>
+<p>Note that this build requires a separate VM containing the code signing
+certificate. This VM is managed by the WE to ensure only official releases
+have access to the certificate.</p>
+<p>The build process runs in multiple stages, with each stage’s output being
+available as a downloadable artifact. The stages are:</p>
+<ul class="simple">
+<li><p>Compile all variants of binaries (32-bit, 64-bit, debug/release),
+including running profile-guided optimization.</p></li>
+<li><p>Compile the HTML Help file containing the Python documentation</p></li>
+<li><p>Codesign all the binaries with the PSF’s certificate</p></li>
+<li><p>Create packages for python.org, nuget.org, the embeddable distro and
+the Windows Store</p></li>
+<li><p>Perform basic verification of the installers</p></li>
+<li><p>Upload packages to python.org and nuget.org, purge download caches and
+run a test download.</p></li>
+</ul>
+<p>After the uploads are complete, the WE copies the generated hashes from
+the build logs and emails them to the RM. The Windows Store packages are
+uploaded manually to <a class="reference external" href="https://partner.microsoft.com/dashboard/home">https://partner.microsoft.com/dashboard/home</a> by the
+WE.</p>
+</li>
+<li><p>The ME builds Mac installer packages and uploads them to
+downloads.nyc1.psf.io together with gpg signature files.</p></li>
+<li><p>scp or rsync all the files built by <code class="docutils literal notranslate"><span class="pre">release.py</span> <span class="pre">--export</span></code>
+to your home directory on downloads.nyc1.psf.io.</p>
+<p>While you’re waiting for the files to finish uploading, you can continue
+on with the remaining tasks.  You can also ask folks on #python-dev
+and/or python-committers to download the files as they finish uploading
+so that they can test them on their platforms as well.</p>
+</li>
+<li><p>Now you need to go to downloads.nyc1.psf.io and move all the files in place
+over there.  Our policy is that every Python version gets its own
+directory, but each directory contains all releases of that version.</p>
+<ul>
+<li><p>On downloads.nyc1.psf.io, cd /srv/www.python.org/ftp/python/X.Y.Z
+creating it if necessary.  Make sure it is owned by group ‘downloads’
+and group-writable.</p></li>
+<li><p>Move the release .tgz, and .tar.xz files into place, as well as the
+.asc GPG signature files.  The Win/Mac binaries are usually put there
+by the experts themselves.</p>
+<p>Make sure they are world readable.  They should also be group
+writable, and group-owned by downloads.</p>
+</li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">gpg</span> <span class="pre">--verify</span></code> to make sure they got uploaded intact.</p></li>
+<li><p>If this is a <strong>final</strong> or rc release: Move the doc zips and tarballs to
+<code class="docutils literal notranslate"><span class="pre">/srv/www.python.org/ftp/python/doc/X.Y.Z[rcA]</span></code>, creating the directory
+if necessary, and adapt the “current” symlink in <code class="docutils literal notranslate"><span class="pre">.../doc</span></code> to point to
+that directory.  Note though that if you’re releasing a maintenance
+release for an older version, don’t change the current link.</p></li>
+<li><p>If this is a <strong>final</strong> or rc release (even a maintenance release), also
+unpack the HTML docs to <code class="docutils literal notranslate"><span class="pre">/srv/docs.python.org/release/X.Y.Z[rcA]</span></code> on
+docs.nyc1.psf.io. Make sure the files are in group <code class="docutils literal notranslate"><span class="pre">docs</span></code> and are
+group-writeable.  If it is a release of a security-fix-only version,
+tell the DE to start a build (<code class="docutils literal notranslate"><span class="pre">security-fixes</span></code> and <code class="docutils literal notranslate"><span class="pre">EOL</span></code> version
+are not built daily).</p></li>
+<li><p>Let the DE check if the docs are built and work all right.</p></li>
+<li><p>If this is a <strong>final</strong> major release: Tell the DE to adapt redirects for
+docs.python.org/X.Y in the nginx config for docs.python.org.</p></li>
+<li><p>Note both the documentation and downloads are behind a caching CDN. If
+you change archives after downloading them through the website, you’ll
+need to purge the stale data in the CDN like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ curl -X PURGE https://www.python.org/ftp/python/2.7.5/Python-2.7.5.tar.xz
+</pre></div>
+</div>
+<p>You should always purge the cache of the directory listing as people
+use that to browse the release files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ curl -X PURGE https://www.python.org/ftp/python/2.7.5/
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p>For the extra paranoid, do a completely clean test of the release.
+This includes downloading the tarball from www.python.org.</p>
+<p>Make sure the md5 checksums match.  Then unpack the tarball,
+and do a clean make test.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ make distclean
+$ ./configure
+$ make test
+</pre></div>
+</div>
+<p>To ensure that the regression test suite passes.  If not, you
+screwed up somewhere!</p>
+</li>
+<li><p>STOP STOP STOP STOP STOP STOP STOP STOP</p>
+<ul class="simple">
+<li><p>Have you gotten the green light from the WE?</p></li>
+<li><p>Have you gotten the green light from the ME?</p></li>
+<li><p>Have you gotten the green light from the DE?</p></li>
+</ul>
+</li>
+</ul>
+<p>If green, it’s time to merge the release engineering branch back into
+the main repo.</p>
+<ul>
+<li><p>In order to push your changes to Github, you’ll have to temporarily
+disable branch protection for administrators.  Go to the
+<code class="docutils literal notranslate"><span class="pre">Settings</span> <span class="pre">|</span> <span class="pre">Branches</span></code> page:</p>
+<p><a class="reference external" href="https://github.com/python/cpython/settings/branches/">https://github.com/python/cpython/settings/branches/</a></p>
+<p>“Edit” the settings for the branch you’re releasing on.
+This will load the settings page for that branch.
+Uncheck the “Include administrators” box and press the
+“Save changes” button at the bottom.</p>
+</li>
+<li><p>Merge your release clone into the main development repo:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># Pristine copy of the upstream repo branch
+$ git clone git@github.com:python/cpython.git merge
+$ cd merge
+
+# Checkout the correct branch:
+# 1. For feature pre-releases up to and including a
+#    **new branch** release, i.e. alphas and first beta
+#   do a checkout of the main branch
+$ git checkout main
+
+# 2. Else, for all other releases, checkout the
+#       appropriate release branch.
+$ git checkout X.Y
+
+# Fetch the newly created and signed tag from your clone repo
+$ git fetch --tags git@github.com:your-github-id/cpython.git vX.Y.ZaN
+# Merge the temporary release engineering branch back into
+$ git merge --no-squash vX.Y.ZaN
+$ git commit -m &#39;Merge release engineering branch&#39;
+</pre></div>
+</div>
+</li>
+<li><p>If this is a <strong>new branch</strong> release, i.e. first beta,
+now create the new release branch:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git checkout -b X.Y
+</pre></div>
+</div>
+<p>Do any steps needed to setup the new release branch, including:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>In README.rst, change all references from <code class="docutils literal notranslate"><span class="pre">main</span></code> to
+the new branch, in particular, GitHub repo URLs.</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>For <em>all</em> releases, do the guided post-release steps with the
+release script.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ .../release-tools/release.py --done X.Y.ZaN
+</pre></div>
+</div>
+</li>
+<li><p>For a <strong>final</strong> or <strong>release candidate 2+</strong> release, you may need to
+do some post-merge cleanup.  Check the top-level <code class="docutils literal notranslate"><span class="pre">README.rst</span></code>
+and <code class="docutils literal notranslate"><span class="pre">include/patchlevel.h</span></code> files to ensure they now reflect
+the desired post-release values for on-going development.
+The patchlevel should be the release tag with a <cite>+</cite>.
+Also, if you cherry-picked changes from the standard release
+branch into the release engineering branch for this release,
+you will now need to manual remove each blurb entry from
+the <code class="docutils literal notranslate"><span class="pre">Misc/NEWS.d/next</span></code> directory that was cherry-picked
+into the release you are working on since that blurb entry
+is now captured in the merged x.y.z.rst fils for the new
+release.  Otherwise, the blurb entry will appear twice in
+the <cite>changelog.html</cite> file, once under <cite>Python next</cite> and again
+under <cite>x.y.z</cite>.</p></li>
+<li><p>Review and commit these changes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git commit -m &#39;Post release updates&#39;
+</pre></div>
+</div>
+</li>
+<li><p>If this is a <strong>new branch</strong> release (e.g. the first beta),
+update the main branch to start development for the
+following feature release.  When finished, the <code class="docutils literal notranslate"><span class="pre">main</span></code>
+branch will now build Python <code class="docutils literal notranslate"><span class="pre">X.Y+1</span></code>.</p>
+<blockquote>
+<div><ul>
+<li><p>First, set main up to be the next release, i.e.X.Y+1.a0:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git checkout main
+$ .../release-tools/release.py --bump 3.9.0a0
+</pre></div>
+</div>
+</li>
+<li><p>Edit all version references in README.rst</p></li>
+<li><p>Move any historical “what’s new” entries from <code class="docutils literal notranslate"><span class="pre">Misc/NEWS</span></code> to
+<code class="docutils literal notranslate"><span class="pre">Misc/HISTORY</span></code>.</p></li>
+<li><p>Edit <code class="docutils literal notranslate"><span class="pre">Doc/tutorial/interpreter.rst</span></code> (2 references to ‘[Pp]ython3x’,
+one to ‘Python 3.x’, also make the date in the banner consistent).</p></li>
+<li><p>Edit <code class="docutils literal notranslate"><span class="pre">Doc/tutorial/stdlib.rst</span></code> and <code class="docutils literal notranslate"><span class="pre">Doc/tutorial/stdlib2.rst</span></code>, which
+have each one reference to ‘[Pp]ython3x’.</p></li>
+<li><p>Add a new <code class="docutils literal notranslate"><span class="pre">whatsnew/3.x.rst</span></code> file (with the comment near the top
+and the toplevel sections copied from the previous file) and
+add it to the toctree in <code class="docutils literal notranslate"><span class="pre">whatsnew/index.rst</span></code>.  But beware that
+the initial <code class="docutils literal notranslate"><span class="pre">whatsnew/3.x.rst</span></code> checkin from previous releases
+may be incorrect due to the initial midstream change to <code class="docutils literal notranslate"><span class="pre">blurb</span></code>
+that propagates from release to release!  Help break the cycle: if
+necessary make the following change:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>- For full details, see the :source:`Misc/NEWS` file.
++ For full details, see the :ref:`changelog &lt;changelog&gt;`.
+</pre></div>
+</div>
+</li>
+<li><p>Update the version number in <code class="docutils literal notranslate"><span class="pre">configure.ac</span></code> and re-run <code class="docutils literal notranslate"><span class="pre">autoconf</span></code>.</p></li>
+<li><p>Make sure the <code class="docutils literal notranslate"><span class="pre">SOURCE_URI</span></code> in <code class="docutils literal notranslate"><span class="pre">Doc/tools/extensions/pyspecific.py</span></code>
+points to <code class="docutils literal notranslate"><span class="pre">main</span></code>.</p></li>
+<li><p>Update the version numbers for the Windows builds in PC/ and
+PCbuild/, which have references to python38.
+NOTE, check with Steve Dower about this step, it is probably obsolete.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ find PC/ PCbuild/ -type f | xargs sed -i &#39;s/python38/python39/g&#39;
+$ git mv -f PC/os2emx/python38.def PC/os2emx/python39.def
+$ git mv -f PC/python38stub.def PC/python39stub.def
+$ git mv -f PC/python38gen.py PC/python39gen.py
+</pre></div>
+</div>
+</li>
+<li><p>Commit these changes to the main branch:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git status
+$ git add ...
+$ git commit -m &#39;Bump to 3.9.0a0&#39;
+</pre></div>
+</div>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Do another <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">status</span></code> in this directory.</p>
+<p>You should not see any files.  I.e. you better not have any uncommitted
+changes in your working directory.</p>
+</li>
+<li><p>Commit and push to the main repo.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># Do a dry run first.
+
+# For feature pre-releases prior to a **new branch** release,
+#   i.e. a feature alpha release:
+$ git push --dry-run --tags  git@github.com:python/cpython.git main
+# If it looks OK, take the plunge.  There&#39;s no going back!
+$ git push --tags  git@github.com:python/cpython.git main
+
+# For a **new branch** release, i.e. first beta:
+$ git push --dry-run --tags  git@github.com:python/cpython.git X.Y
+$ git push --dry-run --tags  git@github.com:python/cpython.git main
+# If it looks OK, take the plunge.  There&#39;s no going back!
+$ git push --tags  git@github.com:python/cpython.git X.Y
+$ git push --tags  git@github.com:python/cpython.git main
+
+# For all other releases:
+$ git push --dry-run --tags  git@github.com:python/cpython.git X.Y
+# If it looks OK, take the plunge.  There&#39;s no going back!
+$ git push --tags  git@github.com:python/cpython.git X.Y
+</pre></div>
+</div>
+</li>
+<li><p>If this is a <strong>new branch</strong> release, add a <code class="docutils literal notranslate"><span class="pre">Branch</span> <span class="pre">protection</span> <span class="pre">rule</span></code>
+for the newly created branch (X.Y).  Look at the values for the previous
+release branch (X.Y-1) and use them as a template.
+<a class="reference external" href="https://github.com/python/cpython/settings/branches/">https://github.com/python/cpython/settings/branches/</a></p>
+<p>Also, add a <code class="docutils literal notranslate"><span class="pre">needs</span> <span class="pre">backport</span> <span class="pre">to</span> <span class="pre">X.Y</span></code> label to the Github repo.
+<a class="reference external" href="https://github.com/python/cpython/labels">https://github.com/python/cpython/labels</a></p>
+</li>
+<li><p>You can now re-enable enforcement of branch settings against administrators
+on Github.  Go back to the <code class="docutils literal notranslate"><span class="pre">Settings</span> <span class="pre">|</span> <span class="pre">Branch</span></code> page:</p>
+<p><a class="reference external" href="https://github.com/python/cpython/settings/branches/">https://github.com/python/cpython/settings/branches/</a></p>
+<p>“Edit” the settings for the branch you’re releasing on.
+Re-check the “Include administrators” box and press the
+“Save changes” button at the bottom.</p>
+</li>
+</ul>
+<p>Now it’s time to twiddle the web site.  Almost none of this is automated, sorry.</p>
+<p>To do these steps, you must have the permission to edit the website.  If you
+don’t have that, ask someone on <a class="reference external" href="mailto:pydotorg&#37;&#52;&#48;python&#46;org">pydotorg<span>&#64;</span>python<span>&#46;</span>org</a> for the proper
+permissions.  (Or ask Ewa, who coordinated the effort for the new website
+with RevSys.)</p>
+<ul>
+<li><p>Log in to <a class="reference external" href="https://www.python.org/admin">https://www.python.org/admin</a> .</p></li>
+<li><p>Create a new “release” for the release.  Currently “Releases” are
+sorted under “Downloads”.</p>
+<p>The easiest thing is probably to copy fields from an existing
+Python release “page”, editing as you go.</p>
+<p>You can use <a class="reference external" href="https://daringfireball.net/projects/markdown/syntax">Markdown</a> or
+<a class="reference external" href="http://docutils.sourceforge.net/docs/user/rst/quickref.html">ReStructured Text</a>
+to describe your release.  The former is less verbose, while the latter has nifty
+integration for things like referencing PEPs.</p>
+<p>Leave the “Release page” field on the form empty.</p>
+</li>
+<li><p>“Save” the release.</p></li>
+<li><p>Populate the release with the downloadable files.</p>
+<p>Your friend and mine, Georg Brandl, made a lovely tool
+called “add-to-pydotorg.py”.  You can find it in the
+“release” tree (next to “release.py”).  You run the
+tool on downloads.nyc1.psf.io, like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ AUTH_INFO=&lt;username&gt;:&lt;python.org-api-key&gt; python add-to-pydotorg.py &lt;version&gt;
+</pre></div>
+</div>
+<p>This walks the correct download directory for &lt;version&gt;,
+looks for files marked with &lt;version&gt;, and populates
+the “Release Files” for the correct “release” on the web
+site with these files.  Note that clears the “Release Files”
+for the relevant version each time it’s run.  You may run
+it from any directory you like, and you can run it as
+many times as you like if the files happen to change.
+Keep a copy in your home directory on dl-files and
+keep it fresh.</p>
+<p>If new types of files are added to the release
+(e.g. the web-based installers or redistributable zip
+files added to Python 3.5) someone will need to update
+add-to-pydotorg.py so it recognizes these new files.
+(It’s best to update add-to-pydotorg.py when file types
+are removed, too.)</p>
+</li>
+<li><p>In case the CDN already cached a version of the Downloads page
+without the files present, you can invalidate the cache using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ curl -X PURGE https://www.python.org/downloads/release/python-XXX/
+</pre></div>
+</div>
+</li>
+<li><p>If this is a <strong>final</strong> release:</p>
+<ul>
+<li><p>Add the new version to the <em>Python Documentation by Version</em>
+page <cite>https://www.python.org/doc/versions/</cite> and
+remove the current version from any ‘in development’ section.</p></li>
+<li><p>For X.Y.Z, edit all the previous X.Y releases’ page(s) to
+point to the new release.  This includes the content field of the
+<cite>Downloads -&gt; Releases</cite> entry for the release:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Note: Python x.y.m has been superseded by
+`Python x.y.n &lt;/downloads/release/python-xyn/&gt;`_.
+</pre></div>
+</div>
+<p>And, for those releases having separate release page entries
+(phasing these out?), update those pages as well,
+e.g. <cite>download/releases/x.y.z</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Note: Python x.y.m has been superseded by
+`Python x.y.n &lt;/download/releases/x.y.n/&gt;`_.
+</pre></div>
+</div>
+</li>
+<li><p>Update the “Current Pre-release Testing Versions web page”.</p>
+<p>There’s a page that lists all the currently-in-testing versions
+of Python:</p>
+<blockquote>
+<div><p><a class="reference external" href="https://www.python.org/download/pre-releases/">https://www.python.org/download/pre-releases/</a></p>
+</div></blockquote>
+<p>Every time you make a release, one way or another you’ll
+have to update this page:</p>
+<ul class="simple">
+<li><p>If you’re releasing a version before <em>x.y.0</em>,
+or <em>x.y.z release candidate N,</em>
+you should add it to this page, removing the previous pre-release
+of version <em>x.y</em> as needed.</p></li>
+<li><p>If you’re releasing <em>x.y.z final</em>, you need to remove the pre-release
+version from this page.</p></li>
+</ul>
+<p>This is in the “Pages” category on the Django-based website, and finding
+it through that UI is kind of a chore.  However!  If you’re already logged
+in to the admin interface (which, at this point, you should be), Django
+will helpfully add a convenient “Edit this page” link to the top of the
+page itself.  So you can simply follow the link above, click on the
+“Edit this page” link, and make your changes as needed.  How convenient!</p>
+</li>
+<li><p>If appropriate, update the “Python Documentation by Version” page:</p>
+<blockquote>
+<div><p><a class="reference external" href="https://www.python.org/doc/versions/">https://www.python.org/doc/versions/</a></p>
+</div></blockquote>
+<p>This lists all releases of Python by version number and links to their
+static (not built daily) online documentation.  There’s a list at the
+bottom of in-development versions, which is where all alphas/betas/RCs
+should go.  And yes you should be able to click on the link above then
+press the shiny, exciting “Edit this page” button.</p>
+</li>
+<li><p>Other steps (other update for new web site)??</p></li>
+</ul>
+</li>
+<li><p>Write the announcement for the mailing lists.  This is the
+fuzzy bit because not much can be automated.  You can use an earlier
+announcement as a template, but edit it for content!</p></li>
+<li><p>Once the announcement is ready, send it to the following
+addresses:</p>
+<p><a class="reference external" href="mailto:python-list&#37;&#52;&#48;python&#46;org">python-list<span>&#64;</span>python<span>&#46;</span>org</a>
+<a class="reference external" href="mailto:python-announce&#37;&#52;&#48;python&#46;org">python-announce<span>&#64;</span>python<span>&#46;</span>org</a>
+<a class="reference external" href="mailto:python-dev&#37;&#52;&#48;python&#46;org">python-dev<span>&#64;</span>python<span>&#46;</span>org</a></p>
+</li>
+<li><p>Also post the announcement to
+<a class="reference external" href="http://blog.python.org">The Python Insider blog</a>.
+To add a new entry, go to
+<a class="reference external" href="https://www.blogger.com/home">your Blogger home page, here.</a></p></li>
+<li><p>Send email to python-committers informing them that the release has been
+published and a reminder about any relevant changes in policy
+based on the phase of the release cycle.  In particular,
+if this is a <strong>new branch</strong> release, remind everyone that the
+new release branch exists and that they need to start
+considering whether to backport to it when merging changes to
+main.</p></li>
+<li><p>Update any release PEPs (e.g. 361) with the release dates.</p></li>
+<li><p>Update the tracker at <a class="reference external" href="https://bugs.python.org">https://bugs.python.org</a>:</p>
+<ul class="simple">
+<li><p>Flip all the deferred blocker issues back to release blocker
+for the next release.</p></li>
+<li><p>Add version X.Y+1 as when version X.Y enters alpha.</p></li>
+<li><p>Change non-doc RFEs to version X.Y+1 when version X.Y enters beta.</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">X.Yregression</span></code> keyword (<a class="reference external" href="https://bugs.python.org/keyword">https://bugs.python.org/keyword</a>)
+when version X.Y enters beta.</p></li>
+<li><p>Update ‘behavior’ issues from versions that your release make
+unsupported to the next supported version.</p></li>
+<li><p>Review open issues, as this might find lurking showstopper bugs,
+besides reminding people to fix the easy ones they forgot about.</p></li>
+</ul>
+</li>
+<li><p>You can delete the remote release clone branch from your repo clone.</p></li>
+<li><p>If this is a <strong>new branch</strong> release, you will need to ensure various
+pieces of the development infrastructure are updated for the new branch.
+These include:</p>
+<ul>
+<li><p>Update the issue tracker for the new branch.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Add the new version to the versions list (contact the tracker
+admins?).</p></li>
+<li><p>Add a <a class="reference external" href="https://bugs.python.org/keyword">regressions keyword</a>
+for the release</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Update the devguide to reflect the new branches and versions.</p></li>
+<li><p>Create a PR to update the supported releases table on the
+<a class="reference external" href="https://www.python.org/downloads/">downloads page</a>.
+(See <a class="reference external" href="https://github.com/python/pythondotorg/issues/1302">https://github.com/python/pythondotorg/issues/1302</a>)</p></li>
+<li><p>Ensure buildbots are defined for the new branch (contact zware).</p></li>
+<li><p>Ensure the daily docs build scripts are updated to include
+the new branch (contact DE).</p></li>
+<li><p>Ensure the various Github bots are updated, as needed, for the
+new branch, in particular, make sure backporting to the new
+branch works (contact core-workflow team)
+<a class="reference external" href="https://github.com/python/core-workflow/issues">https://github.com/python/core-workflow/issues</a></p></li>
+<li><p>Review the most recent commit history for the main and new release
+branches to identify and backport any merges that might have been made
+to the main branch during the release engineering phase and that
+should be in the release branch.</p></li>
+<li><p>Verify that CI is working for new PRs for the main and new release
+branches and that the release branch is properly protected (no direct
+pushes, etc).</p></li>
+<li><p>Verify that the on-line docs are building properly (this may take up to
+24 hours for a complete build on the web site).</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="what-next">
+<h2><a class="toc-backref" href="#id10">What Next?</a><a class="headerlink" href="#what-next" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Verify!  Pretend you’re a user: download the files from python.org, and
+make Python from it. This step is too easy to overlook, and on several
+occasions we’ve had useless release files.  Once a general server problem
+caused mysterious corruption of all files; once the source tarball got
+built incorrectly; more than once the file upload process on SF truncated
+files; and so on.</p></li>
+<li><p>Rejoice.  Drink.  Be Merry.  Write a PEP like this one.  Or be
+like unto Guido and take A Vacation.</p></li>
+</ul>
+<p>You’ve just made a Python release!</p>
+</section>
+<section id="moving-to-end-of-life">
+<h2><a class="toc-backref" href="#id11">Moving to End-of-life</a><a class="headerlink" href="#moving-to-end-of-life" title="Permalink to this headline">¶</a></h2>
+<p>Under current policy, a release branch normally reaches end-of-life status
+5 years after its initial release.  The policy is discussed in more detail
+in <a class="reference external" href="https://devguide.python.org/devcycle/">the Python Developer’s Guide</a>.
+When end-of-life is reached, there are a number of tasks that need to be
+performed either directly by you as release manager or by ensuring someone
+else does them.  Some of those tasks include:</p>
+<ul>
+<li><p>Optionally making a final release to publish any remaining unreleased
+changes.</p></li>
+<li><p>Update the <code class="docutils literal notranslate"><span class="pre">VERSIONS</span></code> list of <a class="reference external" href="https://github.com/python/docsbuild-scripts/blob/main/build_docs.py">docsbuild scripts</a> <a class="footnote-reference brackets" href="#id2" id="id5">1</a>: change the
+version state to <code class="docutils literal notranslate"><span class="pre">EOL</span></code>.</p></li>
+<li><p>On the docs download server (docs.nyc1.psf.io), ensure the top-level
+symlink points to the upload of unpacked html docs from final release:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">srv</span><span class="o">/</span><span class="n">docs</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">org</span>
+<span class="n">ls</span> <span class="o">-</span><span class="n">l</span> <span class="mf">3.3</span>
+<span class="n">lrwxrwxrwx</span> <span class="mi">1</span> <span class="n">nad</span> <span class="n">docs</span> <span class="mi">13</span> <span class="n">Sep</span>  <span class="mi">6</span> <span class="mi">21</span><span class="p">:</span><span class="mi">38</span> <span class="mf">3.3</span> <span class="o">-&gt;</span> <span class="n">release</span><span class="o">/</span><span class="mf">3.3.7</span>
+</pre></div>
+</div>
+</li>
+<li><p>Freeze the state of the release branch by creating a tag of its current HEAD
+and then deleting the branch from the cpython repo.  The current HEAD should
+be at or beyond the final security release for the branch:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">fetch</span> <span class="n">upstream</span>
+<span class="n">git</span> <span class="n">tag</span> <span class="o">--</span><span class="n">sign</span> <span class="o">-</span><span class="n">m</span> <span class="s1">&#39;Final head of the former 3.3 branch&#39;</span> <span class="mf">3.3</span> <span class="n">upstream</span><span class="o">/</span><span class="mf">3.3</span>
+<span class="n">git</span> <span class="n">push</span> <span class="n">upstream</span> <span class="n">refs</span><span class="o">/</span><span class="n">tags</span><span class="o">/</span><span class="mf">3.3</span>
+</pre></div>
+</div>
+</li>
+<li><p>If all looks good, delete the branch.  This may require the assistance of
+someone with repo administrator privileges:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">push</span> <span class="n">upstream</span> <span class="o">--</span><span class="n">delete</span> <span class="mf">3.3</span>  <span class="c1"># or perform from Github Settings page</span>
+</pre></div>
+</div>
+</li>
+<li><p>Remove the release from the list of “Active Python Releases” on the Downloads
+page.  To do this, log in to the admin page for python.org, navigate to Boxes,
+and edit the <cite>downloads-active-releases</cite> entry.  Simply strip out the relevant
+paragraph of HTML for your release.  (You’ll probably have to do the <cite>curl -X PURGE</cite>
+trick to purge the cache if you want to confirm you made the change correctly.)</p></li>
+<li><p>Add retired notice to each release page on python.org for the retired branch.
+For example:</p>
+<blockquote>
+<div><p><a class="reference external" href="https://www.python.org/downloads/release/python-337/">https://www.python.org/downloads/release/python-337/</a></p>
+<p><a class="reference external" href="https://www.python.org/downloads/release/python-336/">https://www.python.org/downloads/release/python-336/</a></p>
+</div></blockquote>
+</li>
+<li><p>In the developer’s guide, add the branch to the recent end-of-life branches
+list (<a class="reference external" href="https://devguide.python.org/devcycle/#end-of-life-branches">https://devguide.python.org/devcycle/#end-of-life-branches</a>) and update
+or remove references to the branch elsewhere in the devguide.</p></li>
+<li><p>Retire the release from the bugs.python.org issue tracker. Tasks include:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>remove branch from tracker list of versions</p></li>
+<li><p>remove any release-release keywords (3.3regressions)</p></li>
+<li><p>review and dispose of open issues marked for this branch</p></li>
+</ul>
+</div></blockquote>
+<p>Note, with the likely future migration of bug tracking from the current
+Roundup bugs.python.org to Github issues and with the impending end-of-life
+of Python 2.7, it probably makes sense to avoid unnecessary churn for
+currently and about-to-be retired 3.x branches by deferring any major
+wholesale changes to existing issues until the migration process is
+clarified.</p>
+<p>In practice, you’re probably not going to do this yourself, you’re going
+to ask one of the bpo maintainers to do it for you (e.g. Ezio Melotti,
+Zachary Ware.)</p>
+</li>
+<li><p>Announce the branch retirement in the usual places:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>mailing lists (python-committers, python-dev, python-list, python-announcements)</p></li>
+<li><p>discuss.python.org and Zulip</p></li>
+<li><p>Python Dev blog</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Enjoy your retirement and bask in the glow of a job well done!</p></li>
+</ul>
+</section>
+<section id="windows-notes">
+<h2><a class="toc-backref" href="#id12">Windows Notes</a><a class="headerlink" href="#windows-notes" title="Permalink to this headline">¶</a></h2>
+<p>NOTE, have Steve Dower review; probably obsolete.</p>
+<p>Windows has a MSI installer, various flavors of Windows have
+“special limitations”, and the Windows installer also packs
+precompiled “foreign” binaries (Tcl/Tk, expat, etc).  So Windows
+testing is tiresome but very necessary.</p>
+<p>Concurrent with uploading the installer, the WE installs Python
+from it twice: once into the default directory suggested by the
+installer, and later into a directory with embedded spaces in its
+name.  For each installation, the WE runs the full regression suite
+from a DOS box, and both with and without -0. For maintenance
+release, the WE also tests whether upgrade installations succeed.</p>
+<p>The WE also tries <em>every</em> shortcut created under Start -&gt; Menu -&gt; the
+Python group.  When trying IDLE this way, you need to verify that
+Help -&gt; Python Documentation works.  When trying pydoc this way
+(the “Module Docs” Start menu entry), make sure the “Start
+Browser” button works, and make sure you can search for a random
+module (like “random” &lt;wink&gt;) and then that the “go to selected”
+button works.</p>
+<p>It’s amazing how much can go wrong here – and even more amazing
+how often last-second checkins break one of these things.  If
+you’re “the Windows geek”, keep in mind that you’re likely the
+only person routinely testing on Windows, and that Windows is
+simply a mess.</p>
+<p>Repeat the testing for each target architecture.  Try both an
+Admin and a plain User (not Power User) account.</p>
+</section>
+<section id="id1">
+<h2><a class="toc-backref" href="#id13">References</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets">1</span><span class="fn-backref">(<a href="#id3">1</a>,<a href="#id4">2</a>,<a href="#id5">3</a>)</span></dt>
+<dd><p><a class="reference external" href="https://github.com/python/docsbuild-scripts/blob/main/build_docs.py">https://github.com/python/docsbuild-scripts/blob/main/build_docs.py</a></p>
+</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#id14">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0101.txt">https://github.com/python/peps/blob/master/pep-0101.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0101.txt">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0001/">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0100/">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0374/">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0391/">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0423/">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0451/">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0471/">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0479/">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0495/">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0558/">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0570/">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0584/">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0586/">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0594/">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3118/">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-0100/" title="previous chapter">PEP 100 – Python Unicode Integration</a></li>
+      <li>Next: <a href="../pep-0102/" title="next chapter">PEP 102 – Doing Python Micro Releases</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-0101.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

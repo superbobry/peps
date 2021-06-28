@@ -1,0 +1,2136 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 594 – Removing dead batteries from the standard library &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 595 – Improving bugs.python.org" href="../pep-0595/" />
+    <link rel="prev" title="PEP 593 – Flexible function and variable annotations" href="../pep-0593/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pep-594-removing-dead-batteries-from-the-standard-library">
+<h1 class="page-title">PEP 594 – Removing dead batteries from the standard library<a class="headerlink" href="#pep-594-removing-dead-batteries-from-the-standard-library" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>594</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>Removing dead batteries from the standard library</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Christian Heimes &lt;<a class="reference external" href="mailto:christian&#37;&#52;&#48;python&#46;org?subject=PEP%20-1">christian&#32;&#97;t&#32;python.org</a>&gt;</p>
+</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><p><a class="reference external" href="https://discuss.python.org/t/pep-594-removing-dead-batteries-from-the-standard-library/1704">https://discuss.python.org/t/pep-594-removing-dead-batteries-from-the-standard-library/1704</a></p>
+</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd"><p>Draft</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Standards Track</p>
+</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd"><p>20-May-2019</p>
+</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p>21-May-2019</p>
+</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#abstract" id="id156">Abstract</a></p></li>
+<li><p><a class="reference internal" href="#rationale" id="id157">Rationale</a></p></li>
+<li><p><a class="reference internal" href="#deprecation-schedule" id="id158">Deprecation schedule</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id2" id="id159">3.8</a></p></li>
+<li><p><a class="reference internal" href="#id3" id="id160">3.9</a></p></li>
+<li><p><a class="reference internal" href="#id4" id="id161">3.10</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#pep-acceptance-process" id="id162">PEP acceptance process</a></p></li>
+<li><p><a class="reference internal" href="#deprecated-modules" id="id163">Deprecated modules</a></p>
+<ul>
+<li><p><a class="reference internal" href="#data-encoding-modules" id="id164">Data encoding modules</a></p>
+<ul>
+<li><p><a class="reference internal" href="#binhex" id="id165">binhex</a></p></li>
+<li><p><a class="reference internal" href="#uu-and-the-uu-encoding" id="id166">uu and the uu encoding</a></p></li>
+<li><p><a class="reference internal" href="#xdrlib" id="id167">xdrlib</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#multimedia-modules" id="id168">Multimedia modules</a></p>
+<ul>
+<li><p><a class="reference internal" href="#aifc" id="id169">aifc</a></p></li>
+<li><p><a class="reference internal" href="#audioop" id="id170">audioop</a></p></li>
+<li><p><a class="reference internal" href="#chunk" id="id171">chunk</a></p></li>
+<li><p><a class="reference internal" href="#imghdr" id="id172">imghdr</a></p></li>
+<li><p><a class="reference internal" href="#ossaudiodev" id="id173">ossaudiodev</a></p></li>
+<li><p><a class="reference internal" href="#sndhdr" id="id174">sndhdr</a></p></li>
+<li><p><a class="reference internal" href="#sunau" id="id175">sunau</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#networking-modules" id="id176">Networking modules</a></p>
+<ul>
+<li><p><a class="reference internal" href="#asynchat" id="id177">asynchat</a></p></li>
+<li><p><a class="reference internal" href="#asyncore" id="id178">asyncore</a></p></li>
+<li><p><a class="reference internal" href="#cgi" id="id179">cgi</a></p></li>
+<li><p><a class="reference internal" href="#cgitb" id="id180">cgitb</a></p></li>
+<li><p><a class="reference internal" href="#smtpd" id="id181">smtpd</a></p></li>
+<li><p><a class="reference internal" href="#nntplib" id="id182">nntplib</a></p></li>
+<li><p><a class="reference internal" href="#telnetlib" id="id183">telnetlib</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#operating-system-interface" id="id184">Operating system interface</a></p>
+<ul>
+<li><p><a class="reference internal" href="#crypt" id="id185">crypt</a></p></li>
+<li><p><a class="reference internal" href="#macpath" id="id186">macpath</a></p></li>
+<li><p><a class="reference internal" href="#nis" id="id187">nis</a></p></li>
+<li><p><a class="reference internal" href="#spwd" id="id188">spwd</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#misc-modules" id="id189">Misc modules</a></p>
+<ul>
+<li><p><a class="reference internal" href="#formatter" id="id190">formatter</a></p></li>
+<li><p><a class="reference internal" href="#imp" id="id191">imp</a></p></li>
+<li><p><a class="reference internal" href="#msilib" id="id192">msilib</a></p></li>
+<li><p><a class="reference internal" href="#parser" id="id193">parser</a></p></li>
+<li><p><a class="reference internal" href="#pipes" id="id194">pipes</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#removed-modules" id="id195">Removed modules</a></p>
+<ul>
+<li><p><a class="reference internal" href="#fpectl" id="id196">fpectl</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#modules-to-keep" id="id197">Modules to keep</a></p>
+<ul>
+<li><p><a class="reference internal" href="#colorsys" id="id198">colorsys</a></p></li>
+<li><p><a class="reference internal" href="#fileinput" id="id199">fileinput</a></p></li>
+<li><p><a class="reference internal" href="#lib2to3" id="id200">lib2to3</a></p></li>
+<li><p><a class="reference internal" href="#getopt" id="id201">getopt</a></p></li>
+<li><p><a class="reference internal" href="#optparse" id="id202">optparse</a></p></li>
+<li><p><a class="reference internal" href="#wave" id="id203">wave</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#future-maintenance-of-removed-modules" id="id204">Future maintenance of removed modules</a></p></li>
+<li><p><a class="reference internal" href="#discussions" id="id205">Discussions</a></p></li>
+<li><p><a class="reference internal" href="#update-history" id="id206">Update history</a></p>
+<ul>
+<li><p><a class="reference internal" href="#update-1" id="id207">Update 1</a></p></li>
+<li><p><a class="reference internal" href="#update-2" id="id208">Update 2</a></p></li>
+<li><p><a class="reference internal" href="#update-3" id="id209">Update 3</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#references" id="id210">References</a></p></li>
+<li><p><a class="reference internal" href="#copyright" id="id211">Copyright</a></p></li>
+</ul>
+</div>
+<section id="abstract">
+<h2><a class="toc-backref" href="#id156">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposed a list of standard library modules to be removed from the
+standard library. The modules are mostly historic data formats (e.g. Commodore
+and SUN file formats), APIs and operating systems that have been superseded a
+long time ago (e.g. Mac OS 9), or modules that have security implications and
+better alternatives (e.g. password and login).</p>
+<p>The PEP follows in the foot steps of other PEPS like <span class="target" id="index-0"></span><a class="pep reference external" href="pep-3108.html"><strong>PEP 3108</strong></a>. The
+<em>Standard Library Reorganization</em> proposal removed a bunch of modules from
+Python 3.0. In 2007, the PEP referred to maintenance burden as:</p>
+<blockquote>
+<div><p>“Over the years, certain modules have become a heavy burden upon python-dev
+to maintain. In situations like this, it is better for the module to be
+given to the community to maintain to free python-dev to focus more on
+language support and other modules in the standard library that do not take
+up an undue amount of time and effort.”</p>
+</div></blockquote>
+<p>The withdrawn <span class="target" id="index-1"></span><a class="pep reference external" href="pep-0206.html"><strong>PEP 206</strong></a> from 2000 expresses issues with the Python standard
+library unvarnished and fortright:</p>
+<blockquote>
+<div><p>“[…] the standard library modules aren’t always the best choices for a
+job. Some library modules were quick hacks (e.g. <code class="docutils literal notranslate"><span class="pre">calendar</span></code>,
+<code class="docutils literal notranslate"><span class="pre">commands</span></code>), some were designed poorly and are now near-impossible to
+fix (<code class="docutils literal notranslate"><span class="pre">cgi</span></code>), and some have been rendered obsolete by other, more complete
+modules […].”</p>
+</div></blockquote>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#id157">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Back in the early days of Python, the interpreter came with a large set of
+useful modules. This was often referred to as “batteries included”
+philosophy and was one of the cornerstones to Python’s success story.
+Users didn’t have to figure out how to download and install separate
+packages in order to write a simple web server or parse email.</p>
+<p>Times have changed. The introduction of the cheese shop (PyPI), setuptools,
+and later pip, it became simple and straightforward to download and install
+packages. Nowadays Python has a rich and vibrant ecosystem of third-party
+packages. It’s pretty much standard to either install packages from PyPI or
+use one of the many Python or Linux distributions.</p>
+<p>On the other hand, Python’s standard library is piling up cruft, unnecessary
+duplication of functionality, and dispensable features. This is undesirable
+for several reasons.</p>
+<ul class="simple">
+<li><p>Any additional module increases the maintenance cost for the Python core
+development team. The team has limited resources, reduced maintenance cost
+frees development time for other improvements.</p></li>
+<li><p>Modules in the standard library are generally favored and seen as the
+de facto solution for a problem. A majority of users only pick third-party
+modules to replace a stdlib module, when they have a compelling reason, e.g.
+<code class="docutils literal notranslate"><span class="pre">lxml</span></code> instead of <code class="docutils literal notranslate"><span class="pre">xml</span></code>. The removal of an unmaintained stdlib module
+increases the chances of a community-contributed module to become widely
+used.</p></li>
+<li><p>A lean and mean standard library benefits platforms with limited resources
+like devices with just a few hundred kilobyte of storage (e.g. BBC
+Micro:bit). Python on mobile platforms like BeeWare or WebAssembly
+(e.g. pyodide) also benefit from reduced download size.</p></li>
+</ul>
+<p>The modules in the PEP have been selected for deprecation because their
+removal is either least controversial or most beneficial. For example,
+least controversial are 30-year-old multimedia formats like the <code class="docutils literal notranslate"><span class="pre">sunau</span></code>
+audio format, which was used on SPARC and NeXT workstations in the late
+1980s. The <code class="docutils literal notranslate"><span class="pre">crypt</span></code> module has fundamental flaws that are better solved
+outside the standard library.</p>
+<p>This PEP also designates some modules as not scheduled for removal. Some
+modules have been deprecated for several releases or seem unnecessary at
+first glance. However it is beneficial to keep the modules in the standard
+library, mostly for environments where installing a package from PyPI is not
+an option. This can be corporate environments or classrooms where external
+code is not permitted without legal approval.</p>
+<ul class="simple">
+<li><p>The usage of FTP is declining, but some files are still provided over
+the FTP protocol or hosters offer FTP to upload content. Therefore,
+<code class="docutils literal notranslate"><span class="pre">ftplib</span></code> is going to stay.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">optparse</span></code> and <code class="docutils literal notranslate"><span class="pre">getopt</span></code> modules are widely used. They are mature
+modules with very low maintenance overhead.</p></li>
+<li><p>According to David Beazley <a class="footnote-reference brackets" href="#id61" id="id1">5</a> the <code class="docutils literal notranslate"><span class="pre">wave</span></code> module is easy to teach to
+kids and can make crazy sounds. Making a computer generate crazy sounds is
+powerful and highly motivating exercise for a nine-year-old aspiring developer.
+It’s a fun battery to keep.</p></li>
+</ul>
+</section>
+<section id="deprecation-schedule">
+<h2><a class="toc-backref" href="#id158">Deprecation schedule</a><a class="headerlink" href="#deprecation-schedule" title="Permalink to this headline">¶</a></h2>
+<section id="id2">
+<h3><a class="toc-backref" href="#id159">3.8</a><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>This PEP targets Python 3.8. Version 3.8.0 final is scheduled to be released
+a few months before Python 2.7 will reach its end of lifetime. We expect that
+Python 3.8 will be targeted by users that migrate to Python 3 in 2019 and
+2020. To reduce churn and to allow a smooth transition from Python 2,
+Python 3.8 will neither raise <code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code> nor remove any
+modules that have been scheduled for removal. Instead deprecated modules will
+just be <em>documented</em> as deprecated. Optionally modules may emit a
+<code class="docutils literal notranslate"><span class="pre">PendingDeprecationWarning</span></code>.</p>
+<p>All deprecated modules will also undergo a feature freeze. No additional
+features should be added <em>unless</em> python-dev agrees that the deprecation of
+the module is reverted and the code will not be removed. Bug should still be
+fixed.</p>
+</section>
+<section id="id3">
+<h3><a class="toc-backref" href="#id160">3.9</a><a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<p>Starting with Python 3.9, deprecated modules will start issuing
+<code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code>. The <a class="reference external" href="https://docs.python.org/3/library/parser.html">parser</a> <a class="footnote-reference brackets" href="#id142" id="id143">38</a> module is removed and potentially
+replaced with a new module.</p>
+<p>All other deprecated modules are fully supported and will receive security
+updates until Python 3.9 reaches its end-of-life. Python 3.9.0 will
+be released about 18 months after 3.8.0 (April 2021?) and most likely
+be supported for five years after the release. The estimated EOL of Python 3.9
+is in 2026.</p>
+</section>
+<section id="id4">
+<h3><a class="toc-backref" href="#id161">3.10</a><a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<p>In 3.10 all deprecated modules will be removed from the CPython repository
+together with tests, documentation, and autoconf rules.</p>
+</section>
+</section>
+<section id="pep-acceptance-process">
+<h2><a class="toc-backref" href="#id162">PEP acceptance process</a><a class="headerlink" href="#pep-acceptance-process" title="Permalink to this headline">¶</a></h2>
+<p>3.8.0b1 is scheduled to be release shortly after the PEP is officially
+submitted. Since it’s improbable that the PEP will pass all stages of the
+PEP process in time, I propose a two-step acceptance process that is
+analogous to Python’s two-release deprecation process.</p>
+<p>The first <em>provisionally-accepted</em> phase targets Python 3.8.0b1. In the first
+phase no code is changed or removed. Modules are only documented as
+deprecated. The only exception is the <a class="reference external" href="https://docs.python.org/3/library/parser.html">parser</a> <a class="footnote-reference brackets" href="#id142" id="id144">38</a> module. It has been
+documented as deprecated since Python 2.5 and is scheduled for removal for
+3.9 to make place for a more advanced parser.</p>
+<p>The final decision, which modules will be removed and how the removed code
+is preserved, can be delayed for another year.</p>
+</section>
+<section id="deprecated-modules">
+<h2><a class="toc-backref" href="#id163">Deprecated modules</a><a class="headerlink" href="#deprecated-modules" title="Permalink to this headline">¶</a></h2>
+<p>The modules are grouped as data encoding, multimedia, network, OS interface,
+and misc modules. The majority of modules are for old data formats or
+old APIs. Some others are rarely useful and have better replacements on
+PyPI, e.g. Pillow for image processing or NumPy-based projects to deal with
+audio processing.</p>
+<table class="colwidths-given docutils align-default" id="id65">
+<caption><span class="caption-text">Table 1: Proposed modules deprecations</span><a class="headerlink" href="#id65" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Module</p></th>
+<th class="head"><p>Deprecated in</p></th>
+<th class="head"><p>To be removed</p></th>
+<th class="head"><p>Added in</p></th>
+<th class="head"><p>Has maintainer?</p></th>
+<th class="head"><p>Replacement</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>aifc</p></td>
+<td><p>3.8 (3.0*)</p></td>
+<td><p>3.10</p></td>
+<td><p>1993</p></td>
+<td><p><strong>yes (inactive)</strong></p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-odd"><td><p>asynchat</p></td>
+<td><p><strong>3.6</strong> (3.0*)</p></td>
+<td><p>3.10</p></td>
+<td><p>1999</p></td>
+<td><p><strong>yes</strong></p></td>
+<td><p><a class="reference external" href="https://docs.python.org/3/library/hashlib.html">asyncio</a> <a class="footnote-reference brackets" href="#id75" id="id76">13</a></p></td>
+</tr>
+<tr class="row-even"><td><p>asyncore</p></td>
+<td><p><strong>3.6</strong> (3.0*)</p></td>
+<td><p>3.10</p></td>
+<td><p>1999</p></td>
+<td><p><strong>yes</strong></p></td>
+<td><p><a class="reference external" href="https://docs.python.org/3/library/hashlib.html">asyncio</a> <a class="footnote-reference brackets" href="#id75" id="id77">13</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>audioop</p></td>
+<td><p>3.8 (3.0*)</p></td>
+<td><p>3.10</p></td>
+<td><p>1992</p></td>
+<td><p><strong>yes</strong></p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p>binhex</p></td>
+<td><p>3.8</p></td>
+<td><p>3.10</p></td>
+<td><p>1995</p></td>
+<td><p>no</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-odd"><td><p>cgi</p></td>
+<td><p>3.8 (2.0**)</p></td>
+<td><p>3.10</p></td>
+<td><p>1995</p></td>
+<td><p>no</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p>cgitb</p></td>
+<td><p>3.8 (2.0**)</p></td>
+<td><p>3.10</p></td>
+<td><p>1995</p></td>
+<td><p>no</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-odd"><td><p>chunk</p></td>
+<td><p>3.8</p></td>
+<td><p>3.10</p></td>
+<td><p>1999</p></td>
+<td><p>no</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p>crypt</p></td>
+<td><p>3.8</p></td>
+<td><p>3.10</p></td>
+<td><p>1994</p></td>
+<td><p><strong>yes (inactive)</strong></p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/legacycrypt/">legacycrypt</a> <a class="footnote-reference brackets" href="#id89" id="id90">18</a>, <a class="reference external" href="https://pypi.org/project/bcrypt/">bcrypt</a> <a class="footnote-reference brackets" href="#id78" id="id79">14</a>, <a class="reference external" href="https://pypi.org/project/argon2-cffi/">argon2cffi</a> <a class="footnote-reference brackets" href="#id69" id="id70">10</a>, <a class="reference external" href="https://docs.python.org/3/library/hashlib.html">hashlib</a> <a class="footnote-reference brackets" href="#id75" id="id86">13</a>, <a class="reference external" href="https://pypi.org/project/passlib/">passlib</a> <a class="footnote-reference brackets" href="#id92" id="id93">19</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>formatter</p></td>
+<td><p><strong>3.4</strong></p></td>
+<td><p>3.10</p></td>
+<td><p>1995</p></td>
+<td><p>no</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p>fpectl</p></td>
+<td><p><strong>3.7</strong></p></td>
+<td><p><strong>3.7</strong></p></td>
+<td><p>1997</p></td>
+<td><p>n/a</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-odd"><td><p>imghdr</p></td>
+<td><p>3.8</p></td>
+<td><p>3.10</p></td>
+<td><p>1992</p></td>
+<td><p>no</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/filetype/">filetype</a> <a class="footnote-reference brackets" href="#id83" id="id84">16</a>, <a class="reference external" href="https://pypi.org/project/puremagic/">puremagic</a> <a class="footnote-reference brackets" href="#id94" id="id95">20</a>, <a class="reference external" href="https://pypi.org/project/python-magic/">python-magic</a> <a class="footnote-reference brackets" href="#id97" id="id98">21</a></p></td>
+</tr>
+<tr class="row-even"><td><p>imp</p></td>
+<td><p><strong>3.4</strong></p></td>
+<td><p>3.10</p></td>
+<td><p>1990/1995</p></td>
+<td><p>no</p></td>
+<td><p><a class="reference external" href="https://docs.python.org/3/library/importlib.html">importlib</a> <a class="footnote-reference brackets" href="#id87" id="id88">17</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>macpath</p></td>
+<td><p><strong>3.7</strong></p></td>
+<td><p><strong>3.8</strong></p></td>
+<td><p>1990</p></td>
+<td><p>n/a</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p>msilib</p></td>
+<td><p>3.8</p></td>
+<td><p>3.10</p></td>
+<td><p>2006</p></td>
+<td><p>no</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-odd"><td><p>nntplib</p></td>
+<td><p>3.8</p></td>
+<td><p>3.10</p></td>
+<td><p>1992</p></td>
+<td><p>no</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p>nis</p></td>
+<td><p>3.8 (3.0*)</p></td>
+<td><p>3.10</p></td>
+<td><p>1992</p></td>
+<td><p>no</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-odd"><td><p>ossaudiodev</p></td>
+<td><p>3.8</p></td>
+<td><p>3.10</p></td>
+<td><p>2002</p></td>
+<td><p>no</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p>parser</p></td>
+<td><p><strong>2.5</strong></p></td>
+<td><p><strong>3.9</strong></p></td>
+<td><p>1993</p></td>
+<td><p><strong>yes</strong></p></td>
+<td><p><a class="reference external" href="https://docs.python.org/3/library/ast.html">ast</a> <a class="footnote-reference brackets" href="#id71" id="id72">11</a>, <a class="reference external" href="https://pypi.org/project/astroid/">astroid</a> <a class="footnote-reference brackets" href="#id73" id="id74">12</a>, lib2to3.pgen2</p></td>
+</tr>
+<tr class="row-odd"><td><p>pipes</p></td>
+<td><p>3.8</p></td>
+<td><p>3.10</p></td>
+<td><p>1992</p></td>
+<td><p>no</p></td>
+<td><p><a class="reference external" href="https://docs.python.org/3/library/subprocess.html">subprocess</a> <a class="footnote-reference brackets" href="#id104" id="id105">24</a></p></td>
+</tr>
+<tr class="row-even"><td><p>smtpd</p></td>
+<td><p><strong>3.4.7</strong>, <strong>3.5.4</strong></p></td>
+<td><p>3.10</p></td>
+<td><p>2001</p></td>
+<td><p><strong>yes</strong></p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/aiosmtpd/">aiosmtpd</a> <a class="footnote-reference brackets" href="#id67" id="id68">9</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>sndhdr</p></td>
+<td><p>3.8</p></td>
+<td><p>3.10</p></td>
+<td><p>1994</p></td>
+<td><p>no</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/filetype/">filetype</a> <a class="footnote-reference brackets" href="#id83" id="id85">16</a>, <a class="reference external" href="https://pypi.org/project/puremagic/">puremagic</a> <a class="footnote-reference brackets" href="#id94" id="id96">20</a>, <a class="reference external" href="https://pypi.org/project/python-magic/">python-magic</a> <a class="footnote-reference brackets" href="#id97" id="id99">21</a></p></td>
+</tr>
+<tr class="row-even"><td><p>spwd</p></td>
+<td><p>3.8</p></td>
+<td><p>3.10</p></td>
+<td><p>2005</p></td>
+<td><p>no</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/python-pam/">python-pam</a> <a class="footnote-reference brackets" href="#id100" id="id101">22</a>, <a class="reference external" href="https://pypi.org/project/simplepam/">simplepam</a> <a class="footnote-reference brackets" href="#id102" id="id103">23</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>sunau</p></td>
+<td><p>3.8 (3.0*)</p></td>
+<td><p>3.10</p></td>
+<td><p>1993</p></td>
+<td><p>no</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p>telnetlib</p></td>
+<td><p>3.8 (3.0*)</p></td>
+<td><p>3.10</p></td>
+<td><p>1997</p></td>
+<td><p>no</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/telnetlib3/">telnetlib3</a> <a class="footnote-reference brackets" href="#id106" id="id107">25</a>, <a class="reference external" href="https://pypi.org/project/Exscript/">Exscript</a> <a class="footnote-reference brackets" href="#id80" id="id81">15</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>uu</p></td>
+<td><p>3.8</p></td>
+<td><p>3.10</p></td>
+<td><p>1994</p></td>
+<td><p>no</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p>xdrlib</p></td>
+<td><p>3.8</p></td>
+<td><p>3.10</p></td>
+<td><p>1992/1996</p></td>
+<td><p>no</p></td>
+<td><p>-</p></td>
+</tr>
+</tbody>
+</table>
+<p>Some module deprecations proposed by <span class="target" id="index-2"></span><a class="pep reference external" href="pep-3108.html"><strong>PEP 3108</strong></a> for 3.0 and <span class="target" id="index-3"></span><a class="pep reference external" href="pep-0206.html"><strong>PEP 206</strong></a> for
+2.0. The <em>added in</em> column illustrates, when a module was originally designed
+and added to the standard library. The <em>has maintainer</em> column refers to the
+<a class="reference external" href="https://devguide.python.org/experts/">expert index</a>, a list of domain
+experts and maintainers in the DevGuide.</p>
+<section id="data-encoding-modules">
+<h3><a class="toc-backref" href="#id164">Data encoding modules</a><a class="headerlink" href="#data-encoding-modules" title="Permalink to this headline">¶</a></h3>
+<section id="binhex">
+<h4><a class="toc-backref" href="#id165">binhex</a><a class="headerlink" href="#binhex" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/binhex.html">binhex</a> module encodes
+and decodes Apple Macintosh binhex4 data. It was originally developed for
+TRS-80. In the 1980s and early 1990s it was used on classic Mac OS 9 to
+encode binary email attachments.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><strong>none</strong></p>
+</dd>
+</dl>
+</section>
+<section id="uu-and-the-uu-encoding">
+<h4><a class="toc-backref" href="#id166">uu and the uu encoding</a><a class="headerlink" href="#uu-and-the-uu-encoding" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/uu.html">uu</a> module provides
+uuencode format, an old binary encoding format for email from 1980. The uu
+format has been replaced by MIME. The uu codec is provided by the <code class="docutils literal notranslate"><span class="pre">binascii</span></code>
+module.  There’s also <code class="docutils literal notranslate"><span class="pre">encodings/uu_codec.py</span></code> which is a codec for the
+same encoding; it should also be deprecated.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><strong>none</strong></p>
+</dd>
+</dl>
+</section>
+<section id="xdrlib">
+<h4><a class="toc-backref" href="#id167">xdrlib</a><a class="headerlink" href="#xdrlib" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/xdrlib.html">xdrlib</a> module supports
+the Sun External Data Representation Standard. XDR is an old binary
+serialization format from 1987. These days it’s rarely used outside
+specialized domains like NFS.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><strong>none</strong></p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="multimedia-modules">
+<h3><a class="toc-backref" href="#id168">Multimedia modules</a><a class="headerlink" href="#multimedia-modules" title="Permalink to this headline">¶</a></h3>
+<section id="aifc">
+<h4><a class="toc-backref" href="#id169">aifc</a><a class="headerlink" href="#aifc" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/aifc.html">aifc</a> module provides
+support for reading and writing AIFF and AIFF-C files. The Audio Interchange
+File Format is an old audio format from 1988 based on Amiga IFF. It was most
+commonly used on the Apple Macintosh. These days only few specialized
+application use AIFF.</p>
+<p>A user disclosed <a class="footnote-reference brackets" href="#id64" id="id8">8</a> that the post production film industry makes heavy
+use of the AIFC file format. The usage of the <code class="docutils literal notranslate"><span class="pre">aifc</span></code> module in closed source
+and internal software was unknown prior to the first posting of this PEP. This
+may be a compelling argument to keep the <code class="docutils literal notranslate"><span class="pre">aifc</span></code> module in the standard
+library. The file format is stable and the module does not require much
+maintenance. The strategic benefits for Python may outmatch the burden.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python (depends on some functions from <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id112">27</a> C extension)</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>yes, but expert is currently inactive.</p>
+</dd>
+<dt>Substitute</dt><dd><p><strong>none</strong></p>
+</dd>
+</dl>
+</section>
+<section id="audioop">
+<h4><a class="toc-backref" href="#id170">audioop</a><a class="headerlink" href="#audioop" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> module
+contains helper functions to manipulate raw audio data and adaptive
+differential pulse-code modulated audio data. The module is implemented in
+C without any additional dependencies. The <a class="reference external" href="https://docs.python.org/3/library/aifc.html">aifc</a> <a class="footnote-reference brackets" href="#id109" id="id110">26</a>, <a class="reference external" href="https://docs.python.org/3/library/sunhdr.html">sunau</a> <a class="footnote-reference brackets" href="#id125" id="id126">30</a>, and <a class="reference external" href="https://docs.python.org/3/library/wave.html">wave</a> <a class="footnote-reference brackets" href="#id151" id="id152">41</a>
+modules depend on <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id113">27</a> for some operations.</p>
+<p>The byteswap operation in the <code class="docutils literal notranslate"><span class="pre">wave</span></code> module can be substituted with little
+extra work. In case <code class="docutils literal notranslate"><span class="pre">aifc</span></code> is not deprecated as well, a reduced version of
+the <code class="docutils literal notranslate"><span class="pre">audioop</span></code> module is converted into a private implementation detail,
+e.g. <code class="docutils literal notranslate"><span class="pre">_audioop</span></code> with <code class="docutils literal notranslate"><span class="pre">byteswap</span></code>, <code class="docutils literal notranslate"><span class="pre">alaw2lin</span></code>, <code class="docutils literal notranslate"><span class="pre">ulaw2lin</span></code>, <code class="docutils literal notranslate"><span class="pre">lin2alaw</span></code>,
+<code class="docutils literal notranslate"><span class="pre">lin2ulaw</span></code>, and <code class="docutils literal notranslate"><span class="pre">lin2adpcm</span></code>.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>C extension</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>yes</p>
+</dd>
+<dt>Substitute</dt><dd><p><strong>none</strong></p>
+</dd>
+</dl>
+</section>
+<section id="chunk">
+<h4><a class="toc-backref" href="#id171">chunk</a><a class="headerlink" href="#chunk" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/chunk.html">chunk</a> module provides
+support for reading and writing Electronic Arts’ Interchange File Format.
+IFF is an old audio file format originally introduced for Commodore and
+Amiga. The format is no longer relevant.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><strong>none</strong></p>
+</dd>
+</dl>
+</section>
+<section id="imghdr">
+<h4><a class="toc-backref" href="#id172">imghdr</a><a class="headerlink" href="#imghdr" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/imghdr.html">imghdr</a> module is a
+simple tool to guess the image file format from the first 32 bytes
+of a file or buffer. It supports only a limited number of formats and
+neither returns resolution nor color depth.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><a class="reference external" href="https://pypi.org/project/puremagic/">puremagic</a>,
+<a class="reference external" href="https://pypi.org/project/filetype/">filetype</a>,
+<a class="reference external" href="https://pypi.org/project/python-magic/">python-magic</a></p>
+</dd>
+</dl>
+</section>
+<section id="ossaudiodev">
+<h4><a class="toc-backref" href="#id173">ossaudiodev</a><a class="headerlink" href="#ossaudiodev" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/ossaudiodev.html">ossaudiodev</a>
+module provides support for Open Sound System, an interface to sound
+playback and capture devices. OSS was initially free software, but later
+support for newer sound devices and improvements were proprietary. Linux
+community abandoned OSS in favor of ALSA <a class="footnote-reference brackets" href="#id57" id="id16">1</a>. Some operation systems like
+OpenBSD and NetBSD provide an incomplete <a class="footnote-reference brackets" href="#id58" id="id17">2</a> emulation of OSS.</p>
+<p>To best of my knowledge, FreeBSD is the only widespread operating system
+that uses Open Sound System as of today. The <code class="docutils literal notranslate"><span class="pre">ossaudiodev</span></code> hasn’t seen any
+improvements or new features since 2003. All commits since 2003 are
+project-wide code cleanups and a couple of bug fixes. It would be beneficial
+for both FreeBSD community and core development, if the module would be
+maintained and distributed by people that care for it and use it.</p>
+<p>The standard library used to have more audio-related modules. The other
+audio device interface (<code class="docutils literal notranslate"><span class="pre">audiodev</span></code>, <code class="docutils literal notranslate"><span class="pre">linuxaudiodev</span></code>, <code class="docutils literal notranslate"><span class="pre">sunaudiodev</span></code>)
+were removed in 2007 as part of the <span class="target" id="index-4"></span><a class="pep reference external" href="pep-3108.html"><strong>PEP 3108</strong></a> stdlib re-organization.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>C extension</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><strong>none</strong></p>
+</dd>
+</dl>
+</section>
+<section id="sndhdr">
+<h4><a class="toc-backref" href="#id174">sndhdr</a><a class="headerlink" href="#sndhdr" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/sndhdr.html">sndhdr</a> module is
+similar to the <a class="reference external" href="https://docs.python.org/3/library/imghdr.html">imghdr</a> <a class="footnote-reference brackets" href="#id120" id="id121">28</a> module but for audio formats. It guesses file
+format, channels, frame rate, and sample widths from the first 512 bytes of
+a file or buffer. The module only supports AU, AIFF, HCOM, VOC, WAV, and
+other ancient formats.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python (depends on <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id114">27</a> C extension for some operations)</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><a class="reference external" href="https://pypi.org/project/puremagic/">puremagic</a>,
+<a class="reference external" href="https://pypi.org/project/filetype/">filetype</a>,
+<a class="reference external" href="https://pypi.org/project/python-magic/">python-magic</a></p>
+</dd>
+</dl>
+</section>
+<section id="sunau">
+<h4><a class="toc-backref" href="#id175">sunau</a><a class="headerlink" href="#sunau" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/sunhdr.html">sunau</a> module provides
+support for Sun AU sound format. It’s yet another old, obsolete file format.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python (depends on <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id115">27</a> C extension for some operations)</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><strong>none</strong></p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="networking-modules">
+<h3><a class="toc-backref" href="#id176">Networking modules</a><a class="headerlink" href="#networking-modules" title="Permalink to this headline">¶</a></h3>
+<section id="asynchat">
+<h4><a class="toc-backref" href="#id177">asynchat</a><a class="headerlink" href="#asynchat" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/asynchat.html">asynchat</a> module
+is built on top of <a class="reference external" href="https://docs.python.org/3/library/asyncore.html">asyncore</a> <a class="footnote-reference brackets" href="#id127" id="id128">31</a> and has been deprecated since Python 3.6.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.6</p>
+</dd>
+<dt>Removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>yes</p>
+</dd>
+<dt>Substitute</dt><dd><p>asyncio</p>
+</dd>
+</dl>
+</section>
+<section id="asyncore">
+<h4><a class="toc-backref" href="#id178">asyncore</a><a class="headerlink" href="#asyncore" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/asyncore.html">asyncore</a> module was
+the first module for asynchronous socket service clients and servers. It
+has been replaced by asyncio and is deprecated since Python 3.6.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">asyncore</span></code> module is also used in stdlib tests. The tests for
+<code class="docutils literal notranslate"><span class="pre">ftplib</span></code>, <code class="docutils literal notranslate"><span class="pre">logging</span></code>, <code class="docutils literal notranslate"><span class="pre">smptd</span></code>, <code class="docutils literal notranslate"><span class="pre">smtplib</span></code>, and <code class="docutils literal notranslate"><span class="pre">ssl</span></code> are partly
+based on <code class="docutils literal notranslate"><span class="pre">asyncore</span></code>. These tests must be updated to use asyncio or
+threading.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.6</p>
+</dd>
+<dt>Removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>yes</p>
+</dd>
+<dt>Substitute</dt><dd><p>asyncio</p>
+</dd>
+</dl>
+</section>
+<section id="cgi">
+<h4><a class="toc-backref" href="#id179">cgi</a><a class="headerlink" href="#cgi" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/cgi.html">cgi</a> module is a support
+module for Common Gateway Interface (CGI) scripts. CGI is deemed as
+inefficient because every incoming request is handled in a new process.
+<span class="target" id="index-5"></span><a class="pep reference external" href="pep-0206.html"><strong>PEP 206</strong></a> considers the module as:</p>
+<blockquote>
+<div><p>“[…] designed poorly and are now near-impossible to fix (<code class="docutils literal notranslate"><span class="pre">cgi</span></code>) […]”</p>
+</div></blockquote>
+<p>Several people proposed to either keep the <code class="docutils literal notranslate"><span class="pre">cgi</span></code> module for features like
+<code class="docutils literal notranslate"><span class="pre">cgi.parse_qs</span></code> or move <code class="docutils literal notranslate"><span class="pre">cgi.escape</span></code> to a different module. The
+functions <code class="docutils literal notranslate"><span class="pre">cgi.parse_qs</span></code> and <code class="docutils literal notranslate"><span class="pre">cgi.parse_qsl</span></code> have been
+deprecated for a while and are actually aliases for
+<code class="docutils literal notranslate"><span class="pre">urllib.parse.parse_qs</span></code> and <code class="docutils literal notranslate"><span class="pre">urllib.parse.parse_qsl</span></code>. The
+function <code class="docutils literal notranslate"><span class="pre">cgi.quote</span></code> has been deprecated in favor of <code class="docutils literal notranslate"><span class="pre">html.quote</span></code>
+with secure default values.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8 (originally proposed for 2.0 by <span class="target" id="index-6"></span><a class="pep reference external" href="pep-0206.html"><strong>PEP 206</strong></a>)</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><strong>none</strong></p>
+</dd>
+</dl>
+</section>
+<section id="cgitb">
+<h4><a class="toc-backref" href="#id180">cgitb</a><a class="headerlink" href="#cgitb" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/cgitb.html">cgitb</a> module is a
+helper for the <code class="docutils literal notranslate"><span class="pre">cgi</span></code> module for configurable tracebacks.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">cgitb</span></code> module is not used by any major Python web framework (Django,
+Pyramid, Plone, Flask, CherryPy, or Bottle). Only Paste uses it in an
+optional debugging middleware.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8 (originally proposed for 2.0 by <span class="target" id="index-7"></span><a class="pep reference external" href="pep-0206.html"><strong>PEP 206</strong></a>)</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><strong>none</strong></p>
+</dd>
+</dl>
+</section>
+<section id="smtpd">
+<h4><a class="toc-backref" href="#id181">smtpd</a><a class="headerlink" href="#smtpd" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/smtpd.html">smtpd</a> module provides
+a simple implementation of a SMTP mail server. The module documentation
+marks the module as deprecated and recommends <code class="docutils literal notranslate"><span class="pre">aiosmtpd</span></code> instead. The
+deprecation message was added in releases 3.4.7, 3.5.4, and 3.6.1.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p><strong>3.4.7</strong>, <strong>3.5.4</strong>, <strong>3.6.1</strong></p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>yes</p>
+</dd>
+<dt>Substitute</dt><dd><p>aiosmtpd</p>
+</dd>
+</dl>
+</section>
+<section id="nntplib">
+<h4><a class="toc-backref" href="#id182">nntplib</a><a class="headerlink" href="#nntplib" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/nntplib.html">nntplib</a> module
+implements the client side of the Network News Transfer Protocol (nntp). News
+groups used to be a dominant platform for online discussions. Over the last
+two decades, news has been slowly but steadily replaced with mailing lists
+and web-based discussion platforms. Twisted is also
+<a class="reference external" href="https://twistedmatrix.com/trac/ticket/9405">planning</a> to deprecate NNTP
+support and <a class="reference external" href="https://github.com/greenbender/pynntp">pynntp</a> hasn’t seen any
+activity since 2014. This is a good indicator that the public interest in
+NNTP support is declining.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">nntplib</span></code> tests have been the cause of additional work in the recent
+past. Python only contains client side of NNTP. The tests connect to
+external news server. The servers are sometimes unavailable, too slow, or do
+not work correctly over IPv6. The situation causes flaky test runs on
+buildbots.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><strong>none</strong></p>
+</dd>
+</dl>
+</section>
+<section id="telnetlib">
+<h4><a class="toc-backref" href="#id183">telnetlib</a><a class="headerlink" href="#telnetlib" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/telnetlib.html">telnetlib</a> module
+provides a Telnet class that implements the Telnet protocol.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Substitute</dt><dd><p><a class="reference external" href="https://pypi.org/project/telnetlib3/">telnetlib3</a> <a class="footnote-reference brackets" href="#id106" id="id108">25</a>,
+<a class="reference external" href="https://pypi.org/project/Exscript/">Exscript</a> <a class="footnote-reference brackets" href="#id80" id="id82">15</a></p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="operating-system-interface">
+<h3><a class="toc-backref" href="#id184">Operating system interface</a><a class="headerlink" href="#operating-system-interface" title="Permalink to this headline">¶</a></h3>
+<section id="crypt">
+<h4><a class="toc-backref" href="#id185">crypt</a><a class="headerlink" href="#crypt" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/crypt.html">crypt</a> module implements
+password hashing based on the <code class="docutils literal notranslate"><span class="pre">crypt(3)</span></code> function from <code class="docutils literal notranslate"><span class="pre">libcrypt</span></code> or
+<code class="docutils literal notranslate"><span class="pre">libxcrypt</span></code> on Unix-like platforms. The algorithms are mostly old, of poor
+quality and insecure. Users are discouraged to use them.</p>
+<ul class="simple">
+<li><p>The module is not available on Windows. Cross-platform applications need
+an alternative implementation anyway.</p></li>
+<li><p>Only DES encryption is guaranteed to be available. DES has an extremely
+limited key space of 2**56.</p></li>
+<li><p>MD5, salted SHA256, salted SHA512, and Blowfish are optional extensions.
+SSHA256 and SSHA512 are glibc extensions. Blowfish (bcrypt) is the only
+algorithm that is still secure. However it’s in glibc and therefore not
+commonly available on Linux.</p></li>
+<li><p>Depending on the platform, the <code class="docutils literal notranslate"><span class="pre">crypt</span></code> module is not thread safe. Only
+implementations with <code class="docutils literal notranslate"><span class="pre">crypt_r(3)</span></code> are thread safe.</p></li>
+<li><p>The module was never useful to interact with system user and password
+databases. On BSD, macOS, and Linux, all user authentication and
+password modification operations must go through PAM (pluggable
+authentication module), see <a class="reference external" href="https://docs.python.org/3/library/spwd.html">spwd</a> <a class="footnote-reference brackets" href="#id140" id="id141">37</a> deprecation.</p></li>
+</ul>
+<dl class="simple">
+<dt>Module type</dt><dd><p>C extension + Python module</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>yes, but expert is currently inactive.</p>
+</dd>
+<dt>Substitute</dt><dd><p><a class="reference external" href="https://pypi.org/project/legacycrypt/">legacycrypt</a> (ctypes wrapper),
+<a class="reference external" href="https://pypi.org/project/bcrypt/">bcrypt</a>,
+<a class="reference external" href="https://pypi.org/project/passlib/">passlib</a>,
+<a class="reference external" href="https://pypi.org/project/argon2-cffi/">argon2cffi</a>,
+hashlib module (PBKDF2, scrypt)</p>
+</dd>
+</dl>
+</section>
+<section id="macpath">
+<h4><a class="toc-backref" href="#id186">macpath</a><a class="headerlink" href="#macpath" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/macpath.html">macpath</a> module
+provides Mac OS 9 implementation of <code class="docutils literal notranslate"><span class="pre">os.path</span></code> routines. Mac OS 9 is no longer
+supported.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.7</p>
+</dd>
+<dt>Removed in</dt><dd><p>3.8</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>n/a</p>
+</dd>
+<dt>Substitute</dt><dd><p><strong>none</strong></p>
+</dd>
+</dl>
+</section>
+<section id="nis">
+<h4><a class="toc-backref" href="#id187">nis</a><a class="headerlink" href="#nis" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/nis.html">nis</a> module provides
+NIS/YP support. Network Information Service / Yellow Pages is an old and
+deprecated directory service protocol developed by Sun Microsystems. It’s
+designed successor NIS+ from 1992 never took off. For a long time, libc’s
+Name Service Switch, LDAP, and Kerberos/GSSAPI are considered a more powerful
+and more secure replacement of NIS.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>C extension</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><strong>none</strong></p>
+</dd>
+</dl>
+</section>
+<section id="spwd">
+<h4><a class="toc-backref" href="#id188">spwd</a><a class="headerlink" href="#spwd" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/spwd.html">spwd</a> module provides
+direct access to Unix shadow password database using non-standard APIs.</p>
+<p>In general it’s a bad idea to use spwd. It circumvents system
+security policies, does not use the PAM stack, and is only compatible
+with local user accounts, because it ignores NSS. The use of the <code class="docutils literal notranslate"><span class="pre">spwd</span></code>
+module for access control must be considered a <em>security bug</em>, as it bypasses
+PAM’s access control.</p>
+<p>Further more the <code class="docutils literal notranslate"><span class="pre">spwd</span></code> module uses the
+<a class="reference external" href="http://man7.org/linux/man-pages/man3/shadow.3.html">shadow(3)</a> APIs.
+Functions like <code class="docutils literal notranslate"><span class="pre">getspnam(3)</span></code> access the <code class="docutils literal notranslate"><span class="pre">/etc/shadow</span></code> file directly. This
+is dangerous and even forbidden for confined services on systems with a
+security engine like SELinux or AppArmor.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>C extension</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><a class="reference external" href="https://pypi.org/project/python-pam/">python-pam</a>,
+<a class="reference external" href="https://pypi.org/project/simplepam/">simpleplam</a></p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="misc-modules">
+<h3><a class="toc-backref" href="#id189">Misc modules</a><a class="headerlink" href="#misc-modules" title="Permalink to this headline">¶</a></h3>
+<section id="formatter">
+<h4><a class="toc-backref" href="#id190">formatter</a><a class="headerlink" href="#formatter" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/formatter.html">formatter</a> module
+is an old text formatting module which has been deprecated since Python 3.4.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.4</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><em>n/a</em></p>
+</dd>
+</dl>
+</section>
+<section id="imp">
+<h4><a class="toc-backref" href="#id191">imp</a><a class="headerlink" href="#imp" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/imp.html">imp</a> module is the
+predecessor of the
+<a class="reference external" href="https://docs.python.org/3/library/importlib.html">importlib</a> module. Most
+functions have been deprecated since Python 3.3 and the module since
+Python 3.4.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>C extension</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.4</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>yes, experts have deprecated the module</p>
+</dd>
+<dt>Substitute</dt><dd><p>importlib</p>
+</dd>
+</dl>
+</section>
+<section id="msilib">
+<h4><a class="toc-backref" href="#id192">msilib</a><a class="headerlink" href="#msilib" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/msilib.html">msilib</a> package is a
+Windows-only package. It supports the creation of Microsoft Installers (MSI).
+The package also exposes additional APIs to create cabinet files (CAB). The
+module is used to facilitate distutils to create MSI installers with the
+<code class="docutils literal notranslate"><span class="pre">bdist_msi</span></code> command. In the past it was used to create CPython’s official
+Windows installer, too.</p>
+<p>Microsoft is slowly moving away from MSI in favor of Windows 10 Apps (AppX)
+as new deployment model <a class="footnote-reference brackets" href="#id59" id="id43">3</a>.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>C extension + Python code</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><strong>none</strong></p>
+</dd>
+</dl>
+</section>
+<section id="parser">
+<h4><a class="toc-backref" href="#id193">parser</a><a class="headerlink" href="#parser" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/parser.html">parser</a> module provides
+an interface to Python’s internal parser and bytecode compiler. The stdlib
+has superior ways to interact with the parse tree. From Python 2.5 onward,
+it’s much more convenient to cut in at the Abstract Syntax Tree (AST)
+generation and compilation stage.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">parser</span></code> module causes additional work. It’s C code that must be
+kept in sync with any change to Python’s grammar and internal parser.
+Pablo wants to remove the parser module and promote lib2to3’s pgen2 instead
+<a class="footnote-reference brackets" href="#id62" id="id45">6</a>.</p>
+<p>Most importantly the presence of the <code class="docutils literal notranslate"><span class="pre">parser</span></code> module makes it harder to
+switch to something more powerful than a LL(1) parser <a class="footnote-reference brackets" href="#id63" id="id46">7</a>. Since the
+<code class="docutils literal notranslate"><span class="pre">parser</span></code> module is documented as deprecated since Python 2.5 and a new
+parsing technology is planned for 3.9, the <code class="docutils literal notranslate"><span class="pre">parser</span></code> module is scheduled for
+removal in 3.9.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>C extension</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8, documented as deprecated since <strong>2.5</strong></p>
+</dd>
+<dt>To be removed in</dt><dd><p><strong>3.9</strong></p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>yes, experts have deprecated the module.</p>
+</dd>
+<dt>Substitute</dt><dd><p>ast, lib2to3.pgen2</p>
+</dd>
+</dl>
+</section>
+<section id="pipes">
+<h4><a class="toc-backref" href="#id194">pipes</a><a class="headerlink" href="#pipes" title="Permalink to this headline">¶</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/pipes.html">pipes</a> module provides
+helpers to pipe the input of one command into the output of another command.
+The module is built on top of <code class="docutils literal notranslate"><span class="pre">os.popen</span></code>. Users are encouraged to use
+the subprocess module instead.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.8</p>
+</dd>
+<dt>To be removed in</dt><dd><p>3.10</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p>subprocess module</p>
+</dd>
+</dl>
+</section>
+</section>
+</section>
+<section id="removed-modules">
+<h2><a class="toc-backref" href="#id195">Removed modules</a><a class="headerlink" href="#removed-modules" title="Permalink to this headline">¶</a></h2>
+<section id="fpectl">
+<h3><a class="toc-backref" href="#id196">fpectl</a><a class="headerlink" href="#fpectl" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://docs.python.org/3.6/library/fpectl.html">fpectl</a> module was
+never built by default, its usage was discouraged and considered dangerous.
+It also required a configure flag that caused an ABI incompatibility. The
+module was removed in 3.7 by Nathaniel J. Smith in
+<a class="reference external" href="https://bugs.python.org/issue29137">bpo-29137</a>.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>C extension + CAPI</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.7</p>
+</dd>
+<dt>Removed in</dt><dd><p>3.7</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>n/a</p>
+</dd>
+<dt>Substitute</dt><dd><p><strong>none</strong></p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="modules-to-keep">
+<h2><a class="toc-backref" href="#id197">Modules to keep</a><a class="headerlink" href="#modules-to-keep" title="Permalink to this headline">¶</a></h2>
+<p>Some modules were originally proposed for deprecation.</p>
+<table class="colwidths-given docutils align-default" id="id66">
+<caption><span class="caption-text">Table 2: Withdrawn deprecations</span><a class="headerlink" href="#id66" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Module</p></th>
+<th class="head"><p>Deprecated in</p></th>
+<th class="head"><p>Replacement</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>colorsys</p></td>
+<td><p>-</p></td>
+<td><p>colormath, colour, colorspacious, Pillow</p></td>
+</tr>
+<tr class="row-odd"><td><p>fileinput</p></td>
+<td><p>-</p></td>
+<td><p>argparse</p></td>
+</tr>
+<tr class="row-even"><td><p>getopt</p></td>
+<td><p>-</p></td>
+<td><p>argparse, optparse</p></td>
+</tr>
+<tr class="row-odd"><td><p>lib2to3</p></td>
+<td><p>-</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>optparse</p></td>
+<td><p><strong>3.2</strong></p></td>
+<td><p>argparse</p></td>
+</tr>
+<tr class="row-odd"><td><p>wave</p></td>
+<td><p>-</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<section id="colorsys">
+<h3><a class="toc-backref" href="#id198">colorsys</a><a class="headerlink" href="#colorsys" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/colorsys.html">colorsys</a> module
+defines color conversion functions between RGB, YIQ, HSL, and HSV coordinate
+systems.</p>
+<p>Walter Dörwald, Petr Viktorin, and others requested to keep <code class="docutils literal notranslate"><span class="pre">colorsys</span></code>. The
+module is useful to convert CSS colors between coordinate systems. The
+implementation is simple, mature, and does not impose maintenance overhead
+on core development.</p>
+<p>The PyPI packages <code class="docutils literal notranslate"><span class="pre">colormath</span></code>, <code class="docutils literal notranslate"><span class="pre">colour</span></code>, and <code class="docutils literal notranslate"><span class="pre">colorspacious</span></code> provide more and
+advanced features. The Pillow library is better suited to transform images
+between color systems.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p><a class="reference external" href="https://pypi.org/project/colormath/">colormath</a>,
+<a class="reference external" href="https://pypi.org/project/colour/">colour</a>
+<a class="reference external" href="https://pypi.org/project/colorspacious/">colorspacious</a>,
+<a class="reference external" href="https://pypi.org/project/Pillow/">Pillow</a></p>
+</dd>
+</dl>
+</section>
+<section id="fileinput">
+<h3><a class="toc-backref" href="#id199">fileinput</a><a class="headerlink" href="#fileinput" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/fileinput.html">fileinput</a> module
+implements helpers to iterate over a list of files from <code class="docutils literal notranslate"><span class="pre">sys.argv</span></code>. The
+module predates the <code class="docutils literal notranslate"><span class="pre">optparser</span></code> and <code class="docutils literal notranslate"><span class="pre">argparser</span></code> modules. The same functionality
+can be implemented with the <code class="docutils literal notranslate"><span class="pre">argparser</span></code> module.</p>
+<p>Several core developers expressed their interest to keep the module in the
+standard library, as it is handy for quick scripts.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+</dl>
+</section>
+<section id="lib2to3">
+<h3><a class="toc-backref" href="#id200">lib2to3</a><a class="headerlink" href="#lib2to3" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/2to3.html">lib2to3</a> package provides
+the <code class="docutils literal notranslate"><span class="pre">2to3</span></code> command to transpile Python 2 code to Python 3 code.</p>
+<p>The package is useful for other tasks besides porting code from Python 2 to
+3. For example, <a class="reference external" href="https://pypi.org/project/black/">Black</a> <a class="footnote-reference brackets" href="#id154" id="id155">42</a> uses it for code reformatting.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+</dl>
+</section>
+<section id="getopt">
+<h3><a class="toc-backref" href="#id201">getopt</a><a class="headerlink" href="#getopt" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/getopt.html">getopt</a> module mimics
+C’s <code class="docutils literal notranslate"><span class="pre">getopt()</span></code> option parser.</p>
+<p>Although users are encouraged to use <code class="docutils literal notranslate"><span class="pre">argparse</span></code> instead, the <code class="docutils literal notranslate"><span class="pre">getopt</span></code> module is
+still widely used. The module is small, simple, and handy for C developers
+to write simple Python scripts.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+<dt>Substitute</dt><dd><p>argparse</p>
+</dd>
+</dl>
+</section>
+<section id="optparse">
+<h3><a class="toc-backref" href="#id202">optparse</a><a class="headerlink" href="#optparse" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/optparse.html">optparse</a> module is
+the predecessor of the <code class="docutils literal notranslate"><span class="pre">argparse</span></code> module.</p>
+<p>Although it has been deprecated for many years, it’s still too widely used
+to remove it.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python</p>
+</dd>
+<dt>Deprecated in</dt><dd><p>3.2</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>yes</p>
+</dd>
+<dt>Substitute</dt><dd><p>argparse</p>
+</dd>
+</dl>
+</section>
+<section id="wave">
+<h3><a class="toc-backref" href="#id203">wave</a><a class="headerlink" href="#wave" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/wave.html">wave</a> module provides
+support for the WAV sound format.</p>
+<p>The module is not deprecated, because The WAV format is still relevant these
+days. The <code class="docutils literal notranslate"><span class="pre">wave</span></code> module is also used in education, e.g. to show kids how
+to make noise with a computer.</p>
+<p>The module uses one simple function from the <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id116">27</a> module to perform
+byte swapping between little and big endian formats. Before 24 bit WAV
+support was added, byte swap used to be implemented with the <code class="docutils literal notranslate"><span class="pre">array</span></code>
+module. To remove <code class="docutils literal notranslate"><span class="pre">wave</span></code>’s dependency on <code class="docutils literal notranslate"><span class="pre">audioop</span></code>, the byte swap
+function could be either be moved to another module (e.g. <code class="docutils literal notranslate"><span class="pre">operator</span></code>) or
+the <code class="docutils literal notranslate"><span class="pre">array</span></code> module could gain support for 24-bit (3-byte) arrays.</p>
+<dl class="simple">
+<dt>Module type</dt><dd><p>pure Python (depends on <em>byteswap</em> from <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id117">27</a> C extension)</p>
+</dd>
+<dt>Has a designated expert</dt><dd><p>no</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="future-maintenance-of-removed-modules">
+<h2><a class="toc-backref" href="#id204">Future maintenance of removed modules</a><a class="headerlink" href="#future-maintenance-of-removed-modules" title="Permalink to this headline">¶</a></h2>
+<p>The main goal of the PEP is to reduce the burden and workload on the Python
+core developer team. Therefore, removed modules will not be maintained by
+the core team as separate PyPI packages. However the removed code, tests and
+documentation may be moved into a new Git repository, so community members
+have a place from which they can pick up and fork code.</p>
+<p>A first draft of a <a class="reference external" href="https://github.com/tiran/legacylib">legacylib</a>
+repository is available on my private GitHub account. The modules could be
+made available on PyPI. The Python core team will not publish or maintain
+the packages. It is my hope that members of the Python community will
+adopt, maintain, and perhaps improve the deprecated modules.</p>
+<p>It’s my hope that some of the deprecated modules will be picked up and
+adopted by users that actually care about them. For example, <code class="docutils literal notranslate"><span class="pre">colorsys</span></code> and
+<code class="docutils literal notranslate"><span class="pre">imghdr</span></code> are useful modules, but have limited feature set. A fork of
+<code class="docutils literal notranslate"><span class="pre">imghdr</span></code> can add new features and support for more image formats, without
+being constrained by Python’s release cycle.</p>
+<p>Most of the modules are in pure Python and can be easily packaged. Some
+depend on a simple C module, e.g. <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id118">27</a> and <a class="reference external" href="https://docs.python.org/3/library/crypt.html">crypt</a> <a class="footnote-reference brackets" href="#id138" id="id139">36</a>. Since <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id119">27</a>
+does not depend on any external libraries, it can be shipped as binary
+wheels with some effort. Other C modules can be replaced with <code class="docutils literal notranslate"><span class="pre">ctypes</span></code> or <code class="docutils literal notranslate"><span class="pre">cffi</span></code>.
+For example, I created <a class="reference external" href="https://pypi.org/project/legacycrypt/">legacycrypt</a> <a class="footnote-reference brackets" href="#id89" id="id91">18</a>, which provides a full implementation of
+<code class="docutils literal notranslate"><span class="pre">crypt</span></code>. It is implemented on top of a ctypes wrapper around <code class="docutils literal notranslate"><span class="pre">libxcrypt</span></code>
+and <code class="docutils literal notranslate"><span class="pre">libcrypt</span></code> instead of a C extension like the original <code class="docutils literal notranslate"><span class="pre">_crypt</span></code>
+module.</p>
+</section>
+<section id="discussions">
+<h2><a class="toc-backref" href="#id205">Discussions</a><a class="headerlink" href="#discussions" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Elana Hashman and Nick Coghlan suggested to keep the <code class="docutils literal notranslate"><span class="pre">getopt</span></code> module.</p></li>
+<li><p>Berker Peksag proposed to deprecate and removed <code class="docutils literal notranslate"><span class="pre">msilib</span></code>.</p></li>
+<li><p>Brett Cannon recommended to delay active deprecation warnings and removal
+of modules like <code class="docutils literal notranslate"><span class="pre">imp</span></code> until Python 3.10. Version 3.8 will be released
+shortly before Python 2 reaches end-of-life. A delay reduced churn for
+users that migrate from Python 2 to 3.8.</p></li>
+<li><p>Brett also came up with the idea to keep <code class="docutils literal notranslate"><span class="pre">lib2to3</span></code>. The package is useful
+for other purposes, e.g. <a class="reference external" href="https://pypi.org/project/black/">Black</a> uses
+it to reformat Python code.</p></li>
+<li><p>At one point, distutils was mentioned in the same sentence as this PEP.
+To avoid lengthy discussion and delay of the PEP, I decided against dealing
+with distutils. Deprecation of the distutils package will be handled by
+another PEP.</p></li>
+<li><p>Multiple people (Gregory P. Smith, David Beazley, Nick Coghlan, …)
+convinced me to keep the <a class="reference external" href="https://docs.python.org/3/library/wave.html">wave</a> <a class="footnote-reference brackets" href="#id151" id="id153">41</a> module. <a class="footnote-reference brackets" href="#id60" id="id55">4</a></p></li>
+<li><p>Gregory P. Smith proposed to deprecate <a class="reference external" href="https://docs.python.org/3/library/nntplib.html">nntplib</a> <a class="footnote-reference brackets" href="#id133" id="id134">34</a>. <a class="footnote-reference brackets" href="#id60" id="id56">4</a></p></li>
+<li><p>Andrew Svetlov mentioned the <code class="docutils literal notranslate"><span class="pre">socketserver</span></code> module is questionable.
+However it’s used to implement <code class="docutils literal notranslate"><span class="pre">http.server</span></code> and <code class="docutils literal notranslate"><span class="pre">xmlrpc.server</span></code>. The
+stdlib doesn’t have a replacement for the servers, yet.</p></li>
+</ul>
+</section>
+<section id="update-history">
+<h2><a class="toc-backref" href="#id206">Update history</a><a class="headerlink" href="#update-history" title="Permalink to this headline">¶</a></h2>
+<section id="update-1">
+<h3><a class="toc-backref" href="#id207">Update 1</a><a class="headerlink" href="#update-1" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Deprecate <a class="reference external" href="https://docs.python.org/3/library/parser.html">parser</a> <a class="footnote-reference brackets" href="#id142" id="id145">38</a> module</p></li>
+<li><p>Keep <a class="reference external" href="https://docs.python.org/3/library/fileinput.html">fileinput</a> <a class="footnote-reference brackets" href="#id149" id="id150">40</a> module</p></li>
+<li><p>Elaborate why <code class="docutils literal notranslate"><span class="pre">crypt</span></code> and <code class="docutils literal notranslate"><span class="pre">spwd</span></code> are dangerous and bad</p></li>
+<li><p>Improve sections for <a class="reference external" href="https://docs.python.org/3/library/cgitb.html">cgitb</a> <a class="footnote-reference brackets" href="#id129" id="id130">32</a>, <a class="reference external" href="https://docs.python.org/3/library/colorsys.html">colorsys</a> <a class="footnote-reference brackets" href="#id146" id="id147">39</a>, <a class="reference external" href="https://docs.python.org/3/library/nntplib.html">nntplib</a> <a class="footnote-reference brackets" href="#id133" id="id135">34</a>, and <a class="reference external" href="https://docs.python.org/3/library/smtpd.html">smtpd</a> <a class="footnote-reference brackets" href="#id131" id="id132">33</a> modules</p></li>
+<li><p>The <a class="reference external" href="https://docs.python.org/3/library/colorsys.html">colorsys</a> <a class="footnote-reference brackets" href="#id146" id="id148">39</a>, <code class="docutils literal notranslate"><span class="pre">crypt</span></code>, <a class="reference external" href="https://docs.python.org/3/library/imghdr.html">imghdr</a> <a class="footnote-reference brackets" href="#id120" id="id122">28</a>, <a class="reference external" href="https://docs.python.org/3/library/sndhdr.html">sndhdr</a> <a class="footnote-reference brackets" href="#id123" id="id124">29</a>, and <code class="docutils literal notranslate"><span class="pre">spwd</span></code> sections now
+list suitable substitutions</p></li>
+<li><p>Mention that <code class="docutils literal notranslate"><span class="pre">socketserver</span></code> is going to stay for <code class="docutils literal notranslate"><span class="pre">http.server</span></code> and
+<code class="docutils literal notranslate"><span class="pre">xmlrpc.server</span></code></p></li>
+<li><p>The future maintenance section now states that the deprecated modules
+may be adopted by Python community members</p></li>
+</ul>
+</section>
+<section id="update-2">
+<h3><a class="toc-backref" href="#id208">Update 2</a><a class="headerlink" href="#update-2" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Keep <code class="docutils literal notranslate"><span class="pre">colorsys</span></code> module</p></li>
+<li><p>Add experts</p></li>
+<li><p>Redirect discussions to discuss.python.org</p></li>
+<li><p>Deprecate <a class="reference external" href="https://docs.python.org/3/library/telnetlib.html">telnetlib</a> <a class="footnote-reference brackets" href="#id136" id="id137">35</a></p></li>
+<li><p>Deprecate compat32 policy of email package</p></li>
+<li><p>Add creation year to overview table</p></li>
+<li><p>Mention <span class="target" id="index-8"></span><a class="pep reference external" href="pep-0206.html"><strong>PEP 206</strong></a> and <span class="target" id="index-9"></span><a class="pep reference external" href="pep-3108.html"><strong>PEP 3108</strong></a></p></li>
+<li><p>Update sections for <code class="docutils literal notranslate"><span class="pre">aifc</span></code>, <code class="docutils literal notranslate"><span class="pre">audioop</span></code>, <code class="docutils literal notranslate"><span class="pre">cgi</span></code>, and <code class="docutils literal notranslate"><span class="pre">wave</span></code>.</p></li>
+</ul>
+</section>
+<section id="update-3">
+<h3><a class="toc-backref" href="#id209">Update 3</a><a class="headerlink" href="#update-3" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Keep the legacy email API modules.  Internal deprecations will be
+handled separately.</p></li>
+</ul>
+</section>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#id210">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id57"><span class="brackets"><a class="fn-backref" href="#id16">1</a></span></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Open_Sound_System#Free,_proprietary,_free">https://en.wikipedia.org/wiki/Open_Sound_System#Free,_proprietary,_free</a></p>
+</dd>
+<dt class="label" id="id58"><span class="brackets"><a class="fn-backref" href="#id17">2</a></span></dt>
+<dd><p><a class="reference external" href="https://man.openbsd.org/ossaudio">https://man.openbsd.org/ossaudio</a></p>
+</dd>
+<dt class="label" id="id59"><span class="brackets"><a class="fn-backref" href="#id43">3</a></span></dt>
+<dd><p><a class="reference external" href="https://blogs.msmvps.com/installsite/blog/2015/05/03/the-future-of-windows-installer-msi-in-the-light-of-windows-10-and-the-universal-windows-platform/">https://blogs.msmvps.com/installsite/blog/2015/05/03/the-future-of-windows-installer-msi-in-the-light-of-windows-10-and-the-universal-windows-platform/</a></p>
+</dd>
+<dt class="label" id="id60"><span class="brackets">4</span><span class="fn-backref">(<a href="#id55">1</a>,<a href="#id56">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://twitter.com/ChristianHeimes/status/1130257799475335169">https://twitter.com/ChristianHeimes/status/1130257799475335169</a></p>
+</dd>
+<dt class="label" id="id61"><span class="brackets"><a class="fn-backref" href="#id1">5</a></span></dt>
+<dd><p><a class="reference external" href="https://twitter.com/dabeaz/status/1130278844479545351">https://twitter.com/dabeaz/status/1130278844479545351</a></p>
+</dd>
+<dt class="label" id="id62"><span class="brackets"><a class="fn-backref" href="#id45">6</a></span></dt>
+<dd><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2019-May/157464.html">https://mail.python.org/pipermail/python-dev/2019-May/157464.html</a></p>
+</dd>
+<dt class="label" id="id63"><span class="brackets"><a class="fn-backref" href="#id46">7</a></span></dt>
+<dd><p><a class="reference external" href="https://discuss.python.org/t/switch-pythons-parsing-tech-to-something-more-powerful-than-ll-1/379">https://discuss.python.org/t/switch-pythons-parsing-tech-to-something-more-powerful-than-ll-1/379</a></p>
+</dd>
+<dt class="label" id="id64"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2019-May/157634.html">https://mail.python.org/pipermail/python-dev/2019-May/157634.html</a></p>
+</dd>
+<dt class="label" id="id67"><span class="brackets"><a class="fn-backref" href="#id68">9</a></span></dt>
+<dd><p><a class="reference external" href="https://pypi.org/project/aiosmtpd/">https://pypi.org/project/aiosmtpd/</a></p>
+</dd>
+<dt class="label" id="id69"><span class="brackets"><a class="fn-backref" href="#id70">10</a></span></dt>
+<dd><p><a class="reference external" href="https://pypi.org/project/argon2-cffi/">https://pypi.org/project/argon2-cffi/</a></p>
+</dd>
+<dt class="label" id="id71"><span class="brackets"><a class="fn-backref" href="#id72">11</a></span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/ast.html">https://docs.python.org/3/library/ast.html</a></p>
+</dd>
+<dt class="label" id="id73"><span class="brackets"><a class="fn-backref" href="#id74">12</a></span></dt>
+<dd><p><a class="reference external" href="https://pypi.org/project/astroid/">https://pypi.org/project/astroid/</a></p>
+</dd>
+<dt class="label" id="id75"><span class="brackets">13</span><span class="fn-backref">(<a href="#id76">1</a>,<a href="#id77">2</a>,<a href="#id86">3</a>)</span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/hashlib.html">https://docs.python.org/3/library/hashlib.html</a></p>
+</dd>
+<dt class="label" id="id78"><span class="brackets"><a class="fn-backref" href="#id79">14</a></span></dt>
+<dd><p><a class="reference external" href="https://pypi.org/project/bcrypt/">https://pypi.org/project/bcrypt/</a></p>
+</dd>
+<dt class="label" id="id80"><span class="brackets">15</span><span class="fn-backref">(<a href="#id81">1</a>,<a href="#id82">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://pypi.org/project/Exscript/">https://pypi.org/project/Exscript/</a></p>
+</dd>
+<dt class="label" id="id83"><span class="brackets">16</span><span class="fn-backref">(<a href="#id84">1</a>,<a href="#id85">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://pypi.org/project/filetype/">https://pypi.org/project/filetype/</a></p>
+</dd>
+<dt class="label" id="id87"><span class="brackets"><a class="fn-backref" href="#id88">17</a></span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/importlib.html">https://docs.python.org/3/library/importlib.html</a></p>
+</dd>
+<dt class="label" id="id89"><span class="brackets">18</span><span class="fn-backref">(<a href="#id90">1</a>,<a href="#id91">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://pypi.org/project/legacycrypt/">https://pypi.org/project/legacycrypt/</a></p>
+</dd>
+<dt class="label" id="id92"><span class="brackets"><a class="fn-backref" href="#id93">19</a></span></dt>
+<dd><p><a class="reference external" href="https://pypi.org/project/passlib/">https://pypi.org/project/passlib/</a></p>
+</dd>
+<dt class="label" id="id94"><span class="brackets">20</span><span class="fn-backref">(<a href="#id95">1</a>,<a href="#id96">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://pypi.org/project/puremagic/">https://pypi.org/project/puremagic/</a></p>
+</dd>
+<dt class="label" id="id97"><span class="brackets">21</span><span class="fn-backref">(<a href="#id98">1</a>,<a href="#id99">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://pypi.org/project/python-magic/">https://pypi.org/project/python-magic/</a></p>
+</dd>
+<dt class="label" id="id100"><span class="brackets"><a class="fn-backref" href="#id101">22</a></span></dt>
+<dd><p><a class="reference external" href="https://pypi.org/project/python-pam/">https://pypi.org/project/python-pam/</a></p>
+</dd>
+<dt class="label" id="id102"><span class="brackets"><a class="fn-backref" href="#id103">23</a></span></dt>
+<dd><p><a class="reference external" href="https://pypi.org/project/simplepam/">https://pypi.org/project/simplepam/</a></p>
+</dd>
+<dt class="label" id="id104"><span class="brackets"><a class="fn-backref" href="#id105">24</a></span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/subprocess.html">https://docs.python.org/3/library/subprocess.html</a></p>
+</dd>
+<dt class="label" id="id106"><span class="brackets">25</span><span class="fn-backref">(<a href="#id107">1</a>,<a href="#id108">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://pypi.org/project/telnetlib3/">https://pypi.org/project/telnetlib3/</a></p>
+</dd>
+<dt class="label" id="id109"><span class="brackets"><a class="fn-backref" href="#id110">26</a></span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/aifc.html">https://docs.python.org/3/library/aifc.html</a></p>
+</dd>
+<dt class="label" id="id111"><span class="brackets">27</span><span class="fn-backref">(<a href="#id112">1</a>,<a href="#id113">2</a>,<a href="#id114">3</a>,<a href="#id115">4</a>,<a href="#id116">5</a>,<a href="#id117">6</a>,<a href="#id118">7</a>,<a href="#id119">8</a>)</span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/audioop.html">https://docs.python.org/3/library/audioop.html</a></p>
+</dd>
+<dt class="label" id="id120"><span class="brackets">28</span><span class="fn-backref">(<a href="#id121">1</a>,<a href="#id122">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/imghdr.html">https://docs.python.org/3/library/imghdr.html</a></p>
+</dd>
+<dt class="label" id="id123"><span class="brackets"><a class="fn-backref" href="#id124">29</a></span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/sndhdr.html">https://docs.python.org/3/library/sndhdr.html</a></p>
+</dd>
+<dt class="label" id="id125"><span class="brackets"><a class="fn-backref" href="#id126">30</a></span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/sunhdr.html">https://docs.python.org/3/library/sunhdr.html</a></p>
+</dd>
+<dt class="label" id="id127"><span class="brackets"><a class="fn-backref" href="#id128">31</a></span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/asyncore.html">https://docs.python.org/3/library/asyncore.html</a></p>
+</dd>
+<dt class="label" id="id129"><span class="brackets"><a class="fn-backref" href="#id130">32</a></span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/cgitb.html">https://docs.python.org/3/library/cgitb.html</a></p>
+</dd>
+<dt class="label" id="id131"><span class="brackets"><a class="fn-backref" href="#id132">33</a></span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/smtpd.html">https://docs.python.org/3/library/smtpd.html</a></p>
+</dd>
+<dt class="label" id="id133"><span class="brackets">34</span><span class="fn-backref">(<a href="#id134">1</a>,<a href="#id135">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/nntplib.html">https://docs.python.org/3/library/nntplib.html</a></p>
+</dd>
+<dt class="label" id="id136"><span class="brackets"><a class="fn-backref" href="#id137">35</a></span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/telnetlib.html">https://docs.python.org/3/library/telnetlib.html</a></p>
+</dd>
+<dt class="label" id="id138"><span class="brackets"><a class="fn-backref" href="#id139">36</a></span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/crypt.html">https://docs.python.org/3/library/crypt.html</a></p>
+</dd>
+<dt class="label" id="id140"><span class="brackets"><a class="fn-backref" href="#id141">37</a></span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/spwd.html">https://docs.python.org/3/library/spwd.html</a></p>
+</dd>
+<dt class="label" id="id142"><span class="brackets">38</span><span class="fn-backref">(<a href="#id143">1</a>,<a href="#id144">2</a>,<a href="#id145">3</a>)</span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/parser.html">https://docs.python.org/3/library/parser.html</a></p>
+</dd>
+<dt class="label" id="id146"><span class="brackets">39</span><span class="fn-backref">(<a href="#id147">1</a>,<a href="#id148">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/colorsys.html">https://docs.python.org/3/library/colorsys.html</a></p>
+</dd>
+<dt class="label" id="id149"><span class="brackets"><a class="fn-backref" href="#id150">40</a></span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/fileinput.html">https://docs.python.org/3/library/fileinput.html</a></p>
+</dd>
+<dt class="label" id="id151"><span class="brackets">41</span><span class="fn-backref">(<a href="#id152">1</a>,<a href="#id153">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/wave.html">https://docs.python.org/3/library/wave.html</a></p>
+</dd>
+<dt class="label" id="id154"><span class="brackets"><a class="fn-backref" href="#id155">42</a></span></dt>
+<dd><p><a class="reference external" href="https://pypi.org/project/black/">https://pypi.org/project/black/</a></p>
+</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#id211">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0594.rst">https://github.com/python/peps/blob/master/pep-0594.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0594.rst">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0001/">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0100/">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0101/">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0374/">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0391/">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0423/">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0451/">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0471/">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0479/">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0495/">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0558/">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0570/">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0584/">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0586/">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3118/">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-0593/" title="previous chapter">PEP 593 – Flexible function and variable annotations</a></li>
+      <li>Next: <a href="../pep-0595/" title="next chapter">PEP 595 – Improving bugs.python.org</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-0594.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

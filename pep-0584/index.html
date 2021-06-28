@@ -1,0 +1,1674 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 584 – Add Union Operators To dict &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 585 – Type Hinting Generics In Standard Collections" href="../pep-0585/" />
+    <link rel="prev" title="PEP 583 – A Concurrency Memory Model for Python" href="../pep-0583/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="id10">
+<h1 class="page-title">PEP 584 – Add Union Operators To dict<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>584</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>Add Union Operators To dict</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Steven D’Aprano &lt;<a class="reference external" href="mailto:steve&#37;&#52;&#48;pearwood&#46;info?subject=PEP%20-1">steve&#32;&#97;t&#32;pearwood.info</a>&gt;,
+Brandt Bucher &lt;<a class="reference external" href="mailto:brandt&#37;&#52;&#48;python&#46;org?subject=PEP%20-1">brandt&#32;&#97;t&#32;python.org</a>&gt;</p>
+</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even"><p>Guido van Rossum &lt;<a class="reference external" href="mailto:guido&#37;&#52;&#48;python&#46;org?subject=PEP%20-1">guido&#32;&#97;t&#32;python.org</a>&gt;</p>
+</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd"><p>Final</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Standards Track</p>
+</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd"><p>01-Mar-2019</p>
+</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even"><p>3.9</p>
+</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p>01-Mar-2019, 16-Oct-2019, 02-Dec-2019, 04-Feb-2020,
+17-Feb-2020</p>
+</dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><p><a class="reference external" href="https://mail.python.org/archives/list/python-dev&#64;python.org/thread/6KT2KIOTYXMDCD2CCAOLOI7LUGTN6MBS">https://mail.python.org/archives/list/python-dev&#64;python.org/thread/6KT2KIOTYXMDCD2CCAOLOI7LUGTN6MBS</a></p>
+</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#abstract" id="id12">Abstract</a></p></li>
+<li><p><a class="reference internal" href="#motivation" id="id13">Motivation</a></p>
+<ul>
+<li><p><a class="reference internal" href="#dict-update" id="id14"><code class="docutils literal notranslate"><span class="pre">dict.update</span></code></a></p></li>
+<li><p><a class="reference internal" href="#d1-d2" id="id15"><code class="docutils literal notranslate"><span class="pre">{**d1,</span> <span class="pre">**d2}</span></code></a></p></li>
+<li><p><a class="reference internal" href="#collections-chainmap" id="id16"><code class="docutils literal notranslate"><span class="pre">collections.ChainMap</span></code></a></p></li>
+<li><p><a class="reference internal" href="#dict-d1-d2" id="id17"><code class="docutils literal notranslate"><span class="pre">dict(d1,</span> <span class="pre">**d2)</span></code></a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#rationale" id="id18">Rationale</a></p></li>
+<li><p><a class="reference internal" href="#specification" id="id19">Specification</a></p></li>
+<li><p><a class="reference internal" href="#reference-implementation" id="id20">Reference Implementation</a></p></li>
+<li><p><a class="reference internal" href="#major-objections" id="id21">Major Objections</a></p>
+<ul>
+<li><p><a class="reference internal" href="#dict-union-is-not-commutative" id="id22">Dict Union Is Not Commutative</a></p>
+<ul>
+<li><p><a class="reference internal" href="#response" id="id23">Response</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#dict-union-will-be-inefficient" id="id24">Dict Union Will Be Inefficient</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id1" id="id25">Response</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#dict-union-is-lossy" id="id26">Dict Union Is Lossy</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id2" id="id27">Response</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#only-one-way-to-do-it" id="id28">Only One Way To Do It</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id3" id="id29">Response</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#more-than-one-way-to-do-it" id="id30">More Than One Way To Do It</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id4" id="id31">Response</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#dict-union-makes-code-harder-to-understand" id="id32">Dict Union Makes Code Harder To Understand</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id5" id="id33">Response</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#what-about-the-full-set-api" id="id34">What About The Full <code class="docutils literal notranslate"><span class="pre">set</span></code> API?</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id6" id="id35">Response</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#what-about-mapping-and-mutablemapping" id="id36">What About <code class="docutils literal notranslate"><span class="pre">Mapping</span></code> And <code class="docutils literal notranslate"><span class="pre">MutableMapping</span></code>?</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id7" id="id37">Response</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#rejected-ideas" id="id38">Rejected Ideas</a></p>
+<ul>
+<li><p><a class="reference internal" href="#rejected-semantics" id="id39">Rejected Semantics</a></p>
+<ul>
+<li><p><a class="reference internal" href="#raise" id="id40">Raise</a></p></li>
+<li><p><a class="reference internal" href="#add-the-values-as-counter-does-with" id="id41">Add The Values (As Counter Does, with <code class="docutils literal notranslate"><span class="pre">+</span></code>)</a></p></li>
+<li><p><a class="reference internal" href="#leftmost-value-first-seen-wins" id="id42">Leftmost Value (First-Seen) Wins</a></p></li>
+<li><p><a class="reference internal" href="#concatenate-values-in-a-list" id="id43">Concatenate Values In A List</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#rejected-alternatives" id="id44">Rejected Alternatives</a></p>
+<ul>
+<li><p><a class="reference internal" href="#use-the-addition-operator" id="id45">Use The Addition Operator</a></p></li>
+<li><p><a class="reference internal" href="#use-the-left-shift-operator" id="id46">Use The Left Shift Operator</a></p></li>
+<li><p><a class="reference internal" href="#use-a-new-left-arrow-operator" id="id47">Use A New Left Arrow Operator</a></p></li>
+<li><p><a class="reference internal" href="#use-a-method" id="id48">Use A Method</a></p>
+<ul>
+<li><p><a class="reference internal" href="#advantages" id="id49">Advantages</a></p></li>
+<li><p><a class="reference internal" href="#disadvantages" id="id50">Disadvantages</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#use-a-function" id="id51">Use a Function</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id8" id="id52">Advantages</a></p></li>
+<li><p><a class="reference internal" href="#id9" id="id53">Disadvantages</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#examples" id="id54">Examples</a></p>
+<ul>
+<li><p><a class="reference internal" href="#ipython-zmq-ipkernel-py" id="id55">IPython/zmq/ipkernel.py</a></p></li>
+<li><p><a class="reference internal" href="#ipython-zmq-kernelapp-py" id="id56">IPython/zmq/kernelapp.py</a></p></li>
+<li><p><a class="reference internal" href="#matplotlib-backends-backend-svg-py" id="id57">matplotlib/backends/backend_svg.py</a></p></li>
+<li><p><a class="reference internal" href="#matplotlib-delaunay-triangulate-py" id="id58">matplotlib/delaunay/triangulate.py</a></p></li>
+<li><p><a class="reference internal" href="#matplotlib-legend-py" id="id59">matplotlib/legend.py</a></p></li>
+<li><p><a class="reference internal" href="#numpy-ma-core-py" id="id60">numpy/ma/core.py</a></p></li>
+<li><p><a class="reference internal" href="#praw-internal-py" id="id61">praw/internal.py</a></p></li>
+<li><p><a class="reference internal" href="#pygments-lexer-py" id="id62">pygments/lexer.py</a></p></li>
+<li><p><a class="reference internal" href="#requests-sessions-py" id="id63">requests/sessions.py</a></p></li>
+<li><p><a class="reference internal" href="#sphinx-domains-init-py" id="id64">sphinx/domains/__init__.py</a></p></li>
+<li><p><a class="reference internal" href="#sphinx-ext-doctest-py" id="id65">sphinx/ext/doctest.py</a></p></li>
+<li><p><a class="reference internal" href="#sphinx-ext-inheritance-diagram-py" id="id66">sphinx/ext/inheritance_diagram.py</a></p></li>
+<li><p><a class="reference internal" href="#sphinx-highlighting-py" id="id67">sphinx/highlighting.py</a></p></li>
+<li><p><a class="reference internal" href="#sphinx-quickstart-py" id="id68">sphinx/quickstart.py</a></p></li>
+<li><p><a class="reference internal" href="#sympy-abc-py" id="id69">sympy/abc.py</a></p></li>
+<li><p><a class="reference internal" href="#sympy-parsing-maxima-py" id="id70">sympy/parsing/maxima.py</a></p></li>
+<li><p><a class="reference internal" href="#sympy-printing-ccode-py-and-sympy-printing-fcode-py" id="id71">sympy/printing/ccode.py and sympy/printing/fcode.py</a></p></li>
+<li><p><a class="reference internal" href="#sympy-utilities-runtests-py" id="id72">sympy/utilities/runtests.py</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#related-discussions" id="id73">Related Discussions</a></p></li>
+<li><p><a class="reference internal" href="#copyright" id="id74">Copyright</a></p></li>
+</ul>
+</div>
+<section id="abstract">
+<h2><a class="toc-backref" href="#id12">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes adding merge (<code class="docutils literal notranslate"><span class="pre">|</span></code>) and update (<code class="docutils literal notranslate"><span class="pre">|=</span></code>) operators
+to the built-in <code class="docutils literal notranslate"><span class="pre">dict</span></code> class.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>After this PEP was accepted, the decision was made to also
+implement the new operators for <a class="reference external" href="https://bugs.python.org/issue36144">several other standard library
+mappings</a>.</p>
+</div>
+</section>
+<section id="motivation">
+<h2><a class="toc-backref" href="#id13">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>The current ways to merge two dicts have several disadvantages:</p>
+<section id="dict-update">
+<h3><a class="toc-backref" href="#id14"><code class="docutils literal notranslate"><span class="pre">dict.update</span></code></a><a class="headerlink" href="#dict-update" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">d1.update(d2)</span></code> modifies <code class="docutils literal notranslate"><span class="pre">d1</span></code> in-place.
+<code class="docutils literal notranslate"><span class="pre">e</span> <span class="pre">=</span> <span class="pre">d1.copy();</span> <span class="pre">e.update(d2)</span></code> is not an expression and needs a
+temporary variable.</p>
+</section>
+<section id="d1-d2">
+<h3><a class="toc-backref" href="#id15"><code class="docutils literal notranslate"><span class="pre">{**d1,</span> <span class="pre">**d2}</span></code></a><a class="headerlink" href="#d1-d2" title="Permalink to this headline">¶</a></h3>
+<p>Dict unpacking looks ugly and is not easily discoverable.  Few people
+would be able to guess what it means the first time they see it, or
+think of it as the “obvious way” to merge two dicts.</p>
+<p><a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/message/K4IC74IXE23K4KEL7OUFK3VBC62HGGVF/">As Guido said</a>:</p>
+<blockquote>
+<div><p>I’m sorry for <a class="reference external" href="pep-0448.html">PEP 448</a>, but even if you know about <code class="docutils literal notranslate"><span class="pre">**d</span></code> in
+simpler contexts, if you were to ask a typical Python user how
+to combine two dicts into a new one, I doubt many people would
+think of <code class="docutils literal notranslate"><span class="pre">{**d1,</span> <span class="pre">**d2}</span></code>. I know I myself had forgotten about
+it when this thread started!</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">{**d1,</span> <span class="pre">**d2}</span></code> ignores the types of the mappings and always returns
+a <code class="docutils literal notranslate"><span class="pre">dict</span></code>.  <code class="docutils literal notranslate"><span class="pre">type(d1)({**d1,</span> <span class="pre">**d2})</span></code> fails for dict subclasses
+such as <code class="docutils literal notranslate"><span class="pre">defaultdict</span></code> that have an incompatible <code class="docutils literal notranslate"><span class="pre">__init__</span></code> method.</p>
+</section>
+<section id="collections-chainmap">
+<h3><a class="toc-backref" href="#id16"><code class="docutils literal notranslate"><span class="pre">collections.ChainMap</span></code></a><a class="headerlink" href="#collections-chainmap" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">ChainMap</span></code> is unfortunately poorly-known and doesn’t qualify as
+“obvious”.  It also resolves duplicate keys in the opposite order to
+that expected (“first seen wins” instead of “last seen wins”). Like
+dict unpacking, it is tricky to get it to honor the desired subclass.
+For the same reason, <code class="docutils literal notranslate"><span class="pre">type(d1)(ChainMap(d2,</span> <span class="pre">d1))</span></code> fails for some
+subclasses of dict.</p>
+<p>Further, ChainMaps wrap their underlying dicts, so writes to the
+ChainMap will modify the original dict:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">d1</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;spam&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d2</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;eggs&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">merged</span> <span class="o">=</span> <span class="n">ChainMap</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span> <span class="n">d1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">merged</span><span class="p">[</span><span class="s1">&#39;eggs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">999</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d2</span>
+<span class="go">{&#39;eggs&#39;: 999}</span>
+</pre></div>
+</div>
+</section>
+<section id="dict-d1-d2">
+<h3><a class="toc-backref" href="#id17"><code class="docutils literal notranslate"><span class="pre">dict(d1,</span> <span class="pre">**d2)</span></code></a><a class="headerlink" href="#dict-d1-d2" title="Permalink to this headline">¶</a></h3>
+<p>This “neat trick” is not well-known, and only works when <code class="docutils literal notranslate"><span class="pre">d2</span></code> is
+entirely string-keyed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">d1</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;spam&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d2</span> <span class="o">=</span> <span class="p">{</span><span class="mi">3665</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">dict</span><span class="p">(</span><span class="n">d1</span><span class="p">,</span> <span class="o">**</span><span class="n">d2</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr">TypeError</span>: <span class="n">keywords must be strings</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#id18">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The new operators will have the same relationship to the
+<code class="docutils literal notranslate"><span class="pre">dict.update</span></code> method as the list concatenate (<code class="docutils literal notranslate"><span class="pre">+</span></code>) and extend
+(<code class="docutils literal notranslate"><span class="pre">+=</span></code>) operators have to <code class="docutils literal notranslate"><span class="pre">list.extend</span></code>. Note that this is
+somewhat different from the relationship that <code class="docutils literal notranslate"><span class="pre">|</span></code>/<code class="docutils literal notranslate"><span class="pre">|=</span></code> have with
+<code class="docutils literal notranslate"><span class="pre">set.update</span></code>; the authors have determined that allowing the in-place
+operator to accept a wider range of types (as <code class="docutils literal notranslate"><span class="pre">list</span></code> does) is a more
+useful design, and that restricting the types of the binary operator’s
+operands (again, as <code class="docutils literal notranslate"><span class="pre">list</span></code> does) will help avoid silent errors
+caused by complicated implicit type casting on both sides.</p>
+<p>Key conflicts will be resolved by keeping the rightmost value.  This
+matches the existing behavior of similar <code class="docutils literal notranslate"><span class="pre">dict</span></code> operations, where
+the last seen value always wins:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+<span class="p">{</span><span class="o">**</span><span class="n">d</span><span class="p">,</span> <span class="o">**</span><span class="n">e</span><span class="p">}</span>
+<span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+<span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+<span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+</pre></div>
+</div>
+<p>All of the above follow the same rule.  This PEP takes the position
+that this behavior is simple, obvious, usually the behavior we want,
+and should be the default behavior for dicts.  This means that dict
+union is not commutative; in general <code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">|</span> <span class="pre">e</span> <span class="pre">!=</span> <span class="pre">e</span> <span class="pre">|</span> <span class="pre">d</span></code>.</p>
+<p>Similarly, the <em>iteration order</em> of the key-value pairs in the
+dictionary will follow the same semantics as the examples above, with
+each newly added key (and its value) being appended to the current
+sequence.</p>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#id19">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>Dict union will return a new <code class="docutils literal notranslate"><span class="pre">dict</span></code> consisting of the left operand
+merged with the right operand, each of which must be a <code class="docutils literal notranslate"><span class="pre">dict</span></code> (or an
+instance of a <code class="docutils literal notranslate"><span class="pre">dict</span></code> subclass). If a key appears in both operands,
+the last-seen value (i.e. that from the right-hand operand) wins:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;spam&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;eggs&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;cheese&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">e</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;cheese&#39;</span><span class="p">:</span> <span class="s1">&#39;cheddar&#39;</span><span class="p">,</span> <span class="s1">&#39;aardvark&#39;</span><span class="p">:</span> <span class="s1">&#39;Ethel&#39;</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">|</span> <span class="n">e</span>
+<span class="go">{&#39;spam&#39;: 1, &#39;eggs&#39;: 2, &#39;cheese&#39;: &#39;cheddar&#39;, &#39;aardvark&#39;: &#39;Ethel&#39;}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">e</span> <span class="o">|</span> <span class="n">d</span>
+<span class="go">{&#39;cheese&#39;: 3, &#39;aardvark&#39;: &#39;Ethel&#39;, &#39;spam&#39;: 1, &#39;eggs&#39;: 2}</span>
+</pre></div>
+</div>
+<p>The augmented assignment version operates in-place:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">|=</span> <span class="n">e</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span>
+<span class="go">{&#39;spam&#39;: 1, &#39;eggs&#39;: 2, &#39;cheese&#39;: &#39;cheddar&#39;, &#39;aardvark&#39;: &#39;Ethel&#39;}</span>
+</pre></div>
+</div>
+<p>Augmented assignment behaves identically to the <code class="docutils literal notranslate"><span class="pre">update</span></code> method
+called with a single positional argument, so it also accepts anything
+implementing the Mapping protocol (more specifically, anything with
+the <code class="docutils literal notranslate"><span class="pre">keys</span></code> and <code class="docutils literal notranslate"><span class="pre">__getitem__</span></code> methods) or iterables of key-value
+pairs. This is analogous to <code class="docutils literal notranslate"><span class="pre">list</span> <span class="pre">+=</span></code> and <code class="docutils literal notranslate"><span class="pre">list.extend</span></code>, which
+accept any iterable, not just lists.  Continued from above:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">|</span> <span class="p">[(</span><span class="s1">&#39;spam&#39;</span><span class="p">,</span> <span class="mi">999</span><span class="p">)]</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr">TypeError</span>: <span class="n">can only merge dict (not &quot;list&quot;) to dict</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">|=</span> <span class="p">[(</span><span class="s1">&#39;spam&#39;</span><span class="p">,</span> <span class="mi">999</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span>
+<span class="go">{&#39;spam&#39;: 999, &#39;eggs&#39;: 2, &#39;cheese&#39;: &#39;cheddar&#39;, &#39;aardvark&#39;: &#39;Ethel&#39;}</span>
+</pre></div>
+</div>
+<p>When new keys are added, their order matches their order within the
+right-hand mapping, if any exists for its type.</p>
+</section>
+<section id="reference-implementation">
+<h2><a class="toc-backref" href="#id20">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>One of the authors has <a class="reference external" href="https://github.com/python/cpython/pull/12088">written a C implementation</a>.</p>
+<p>An <em>approximate</em> pure-Python implementation is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="fm">__or__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span>
+    <span class="n">new</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    <span class="n">new</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">new</span>
+
+<span class="k">def</span> <span class="fm">__ror__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span>
+    <span class="n">new</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+    <span class="n">new</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">new</span>
+
+<span class="k">def</span> <span class="fm">__ior__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="nb">dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">self</span>
+</pre></div>
+</div>
+</section>
+<section id="major-objections">
+<h2><a class="toc-backref" href="#id21">Major Objections</a><a class="headerlink" href="#major-objections" title="Permalink to this headline">¶</a></h2>
+<section id="dict-union-is-not-commutative">
+<h3><a class="toc-backref" href="#id22">Dict Union Is Not Commutative</a><a class="headerlink" href="#dict-union-is-not-commutative" title="Permalink to this headline">¶</a></h3>
+<p>Union is commutative, but dict union will not be (<code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">|</span> <span class="pre">e</span> <span class="pre">!=</span> <span class="pre">e</span> <span class="pre">|</span> <span class="pre">d</span></code>).</p>
+<section id="response">
+<h4><a class="toc-backref" href="#id23">Response</a><a class="headerlink" href="#response" title="Permalink to this headline">¶</a></h4>
+<p>There is precedent for non-commutative unions in Python:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">{</span><span class="mi">0</span><span class="p">}</span> <span class="o">|</span> <span class="p">{</span><span class="kc">False</span><span class="p">}</span>
+<span class="go">{0}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">{</span><span class="kc">False</span><span class="p">}</span> <span class="o">|</span> <span class="p">{</span><span class="mi">0</span><span class="p">}</span>
+<span class="go">{False}</span>
+</pre></div>
+</div>
+<p>While the results may be equal, they are distinctly different. In
+general, <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">|</span> <span class="pre">b</span></code> is not the same operation as <code class="docutils literal notranslate"><span class="pre">b</span> <span class="pre">|</span> <span class="pre">a</span></code>.</p>
+</section>
+</section>
+<section id="dict-union-will-be-inefficient">
+<h3><a class="toc-backref" href="#id24">Dict Union Will Be Inefficient</a><a class="headerlink" href="#dict-union-will-be-inefficient" title="Permalink to this headline">¶</a></h3>
+<p>Giving a pipe operator to mappings is an invitation to writing code
+that doesn’t scale well.  Repeated dict union is inefficient:
+<code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">|</span> <span class="pre">e</span> <span class="pre">|</span> <span class="pre">f</span> <span class="pre">|</span> <span class="pre">g</span> <span class="pre">|</span> <span class="pre">h</span></code> creates and destroys three temporary mappings.</p>
+<section id="id1">
+<h4><a class="toc-backref" href="#id25">Response</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h4>
+<p>The same argument applies to sequence concatenation.</p>
+<p>Sequence concatenation grows with the total number of items in the
+sequences, leading to O(N**2) (quadratic) performance.  Dict union is
+likely to involve duplicate keys, so the temporary mappings will
+not grow as fast.</p>
+<p>Just as it is rare for people to concatenate large numbers of lists or
+tuples, the authors of this PEP believe that it will be rare for
+people to merge large numbers of dicts.  <code class="docutils literal notranslate"><span class="pre">collections.Counter</span></code> is a
+dict subclass that supports many operators, and there are no known
+examples of people having performance issues due to combining large
+numbers of Counters.  Further, a survey of the standard library by the
+authors found no examples of merging more than two dicts, so this is
+unlikely to be a performance problem in practice… “Everything is
+fast for small enough N”.</p>
+<p>If one expects to be merging a large number of dicts where performance
+is an issue, it may be better to use an explicit loop and in-place
+merging:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">new</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">many_dicts</span><span class="p">:</span>
+    <span class="n">new</span> <span class="o">|=</span> <span class="n">d</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="dict-union-is-lossy">
+<h3><a class="toc-backref" href="#id26">Dict Union Is Lossy</a><a class="headerlink" href="#dict-union-is-lossy" title="Permalink to this headline">¶</a></h3>
+<p>Dict union can lose data (values may disappear); no other form of
+union is lossy.</p>
+<section id="id2">
+<h4><a class="toc-backref" href="#id27">Response</a><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h4>
+<p>It isn’t clear why the first part of this argument is a problem.
+<code class="docutils literal notranslate"><span class="pre">dict.update()</span></code> may throw away values, but not keys; that is
+expected behavior, and will remain expected behavior regardless of
+whether it is spelled as <code class="docutils literal notranslate"><span class="pre">update()</span></code> or <code class="docutils literal notranslate"><span class="pre">|</span></code>.</p>
+<p>Other types of union are also lossy, in the sense of not being
+reversible; you cannot get back the two operands given only the union.
+<code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">|</span> <span class="pre">b</span> <span class="pre">==</span> <span class="pre">365</span></code>… what are <code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code>?</p>
+</section>
+</section>
+<section id="only-one-way-to-do-it">
+<h3><a class="toc-backref" href="#id28">Only One Way To Do It</a><a class="headerlink" href="#only-one-way-to-do-it" title="Permalink to this headline">¶</a></h3>
+<p>Dict union will violate the Only One Way koan from the Zen.</p>
+<section id="id3">
+<h4><a class="toc-backref" href="#id29">Response</a><a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h4>
+<p>There is no such koan.  “Only One Way” is a calumny about Python
+originating long ago from the Perl community.</p>
+</section>
+</section>
+<section id="more-than-one-way-to-do-it">
+<h3><a class="toc-backref" href="#id30">More Than One Way To Do It</a><a class="headerlink" href="#more-than-one-way-to-do-it" title="Permalink to this headline">¶</a></h3>
+<p>Okay, the Zen doesn’t say that there should be Only One Way To Do It.
+But it does have a prohibition against allowing “more than one way to
+do it”.</p>
+<section id="id4">
+<h4><a class="toc-backref" href="#id31">Response</a><a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h4>
+<p>There is no such prohibition.  The “Zen of Python” merely expresses a
+<em>preference</em> for “only one <em>obvious</em> way”:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">There</span> <span class="n">should</span> <span class="n">be</span> <span class="n">one</span><span class="o">--</span> <span class="ow">and</span> <span class="n">preferably</span> <span class="n">only</span> <span class="n">one</span> <span class="o">--</span><span class="n">obvious</span> <span class="n">way</span> <span class="n">to</span> <span class="n">do</span>
+<span class="n">it</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>The emphasis here is that there should be an obvious way to do “it”.
+In the case of dict update operations, there are at least two
+different operations that we might wish to do:</p>
+<ul class="simple">
+<li><p><em>Update a dict in place</em>: The Obvious Way is to use the <code class="docutils literal notranslate"><span class="pre">update()</span></code>
+method.  If this proposal is accepted, the <code class="docutils literal notranslate"><span class="pre">|=</span></code> augmented
+assignment operator will also work, but that is a side-effect of how
+augmented assignments are defined.  Which you choose is a matter of
+taste.</p></li>
+<li><p><em>Merge two existing dicts into a third, new dict</em>: This PEP proposes
+that the Obvious Way is to use the <code class="docutils literal notranslate"><span class="pre">|</span></code> merge operator.</p></li>
+</ul>
+<p>In practice, this preference for “only one way” is frequently violated
+in Python.  For example, every <code class="docutils literal notranslate"><span class="pre">for</span></code> loop could be re-written as a
+<code class="docutils literal notranslate"><span class="pre">while</span></code> loop; every <code class="docutils literal notranslate"><span class="pre">if</span></code> block could be written as an <code class="docutils literal notranslate"><span class="pre">if</span></code>/
+<code class="docutils literal notranslate"><span class="pre">else</span></code> block.  List, set and dict comprehensions could all be
+replaced by generator expressions.  Lists offer no fewer than five
+ways to implement concatenation:</p>
+<ul class="simple">
+<li><p>Concatenation operator: <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">+</span> <span class="pre">b</span></code></p></li>
+<li><p>In-place concatenation operator: <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">+=</span> <span class="pre">b</span></code></p></li>
+<li><p>Slice assignment: <code class="docutils literal notranslate"><span class="pre">a[len(a):]</span> <span class="pre">=</span> <span class="pre">b</span></code></p></li>
+<li><p>Sequence unpacking: <code class="docutils literal notranslate"><span class="pre">[*a,</span> <span class="pre">*b]</span></code></p></li>
+<li><p>Extend method: <code class="docutils literal notranslate"><span class="pre">a.extend(b)</span></code></p></li>
+</ul>
+<p>We should not be too strict about rejecting useful functionality
+because it violates “only one way”.</p>
+</section>
+</section>
+<section id="dict-union-makes-code-harder-to-understand">
+<h3><a class="toc-backref" href="#id32">Dict Union Makes Code Harder To Understand</a><a class="headerlink" href="#dict-union-makes-code-harder-to-understand" title="Permalink to this headline">¶</a></h3>
+<p>Dict union makes it harder to tell what code means.  To paraphrase the
+objection rather than quote anyone in specific: “If I see
+<code class="docutils literal notranslate"><span class="pre">spam</span> <span class="pre">|</span> <span class="pre">eggs</span></code>, I can’t tell what it does unless I know what <code class="docutils literal notranslate"><span class="pre">spam</span></code>
+and <code class="docutils literal notranslate"><span class="pre">eggs</span></code> are”.</p>
+<section id="id5">
+<h4><a class="toc-backref" href="#id33">Response</a><a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h4>
+<p>This is very true.  But it is equally true today, where the use of the
+<code class="docutils literal notranslate"><span class="pre">|</span></code> operator could mean any of:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">int</span></code>/<code class="docutils literal notranslate"><span class="pre">bool</span></code> bitwise-or</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set</span></code>/<code class="docutils literal notranslate"><span class="pre">frozenset</span></code> union</p></li>
+<li><p>any other overloaded operation</p></li>
+</ul>
+<p>Adding dict union to the set of possibilities doesn’t seem to make
+it <em>harder</em> to understand the code.  No more work is required to
+determine that <code class="docutils literal notranslate"><span class="pre">spam</span></code> and <code class="docutils literal notranslate"><span class="pre">eggs</span></code> are mappings than it would take
+to determine that they are sets, or integers.  And good naming
+conventions will help:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">flags</span> <span class="o">|=</span> <span class="n">WRITEABLE</span>  <span class="c1"># Probably numeric bitwise-or.</span>
+<span class="n">DO_NOT_RUN</span> <span class="o">=</span> <span class="n">WEEKENDS</span> <span class="o">|</span> <span class="n">HOLIDAYS</span>  <span class="c1"># Probably set union.</span>
+<span class="n">settings</span> <span class="o">=</span> <span class="n">DEFAULT_SETTINGS</span> <span class="o">|</span> <span class="n">user_settings</span> <span class="o">|</span> <span class="n">workspace_settings</span>  <span class="c1"># Probably dict union.</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="what-about-the-full-set-api">
+<h3><a class="toc-backref" href="#id34">What About The Full <code class="docutils literal notranslate"><span class="pre">set</span></code> API?</a><a class="headerlink" href="#what-about-the-full-set-api" title="Permalink to this headline">¶</a></h3>
+<p>dicts are “set like”, and should support the full collection of set
+operators: <code class="docutils literal notranslate"><span class="pre">|</span></code>, <code class="docutils literal notranslate"><span class="pre">&amp;</span></code>, <code class="docutils literal notranslate"><span class="pre">^</span></code>, and <code class="docutils literal notranslate"><span class="pre">-</span></code>.</p>
+<section id="id6">
+<h4><a class="toc-backref" href="#id35">Response</a><a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h4>
+<p>This PEP does not take a position on whether dicts should support the
+full collection of set operators, and would prefer to leave that for a
+later PEP (one of the authors is interested in drafting such a PEP).
+For the benefit of any later PEP, a brief summary follows.</p>
+<p>Set symmetric difference (<code class="docutils literal notranslate"><span class="pre">^</span></code>) is obvious and natural.  For example,
+given two dicts:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">d1</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;spam&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;eggs&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+<span class="n">d2</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;ham&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;eggs&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>the symmetric difference <code class="docutils literal notranslate"><span class="pre">d1</span> <span class="pre">^</span> <span class="pre">d2</span></code> would be
+<code class="docutils literal notranslate"><span class="pre">{&quot;spam&quot;:</span> <span class="pre">1,</span> <span class="pre">&quot;ham&quot;:</span> <span class="pre">3}</span></code>.</p>
+<p>Set difference (<code class="docutils literal notranslate"><span class="pre">-</span></code>) is also obvious and natural, and an earlier
+version of this PEP included it in the proposal.  Given the dicts
+above, we would have <code class="docutils literal notranslate"><span class="pre">d1</span> <span class="pre">-</span> <span class="pre">d2</span></code> be <code class="docutils literal notranslate"><span class="pre">{&quot;spam&quot;:</span> <span class="pre">1}</span></code> and <code class="docutils literal notranslate"><span class="pre">d2</span> <span class="pre">-</span> <span class="pre">d1</span></code> be
+<code class="docutils literal notranslate"><span class="pre">{&quot;ham&quot;:</span> <span class="pre">3}</span></code>.</p>
+<p>Set intersection (<code class="docutils literal notranslate"><span class="pre">&amp;</span></code>) is a bit more problematic.  While it is easy
+to determine the intersection of <em>keys</em> in two dicts, it is not clear
+what to do with the <em>values</em>.  Given the two dicts above, it is
+obvious that the only key of <code class="docutils literal notranslate"><span class="pre">d1</span> <span class="pre">&amp;</span> <span class="pre">d2</span></code> must be <code class="docutils literal notranslate"><span class="pre">&quot;eggs&quot;</span></code>. “Last
+seen wins”, however, has the advantage of consistency with other dict
+operations (and the proposed union operators).</p>
+</section>
+</section>
+<section id="what-about-mapping-and-mutablemapping">
+<h3><a class="toc-backref" href="#id36">What About <code class="docutils literal notranslate"><span class="pre">Mapping</span></code> And <code class="docutils literal notranslate"><span class="pre">MutableMapping</span></code>?</a><a class="headerlink" href="#what-about-mapping-and-mutablemapping" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">collections.abc.Mapping</span></code> and <code class="docutils literal notranslate"><span class="pre">collections.abc.MutableMapping</span></code>
+should define <code class="docutils literal notranslate"><span class="pre">|</span></code> and <code class="docutils literal notranslate"><span class="pre">|=</span></code>, so subclasses could just inherit the
+new operators instead of having to define them.</p>
+<section id="id7">
+<h4><a class="toc-backref" href="#id37">Response</a><a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h4>
+<p>There are two primary reasons why adding the new operators to these
+classes would be problematic:</p>
+<ul class="simple">
+<li><p>Currently, neither defines a <code class="docutils literal notranslate"><span class="pre">copy</span></code> method, which would be
+necessary for <code class="docutils literal notranslate"><span class="pre">|</span></code> to create a new instance.</p></li>
+<li><p>Adding <code class="docutils literal notranslate"><span class="pre">|=</span></code> to <code class="docutils literal notranslate"><span class="pre">MutableMapping</span></code> (or a <code class="docutils literal notranslate"><span class="pre">copy</span></code> method to
+<code class="docutils literal notranslate"><span class="pre">Mapping</span></code>) would create compatibility issues for virtual
+subclasses.</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="rejected-ideas">
+<h2><a class="toc-backref" href="#id38">Rejected Ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<section id="rejected-semantics">
+<h3><a class="toc-backref" href="#id39">Rejected Semantics</a><a class="headerlink" href="#rejected-semantics" title="Permalink to this headline">¶</a></h3>
+<p>There were at least four other proposed solutions for handling
+conflicting keys.  These alternatives are left to subclasses of dict.</p>
+<section id="raise">
+<h4><a class="toc-backref" href="#id40">Raise</a><a class="headerlink" href="#raise" title="Permalink to this headline">¶</a></h4>
+<p>It isn’t clear that this behavior has many use-cases or will be often
+useful, but it will likely be annoying as any use of the dict union
+operator would have to be guarded with a <code class="docutils literal notranslate"><span class="pre">try</span></code>/<code class="docutils literal notranslate"><span class="pre">except</span></code> clause.</p>
+</section>
+<section id="add-the-values-as-counter-does-with">
+<h4><a class="toc-backref" href="#id41">Add The Values (As Counter Does, with <code class="docutils literal notranslate"><span class="pre">+</span></code>)</a><a class="headerlink" href="#add-the-values-as-counter-does-with" title="Permalink to this headline">¶</a></h4>
+<p>Too specialised to be used as the default behavior.</p>
+</section>
+<section id="leftmost-value-first-seen-wins">
+<h4><a class="toc-backref" href="#id42">Leftmost Value (First-Seen) Wins</a><a class="headerlink" href="#leftmost-value-first-seen-wins" title="Permalink to this headline">¶</a></h4>
+<p>It isn’t clear that this behavior has many use-cases.  In fact, one
+can simply reverse the order of the arguments:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">d2</span> <span class="o">|</span> <span class="n">d1</span>  <span class="c1"># d1 merged with d2, keeping existing values in d1</span>
+</pre></div>
+</div>
+</section>
+<section id="concatenate-values-in-a-list">
+<h4><a class="toc-backref" href="#id43">Concatenate Values In A List</a><a class="headerlink" href="#concatenate-values-in-a-list" title="Permalink to this headline">¶</a></h4>
+<p>This is likely to be too specialised to be the default.  It is not
+clear what to do if the values are already lists:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]}</span> <span class="o">|</span> <span class="p">{</span><span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]}</span>
+</pre></div>
+</div>
+<p>Should this give <code class="docutils literal notranslate"><span class="pre">{'a':</span> <span class="pre">[1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">4]}</span></code> or
+<code class="docutils literal notranslate"><span class="pre">{'a':</span> <span class="pre">[[1,</span> <span class="pre">2],</span> <span class="pre">[3,</span> <span class="pre">4]]}</span></code>?</p>
+</section>
+</section>
+<section id="rejected-alternatives">
+<h3><a class="toc-backref" href="#id44">Rejected Alternatives</a><a class="headerlink" href="#rejected-alternatives" title="Permalink to this headline">¶</a></h3>
+<section id="use-the-addition-operator">
+<h4><a class="toc-backref" href="#id45">Use The Addition Operator</a><a class="headerlink" href="#use-the-addition-operator" title="Permalink to this headline">¶</a></h4>
+<p>This PEP originally started life as a proposal for dict addition,
+using the <code class="docutils literal notranslate"><span class="pre">+</span></code> and <code class="docutils literal notranslate"><span class="pre">+=</span></code> operator.  That choice proved to be
+exceedingly controversial, with many people having serious objections
+to the choice of operator.  For details, see <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0584.rst">previous versions</a> of the
+PEP and the mailing list <a class="reference internal" href="#discussions">discussions</a>.</p>
+</section>
+<section id="use-the-left-shift-operator">
+<h4><a class="toc-backref" href="#id46">Use The Left Shift Operator</a><a class="headerlink" href="#use-the-left-shift-operator" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">&lt;&lt;</span></code> operator didn’t seem to get much support on Python-Ideas,
+but no major objections either.  Perhaps the strongest objection was
+Chris Angelico’s comment</p>
+<blockquote>
+<div><p>The “cuteness” value of abusing the operator to indicate
+information flow got old shortly after C++ did it.</p>
+</div></blockquote>
+</section>
+<section id="use-a-new-left-arrow-operator">
+<h4><a class="toc-backref" href="#id47">Use A New Left Arrow Operator</a><a class="headerlink" href="#use-a-new-left-arrow-operator" title="Permalink to this headline">¶</a></h4>
+<p>Another suggestion was to create a new operator <code class="docutils literal notranslate"><span class="pre">&lt;-</span></code>.  Unfortunately
+this would be ambiguous, <code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">&lt;-</span> <span class="pre">e</span></code> could mean <code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">merge</span> <span class="pre">e</span></code> or
+<code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">less-than</span> <span class="pre">minus</span> <span class="pre">e</span></code>.</p>
+</section>
+<section id="use-a-method">
+<h4><a class="toc-backref" href="#id48">Use A Method</a><a class="headerlink" href="#use-a-method" title="Permalink to this headline">¶</a></h4>
+<p>A <code class="docutils literal notranslate"><span class="pre">dict.merged()</span></code> method would avoid the need for an operator at
+all.  One subtlety is that it would likely need slightly different
+implementations when called as an unbound method versus as a bound
+method.</p>
+<p>As an unbound method, the behavior could be similar to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">merged</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">mappings</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="n">new</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>  <span class="c1"># Will this work for defaultdict?</span>
+    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">mappings</span><span class="p">:</span>
+        <span class="n">new</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">new</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kw</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">new</span>
+</pre></div>
+</div>
+<p>As a bound method, the behavior could be similar to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">merged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">mappings</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="n">new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">mappings</span><span class="p">:</span>
+        <span class="n">new</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">new</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kw</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">new</span>
+</pre></div>
+</div>
+<section id="advantages">
+<h5><a class="toc-backref" href="#id49">Advantages</a><a class="headerlink" href="#advantages" title="Permalink to this headline">¶</a></h5>
+<ul class="simple">
+<li><p>Arguably, methods are more discoverable than operators.</p></li>
+<li><p>The method could accept any number of positional and keyword
+arguments, avoiding the inefficiency of creating temporary dicts.</p></li>
+<li><p>Accepts sequences of <code class="docutils literal notranslate"><span class="pre">(key,</span> <span class="pre">value)</span></code> pairs like the <code class="docutils literal notranslate"><span class="pre">update</span></code>
+method.</p></li>
+<li><p>Being a method, it is easy to override in a subclass if you need
+alternative behaviors such as “first wins”, “unique keys”, etc.</p></li>
+</ul>
+</section>
+<section id="disadvantages">
+<h5><a class="toc-backref" href="#id50">Disadvantages</a><a class="headerlink" href="#disadvantages" title="Permalink to this headline">¶</a></h5>
+<ul class="simple">
+<li><p>Would likely require a new kind of method decorator which combined
+the behavior of regular instance methods and <code class="docutils literal notranslate"><span class="pre">classmethod</span></code>.  It
+would need to be public (but not necessarily a builtin) for those
+needing to override the method.  There is a
+<a class="reference external" href="http://code.activestate.com/recipes/577030">proof of concept</a>.</p></li>
+<li><p>It isn’t an operator.  Guido discusses <a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/message/52DLME5DKNZYFEETCTRENRNKWJ2B4DD5/">why operators are useful</a>.
+For another viewpoint, see <a class="reference external" href="https://www.curiousefficiency.org/posts/2019/03/what-does-x-equals-a-plus-b-mean.html">Nick Coghlan’s blog post</a>.</p></li>
+</ul>
+</section>
+</section>
+<section id="use-a-function">
+<h4><a class="toc-backref" href="#id51">Use a Function</a><a class="headerlink" href="#use-a-function" title="Permalink to this headline">¶</a></h4>
+<p>Instead of a method, use a new built-in function <code class="docutils literal notranslate"><span class="pre">merged()</span></code>.  One
+possible implementation could be something like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">merged</span><span class="p">(</span><span class="o">*</span><span class="n">mappings</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">mappings</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mappings</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="c1"># If the first argument is a dict, use its type.</span>
+        <span class="n">new</span> <span class="o">=</span> <span class="n">mappings</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">mappings</span> <span class="o">=</span> <span class="n">mappings</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># No positional arguments, or the first argument is a</span>
+        <span class="c1"># sequence of (key, value) pairs.</span>
+        <span class="n">new</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">mappings</span><span class="p">:</span>
+        <span class="n">new</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">new</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kw</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">new</span>
+</pre></div>
+</div>
+<p>An alternative might be to forgo the arbitrary keywords, and take a
+single keyword parameter that specifies the behavior on collisions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">merged</span><span class="p">(</span><span class="o">*</span><span class="n">mappings</span><span class="p">,</span> <span class="n">on_collision</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">,</span> <span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">:</span> <span class="n">v2</span><span class="p">):</span>
+    <span class="c1"># implementation left as an exercise to the reader</span>
+</pre></div>
+</div>
+<section id="id8">
+<h5><a class="toc-backref" href="#id52">Advantages</a><a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h5>
+<ul class="simple">
+<li><p>Most of the same advantages of the method solutions above.</p></li>
+<li><p>Doesn’t require a subclass to implement alternative behavior on
+collisions, just a function.</p></li>
+</ul>
+</section>
+<section id="id9">
+<h5><a class="toc-backref" href="#id53">Disadvantages</a><a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h5>
+<ul class="simple">
+<li><p>May not be important enough to be a builtin.</p></li>
+<li><p>Hard to override behavior if you need something like “first wins”,
+without losing the ability to process arbitrary keyword arguments.</p></li>
+</ul>
+</section>
+</section>
+</section>
+</section>
+<section id="examples">
+<h2><a class="toc-backref" href="#id54">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>The authors of this PEP did a survey of third party libraries for
+dictionary merging which might be candidates for dict union.</p>
+<p>This is a cursory list based on a subset of whatever arbitrary
+third-party packages happened to be installed on one of the authors’
+computers, and may not reflect the current state of any package. Also
+note that, while further (unrelated) refactoring may be possible, the
+rewritten version only adds usage of the new operators for an
+apples-to-apples comparison. It also reduces the result to an
+expression when it is efficient to do so.</p>
+<section id="ipython-zmq-ipkernel-py">
+<h3><a class="toc-backref" href="#id55">IPython/zmq/ipkernel.py</a><a class="headerlink" href="#ipython-zmq-ipkernel-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">aliases</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">kernel_aliases</span><span class="p">)</span>
+<span class="n">aliases</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">shell_aliases</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">aliases</span> <span class="o">=</span> <span class="n">kernel_aliases</span> <span class="o">|</span> <span class="n">shell_aliases</span>
+</pre></div>
+</div>
+</section>
+<section id="ipython-zmq-kernelapp-py">
+<h3><a class="toc-backref" href="#id56">IPython/zmq/kernelapp.py</a><a class="headerlink" href="#ipython-zmq-kernelapp-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_aliases</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">base_aliases</span><span class="p">)</span>
+<span class="n">kernel_aliases</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+    <span class="s1">&#39;ip&#39;</span> <span class="p">:</span> <span class="s1">&#39;KernelApp.ip&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;hb&#39;</span> <span class="p">:</span> <span class="s1">&#39;KernelApp.hb_port&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;shell&#39;</span> <span class="p">:</span> <span class="s1">&#39;KernelApp.shell_port&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;iopub&#39;</span> <span class="p">:</span> <span class="s1">&#39;KernelApp.iopub_port&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;stdin&#39;</span> <span class="p">:</span> <span class="s1">&#39;KernelApp.stdin_port&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;parent&#39;</span><span class="p">:</span> <span class="s1">&#39;KernelApp.parent&#39;</span><span class="p">,</span>
+<span class="p">})</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;win&#39;</span><span class="p">):</span>
+    <span class="n">kernel_aliases</span><span class="p">[</span><span class="s1">&#39;interrupt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;KernelApp.interrupt&#39;</span>
+
+<span class="n">kernel_flags</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">base_flags</span><span class="p">)</span>
+<span class="n">kernel_flags</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+    <span class="s1">&#39;no-stdout&#39;</span> <span class="p">:</span> <span class="p">(</span>
+            <span class="p">{</span><span class="s1">&#39;KernelApp&#39;</span> <span class="p">:</span> <span class="p">{</span><span class="s1">&#39;no_stdout&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">}},</span>
+            <span class="s2">&quot;redirect stdout to the null device&quot;</span><span class="p">),</span>
+    <span class="s1">&#39;no-stderr&#39;</span> <span class="p">:</span> <span class="p">(</span>
+            <span class="p">{</span><span class="s1">&#39;KernelApp&#39;</span> <span class="p">:</span> <span class="p">{</span><span class="s1">&#39;no_stderr&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">}},</span>
+            <span class="s2">&quot;redirect stderr to the null device&quot;</span><span class="p">),</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_aliases</span> <span class="o">=</span> <span class="n">base_aliases</span> <span class="o">|</span> <span class="p">{</span>
+    <span class="s1">&#39;ip&#39;</span> <span class="p">:</span> <span class="s1">&#39;KernelApp.ip&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;hb&#39;</span> <span class="p">:</span> <span class="s1">&#39;KernelApp.hb_port&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;shell&#39;</span> <span class="p">:</span> <span class="s1">&#39;KernelApp.shell_port&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;iopub&#39;</span> <span class="p">:</span> <span class="s1">&#39;KernelApp.iopub_port&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;stdin&#39;</span> <span class="p">:</span> <span class="s1">&#39;KernelApp.stdin_port&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;parent&#39;</span><span class="p">:</span> <span class="s1">&#39;KernelApp.parent&#39;</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;win&#39;</span><span class="p">):</span>
+    <span class="n">kernel_aliases</span><span class="p">[</span><span class="s1">&#39;interrupt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;KernelApp.interrupt&#39;</span>
+
+<span class="n">kernel_flags</span> <span class="o">=</span> <span class="n">base_flags</span> <span class="o">|</span> <span class="p">{</span>
+    <span class="s1">&#39;no-stdout&#39;</span> <span class="p">:</span> <span class="p">(</span>
+            <span class="p">{</span><span class="s1">&#39;KernelApp&#39;</span> <span class="p">:</span> <span class="p">{</span><span class="s1">&#39;no_stdout&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">}},</span>
+            <span class="s2">&quot;redirect stdout to the null device&quot;</span><span class="p">),</span>
+    <span class="s1">&#39;no-stderr&#39;</span> <span class="p">:</span> <span class="p">(</span>
+            <span class="p">{</span><span class="s1">&#39;KernelApp&#39;</span> <span class="p">:</span> <span class="p">{</span><span class="s1">&#39;no_stderr&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">}},</span>
+            <span class="s2">&quot;redirect stderr to the null device&quot;</span><span class="p">),</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="matplotlib-backends-backend-svg-py">
+<h3><a class="toc-backref" href="#id57">matplotlib/backends/backend_svg.py</a><a class="headerlink" href="#matplotlib-backends-backend-svg-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">attrib</span> <span class="o">=</span> <span class="n">attrib</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">attrib</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">extra</span><span class="p">)</span>
+<span class="n">attrib</span> <span class="o">=</span> <span class="n">attrib</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">attrib</span> <span class="o">=</span> <span class="p">(</span><span class="n">attrib</span> <span class="o">|</span> <span class="n">extra</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="matplotlib-delaunay-triangulate-py">
+<h3><a class="toc-backref" href="#id58">matplotlib/delaunay/triangulate.py</a><a class="headerlink" href="#matplotlib-delaunay-triangulate-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">edges</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">edges</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle_nodes</span><span class="p">[</span><span class="n">border</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]][:,</span><span class="mi">1</span><span class="p">],</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">triangle_nodes</span><span class="p">[</span><span class="n">border</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]][:,</span><span class="mi">2</span><span class="p">])))</span>
+<span class="n">edges</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle_nodes</span><span class="p">[</span><span class="n">border</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]][:,</span><span class="mi">2</span><span class="p">],</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">triangle_nodes</span><span class="p">[</span><span class="n">border</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]][:,</span><span class="mi">0</span><span class="p">])))</span>
+<span class="n">edges</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle_nodes</span><span class="p">[</span><span class="n">border</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]][:,</span><span class="mi">0</span><span class="p">],</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">triangle_nodes</span><span class="p">[</span><span class="n">border</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]][:,</span><span class="mi">1</span><span class="p">])))</span>
+</pre></div>
+</div>
+<p>Rewrite as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">edges</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">edges</span> <span class="o">|=</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle_nodes</span><span class="p">[</span><span class="n">border</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]][:,</span><span class="mi">1</span><span class="p">],</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">triangle_nodes</span><span class="p">[</span><span class="n">border</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]][:,</span><span class="mi">2</span><span class="p">])</span>
+<span class="n">edges</span> <span class="o">|=</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle_nodes</span><span class="p">[</span><span class="n">border</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]][:,</span><span class="mi">2</span><span class="p">],</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">triangle_nodes</span><span class="p">[</span><span class="n">border</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]][:,</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">edges</span> <span class="o">|=</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle_nodes</span><span class="p">[</span><span class="n">border</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]][:,</span><span class="mi">0</span><span class="p">],</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">triangle_nodes</span><span class="p">[</span><span class="n">border</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]][:,</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="matplotlib-legend-py">
+<h3><a class="toc-backref" href="#id59">matplotlib/legend.py</a><a class="headerlink" href="#matplotlib-legend-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hm</span> <span class="o">=</span> <span class="n">default_handler_map</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">hm</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_handler_map</span><span class="p">)</span>
+<span class="k">return</span> <span class="n">hm</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">return</span> <span class="n">default_handler_map</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handler_map</span>
+</pre></div>
+</div>
+</section>
+<section id="numpy-ma-core-py">
+<h3><a class="toc-backref" href="#id60">numpy/ma/core.py</a><a class="headerlink" href="#numpy-ma-core-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">_optinfo</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">_optinfo</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;_optinfo&#39;</span><span class="p">,</span> <span class="p">{}))</span>
+<span class="n">_optinfo</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;_basedict&#39;</span><span class="p">,</span> <span class="p">{}))</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">MaskedArray</span><span class="p">):</span>
+    <span class="n">_optinfo</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;__dict__&#39;</span><span class="p">,</span> <span class="p">{}))</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">_optinfo</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">_optinfo</span> <span class="o">|=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;_optinfo&#39;</span><span class="p">,</span> <span class="p">{})</span>
+<span class="n">_optinfo</span> <span class="o">|=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;_basedict&#39;</span><span class="p">,</span> <span class="p">{})</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">MaskedArray</span><span class="p">):</span>
+    <span class="n">_optinfo</span> <span class="o">|=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;__dict__&#39;</span><span class="p">,</span> <span class="p">{})</span>
+</pre></div>
+</div>
+</section>
+<section id="praw-internal-py">
+<h3><a class="toc-backref" href="#id61">praw/internal.py</a><a class="headerlink" href="#praw-internal-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">(</span><span class="n">user</span><span class="p">),</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">relationship</span><span class="p">}</span>
+<span class="n">data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">(</span><span class="n">user</span><span class="p">),</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">relationship</span><span class="p">}</span> <span class="o">|</span> <span class="n">kwargs</span>
+</pre></div>
+</div>
+</section>
+<section id="pygments-lexer-py">
+<h3><a class="toc-backref" href="#id62">pygments/lexer.py</a><a class="headerlink" href="#pygments-lexer-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">lexer</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
+<span class="n">lx</span> <span class="o">=</span> <span class="n">lexer</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lx</span> <span class="o">=</span> <span class="n">lexer</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">kwargs</span> <span class="o">|</span> <span class="n">lexer</span><span class="o">.</span><span class="n">options</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="requests-sessions-py">
+<h3><a class="toc-backref" href="#id63">requests/sessions.py</a><a class="headerlink" href="#requests-sessions-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">merged_setting</span> <span class="o">=</span> <span class="n">dict_class</span><span class="p">(</span><span class="n">to_key_val_list</span><span class="p">(</span><span class="n">session_setting</span><span class="p">))</span>
+<span class="n">merged_setting</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_key_val_list</span><span class="p">(</span><span class="n">request_setting</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">merged_setting</span> <span class="o">=</span> <span class="n">dict_class</span><span class="p">(</span><span class="n">to_key_val_list</span><span class="p">(</span><span class="n">session_setting</span><span class="p">))</span> <span class="o">|</span> <span class="n">to_key_val_list</span><span class="p">(</span><span class="n">request_setting</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="sphinx-domains-init-py">
+<h3><a class="toc-backref" href="#id64">sphinx/domains/__init__.py</a><a class="headerlink" href="#sphinx-domains-init-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">known_attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">attrs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">known_attrs</span> <span class="o">|</span> <span class="n">attrs</span>
+</pre></div>
+</div>
+</section>
+<section id="sphinx-ext-doctest-py">
+<h3><a class="toc-backref" href="#id65">sphinx/ext/doctest.py</a><a class="headerlink" href="#sphinx-ext-doctest-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">new_opt</span> <span class="o">=</span> <span class="n">code</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">new_opt</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">example</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
+<span class="n">example</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">new_opt</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">example</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">code</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">options</span> <span class="o">|</span> <span class="n">example</span><span class="o">.</span><span class="n">options</span>
+</pre></div>
+</div>
+</section>
+<section id="sphinx-ext-inheritance-diagram-py">
+<h3><a class="toc-backref" href="#id66">sphinx/ext/inheritance_diagram.py</a><a class="headerlink" href="#sphinx-ext-inheritance-diagram-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">n_attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_node_attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">e_attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_edge_attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">g_attrs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">graph_attrs</span><span class="p">)</span>
+<span class="n">n_attrs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">node_attrs</span><span class="p">)</span>
+<span class="n">e_attrs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">edge_attrs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">g_attrs</span> <span class="o">|=</span> <span class="n">graph_attrs</span>
+<span class="n">n_attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_node_attrs</span> <span class="o">|</span> <span class="n">node_attrs</span>
+<span class="n">e_attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_edge_attrs</span> <span class="o">|</span> <span class="n">edge_attrs</span>
+</pre></div>
+</div>
+</section>
+<section id="sphinx-highlighting-py">
+<h3><a class="toc-backref" href="#id67">sphinx/highlighting.py</a><a class="headerlink" href="#sphinx-highlighting-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">formatter_args</span><span class="p">)</span>
+<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatter</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatter</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">kwargs</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatter_args</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="sphinx-quickstart-py">
+<h3><a class="toc-backref" href="#id68">sphinx/quickstart.py</a><a class="headerlink" href="#sphinx-quickstart-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">d2</span> <span class="o">=</span> <span class="n">DEFAULT_VALUE</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">d2</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">((</span><span class="s2">&quot;ext_&quot;</span><span class="o">+</span><span class="n">ext</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">EXTENSIONS</span><span class="p">))</span>
+<span class="n">d2</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+<span class="n">d</span> <span class="o">=</span> <span class="n">d2</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">d</span> <span class="o">=</span> <span class="n">DEFAULT_VALUE</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">((</span><span class="s2">&quot;ext_&quot;</span><span class="o">+</span><span class="n">ext</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">EXTENSIONS</span><span class="p">)</span> <span class="o">|</span> <span class="n">d</span>
+</pre></div>
+</div>
+</section>
+<section id="sympy-abc-py">
+<h3><a class="toc-backref" href="#id69">sympy/abc.py</a><a class="headerlink" href="#sympy-abc-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">clash</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">clash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">clash1</span><span class="p">)</span>
+<span class="n">clash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">clash2</span><span class="p">)</span>
+<span class="k">return</span> <span class="n">clash1</span><span class="p">,</span> <span class="n">clash2</span><span class="p">,</span> <span class="n">clash</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">return</span> <span class="n">clash1</span><span class="p">,</span> <span class="n">clash2</span><span class="p">,</span> <span class="n">clash1</span> <span class="o">|</span> <span class="n">clash2</span>
+</pre></div>
+</div>
+</section>
+<section id="sympy-parsing-maxima-py">
+<h3><a class="toc-backref" href="#id70">sympy/parsing/maxima.py</a><a class="headerlink" href="#sympy-parsing-maxima-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dct</span> <span class="o">=</span> <span class="n">MaximaHelpers</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">dct</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">name_dict</span><span class="p">)</span>
+<span class="n">obj</span> <span class="o">=</span> <span class="n">sympify</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">locals</span><span class="o">=</span><span class="n">dct</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">sympify</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">locals</span><span class="o">=</span><span class="n">MaximaHelpers</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">|</span><span class="n">name_dict</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="sympy-printing-ccode-py-and-sympy-printing-fcode-py">
+<h3><a class="toc-backref" href="#id71">sympy/printing/ccode.py and sympy/printing/fcode.py</a><a class="headerlink" href="#sympy-printing-ccode-py-and-sympy-printing-fcode-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">known_functions</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">known_functions</span><span class="p">)</span>
+<span class="n">userfuncs</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;user_functions&#39;</span><span class="p">,</span> <span class="p">{})</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">known_functions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">userfuncs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">known_functions</span> <span class="o">=</span> <span class="n">known_functions</span> <span class="o">|</span> <span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;user_functions&#39;</span><span class="p">,</span> <span class="p">{})</span>
+</pre></div>
+</div>
+</section>
+<section id="sympy-utilities-runtests-py">
+<h3><a class="toc-backref" href="#id72">sympy/utilities/runtests.py</a><a class="headerlink" href="#sympy-utilities-runtests-py" title="Permalink to this headline">¶</a></h3>
+<p>Before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">globs</span> <span class="o">=</span> <span class="n">globs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">extraglobs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">globs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">extraglobs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">globs</span> <span class="o">=</span> <span class="n">globs</span> <span class="o">|</span> <span class="p">(</span><span class="n">extraglobs</span> <span class="k">if</span> <span class="n">extraglobs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{})</span>
+</pre></div>
+</div>
+<p>The above examples show that sometimes the <code class="docutils literal notranslate"><span class="pre">|</span></code> operator leads to a
+clear increase in readability, reducing the number of lines of code
+and improving clarity.  However other examples using the <code class="docutils literal notranslate"><span class="pre">|</span></code>
+operator lead to long, complex single expressions, possibly well over
+the <a class="reference external" href="pep-0008.html">PEP 8</a> maximum line length of 80 columns.  As with any other
+language feature, the programmer should use their own judgement about
+whether <code class="docutils literal notranslate"><span class="pre">|</span></code> improves their code.</p>
+</section>
+</section>
+<section id="related-discussions">
+<h2><a class="toc-backref" href="#id73">Related Discussions</a><a class="headerlink" href="#related-discussions" title="Permalink to this headline">¶</a></h2>
+<p id="discussions">Mailing list threads (this is by no means an exhaustive list):</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/BHIJX6MHGMMD3S6D7GVTPZQL4N5V7T42/">Dict joining using + and +=</a></p></li>
+<li><p><a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/KLDQAPOIJEANCKYCHQZ536WHQ45I6UVW/">PEP: Dict addition and subtraction</a></p></li>
+<li><p><a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/W2FCSC3JDA7NUBXAVSTVCUDEGAKWWPTH/">PEP 584: Add + and += operators to the built-in dict class.</a></p></li>
+<li><p><a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/SWBLMTNQXNL3O5LN3327IYNPFIL2QSH5/">Moving PEP 584 forward (dict + and += operators)</a></p></li>
+<li><p><a class="reference external" href="https://mail.python.org/archives/list/python-dev&#64;python.org/thread/TTIKCDIPC2CDHX23Y57CPHDSVYOWCCER/">PEP 584: Add Union Operators To dict</a></p></li>
+<li><p><a class="reference external" href="https://mail.python.org/archives/list/python-dev&#64;python.org/thread/6KT2KIOTYXMDCD2CCAOLOI7LUGTN6MBS">Accepting PEP 584: Add Union Operators To dict</a></p></li>
+</ul>
+<p><a class="reference external" href="https://bugs.python.org/issue36144">Ticket on the bug tracker</a></p>
+<p>Merging two dictionaries in an expression is a frequently requested
+feature.  For example:</p>
+<p><a class="reference external" href="https://stackoverflow.com/questions/38987/how-to-merge-two-dictionaries-in-a-single-expression">https://stackoverflow.com/questions/38987/how-to-merge-two-dictionaries-in-a-single-expression</a></p>
+<p><a class="reference external" href="https://stackoverflow.com/questions/1781571/how-to-concatenate-two-dictionaries-to-create-a-new-one-in-python">https://stackoverflow.com/questions/1781571/how-to-concatenate-two-dictionaries-to-create-a-new-one-in-python</a></p>
+<p><a class="reference external" href="https://stackoverflow.com/questions/6005066/adding-dictionaries-together-python">https://stackoverflow.com/questions/6005066/adding-dictionaries-together-python</a></p>
+<p>Occasionally people request alternative behavior for the merge:</p>
+<p><a class="reference external" href="https://stackoverflow.com/questions/1031199/adding-dictionaries-in-python">https://stackoverflow.com/questions/1031199/adding-dictionaries-in-python</a></p>
+<p><a class="reference external" href="https://stackoverflow.com/questions/877295/python-dict-add-by-valuedict-2">https://stackoverflow.com/questions/877295/python-dict-add-by-valuedict-2</a></p>
+<p>…including one proposal to treat dicts as <a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/message/YY3KZZGEX6VEFX5QZJ33P7NTTXGPZQ7N/">sets of keys</a>.</p>
+<p><a class="reference external" href="https://lwn.net/Articles/635444/">Ian Lee’s proto-PEP</a>, and
+<a class="reference external" href="https://lwn.net/Articles/635397/">discussion</a> in 2015.  Further
+discussion took place on <a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/43OZV3MR4XLFRPCI27I7BB6HVBD25M2E/">Python-Ideas</a>.</p>
+<p>(Observant readers will notice that one of the authors of this PEP was
+more skeptical of the idea in 2015.)</p>
+<p>Adding <a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/EKWMDJKMVOJCOROQVHJFQX7W2L55I5RA/">a full complement of operators to dicts</a>.</p>
+<p><a class="reference external" href="https://news.ycombinator.com/item?id=19314646">Discussion on Y-Combinator</a>.</p>
+<p><a class="reference external" href="https://treyhunner.com/2016/02/how-to-merge-dictionaries-in-python/">https://treyhunner.com/2016/02/how-to-merge-dictionaries-in-python/</a></p>
+<p><a class="reference external" href="https://code.tutsplus.com/tutorials/how-to-merge-two-python-dictionaries--cms-26230">https://code.tutsplus.com/tutorials/how-to-merge-two-python-dictionaries–cms-26230</a></p>
+<p>In direct response to an earlier draft of this PEP, Serhiy Storchaka
+raised <a class="reference external" href="https://bugs.python.org/issue36431">a ticket in the bug tracker</a> to replace the
+<code class="docutils literal notranslate"><span class="pre">copy();</span> <span class="pre">update()</span></code> idiom with dict unpacking.</p>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#id74">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0584.rst">https://github.com/python/peps/blob/master/pep-0584.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0584.rst">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0001/">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0100/">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0101/">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0374/">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0391/">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0423/">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0451/">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0471/">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0479/">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0495/">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0558/">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0570/">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0586/">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0594/">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3118/">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-0583/" title="previous chapter">PEP 583 – A Concurrency Memory Model for Python</a></li>
+      <li>Next: <a href="../pep-0585/" title="next chapter">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-0584.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,1626 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>PEP 451 – A ModuleSpec Type for the Import System &#8212; peps.python.org</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="PEP 452 – API for Cryptographic Hash Functions v2.0" href="../pep-0452/" />
+    <link rel="prev" title="PEP 450 – Adding A Statistics Module To The Standard Library" href="../pep-0450/" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pep-451-a-modulespec-type-for-the-import-system">
+<h1 class="page-title">PEP 451 – A ModuleSpec Type for the Import System<a class="headerlink" href="#pep-451-a-modulespec-type-for-the-import-system" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd"><p>451</p>
+</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even"><p>A ModuleSpec Type for the Import System</p>
+</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Eric Snow &lt;<a class="reference external" href="mailto:ericsnowcurrently&#37;&#52;&#48;gmail&#46;com?subject=PEP%20-1">ericsnowcurrently&#32;&#97;t&#32;gmail.com</a>&gt;</p>
+</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even"><p>Brett Cannon &lt;<a class="reference external" href="mailto:brett&#37;&#52;&#48;python&#46;org?subject=PEP%20-1">brett&#32;&#97;t&#32;python.org</a>&gt;, Nick Coghlan &lt;<a class="reference external" href="mailto:ncoghlan&#37;&#52;&#48;gmail&#46;com?subject=PEP%20-1">ncoghlan&#32;&#97;t&#32;gmail.com</a>&gt;</p>
+</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><p><a class="reference external" href="mailto:import-sig&#37;&#52;&#48;python&#46;org">import-sig<span>&#64;</span>python<span>&#46;</span>org</a></p>
+</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even"><p>Final</p>
+</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Standards Track</p>
+</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even"><p>08-Aug-2013</p>
+</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd"><p>3.4</p>
+</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p>8-Aug-2013, 28-Aug-2013, 18-Sep-2013, 24-Sep-2013, 4-Oct-2013</p>
+</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-November/130104.html">https://mail.python.org/pipermail/python-dev/2013-November/130104.html</a></p>
+</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#abstract" id="id11">Abstract</a></p></li>
+<li><p><a class="reference internal" href="#terms-and-concepts" id="id12">Terms and Concepts</a></p>
+<ul>
+<li><p><a class="reference internal" href="#name" id="id13">name</a></p></li>
+<li><p><a class="reference internal" href="#finder" id="id14">finder</a></p></li>
+<li><p><a class="reference internal" href="#loader" id="id15">loader</a></p></li>
+<li><p><a class="reference internal" href="#origin" id="id16">origin</a></p></li>
+<li><p><a class="reference internal" href="#location" id="id17">location</a></p></li>
+<li><p><a class="reference internal" href="#cache" id="id18">cache</a></p></li>
+<li><p><a class="reference internal" href="#package" id="id19">package</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#motivation" id="id20">Motivation</a></p></li>
+<li><p><a class="reference internal" href="#specification" id="id21">Specification</a></p>
+<ul>
+<li><p><a class="reference internal" href="#importlib-machinery-modulespec-new" id="id22">importlib.machinery.ModuleSpec (new)</a></p></li>
+<li><p><a class="reference internal" href="#importlib-util-additions" id="id23">importlib.util Additions</a></p></li>
+<li><p><a class="reference internal" href="#other-api-additions" id="id24">Other API Additions</a></p></li>
+<li><p><a class="reference internal" href="#api-changes" id="id25">API Changes</a></p></li>
+<li><p><a class="reference internal" href="#deprecations" id="id26">Deprecations</a></p></li>
+<li><p><a class="reference internal" href="#removals" id="id27">Removals</a></p></li>
+<li><p><a class="reference internal" href="#other-changes" id="id28">Other Changes</a></p></li>
+<li><p><a class="reference internal" href="#backward-compatibility" id="id29">Backward-Compatibility</a></p></li>
+<li><p><a class="reference internal" href="#what-will-not-change" id="id30">What Will not Change?</a></p></li>
+<li><p><a class="reference internal" href="#responsibilities" id="id31">Responsibilities</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#what-will-existing-finders-and-loaders-have-to-do-differently" id="id32">What Will Existing Finders and Loaders Have to Do Differently?</a></p></li>
+<li><p><a class="reference internal" href="#modulespec-users" id="id33">ModuleSpec Users</a></p></li>
+<li><p><a class="reference internal" href="#how-loading-will-work" id="id34">How Loading Will Work</a></p></li>
+<li><p><a class="reference internal" href="#how-reloading-will-work" id="id35">How Reloading Will Work</a></p></li>
+<li><p><a class="reference internal" href="#modulespec" id="id36">ModuleSpec</a></p>
+<ul>
+<li><p><a class="reference internal" href="#attributes" id="id37">Attributes</a></p></li>
+<li><p><a class="reference internal" href="#factory-functions" id="id38">Factory Functions</a></p></li>
+<li><p><a class="reference internal" href="#id5" id="id39">Backward Compatibility</a></p></li>
+<li><p><a class="reference internal" href="#subclassing" id="id40">Subclassing</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#existing-types" id="id41">Existing Types</a></p>
+<ul>
+<li><p><a class="reference internal" href="#module-objects" id="id42">Module Objects</a></p></li>
+<li><p><a class="reference internal" href="#finders" id="id43">Finders</a></p></li>
+<li><p><a class="reference internal" href="#the-target-parameter-of-find-spec" id="id44">The “target” parameter of find_spec()</a></p></li>
+<li><p><a class="reference internal" href="#namespace-packages" id="id45">Namespace Packages</a></p></li>
+<li><p><a class="reference internal" href="#loaders" id="id46">Loaders</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#id9" id="id47">Other Changes</a></p></li>
+<li><p><a class="reference internal" href="#reference-implementation" id="id48">Reference Implementation</a></p>
+<ul>
+<li><p><a class="reference internal" href="#implementation-notes" id="id49">Implementation Notes</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#rejected-additions-to-the-pep" id="id50">Rejected Additions to the PEP</a></p></li>
+<li><p><a class="reference internal" href="#references" id="id51">References</a></p></li>
+<li><p><a class="reference internal" href="#copyright" id="id52">Copyright</a></p></li>
+</ul>
+</div>
+<section id="abstract">
+<h2><a class="toc-backref" href="#id11">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes to add a new class to importlib.machinery called
+“ModuleSpec”.  It will provide all the import-related information used
+to load a module and will be available without needing to load the
+module first.  Finders will directly provide a module’s spec instead of
+a loader (which they will continue to provide indirectly).  The import
+machinery will be adjusted to take advantage of module specs, including
+using them to load modules.</p>
+</section>
+<section id="terms-and-concepts">
+<h2><a class="toc-backref" href="#id12">Terms and Concepts</a><a class="headerlink" href="#terms-and-concepts" title="Permalink to this headline">¶</a></h2>
+<p>The changes in this proposal are an opportunity to make several
+existing terms and concepts more clear, whereas currently they are
+(unfortunately) ambiguous.  New concepts are also introduced in this
+proposal.  Finally, it’s worth explaining a few other existing terms
+with which people may not be so familiar.  For the sake of context, here
+is a brief summary of all three groups of terms and concepts.  A more
+detailed explanation of the import system is found at
+<a class="footnote-reference brackets" href="#import-system-docs" id="id1">2</a>.</p>
+<section id="name">
+<h3><a class="toc-backref" href="#id13">name</a><a class="headerlink" href="#name" title="Permalink to this headline">¶</a></h3>
+<p>In this proposal, a module’s “name” refers to its fully-qualified name,
+meaning the fully-qualified name of the module’s parent (if any) joined
+to the simple name of the module by a period.</p>
+</section>
+<section id="finder">
+<h3><a class="toc-backref" href="#id14">finder</a><a class="headerlink" href="#finder" title="Permalink to this headline">¶</a></h3>
+<p>A “finder” is an object that identifies the loader that the import
+system should use to load a module.  Currently this is accomplished by
+calling the finder’s find_module() method, which returns the loader.</p>
+<p>Finders are strictly responsible for providing the loader, which they do
+through their find_module() method. The import system then uses that
+loader to load the module.</p>
+</section>
+<section id="loader">
+<h3><a class="toc-backref" href="#id15">loader</a><a class="headerlink" href="#loader" title="Permalink to this headline">¶</a></h3>
+<p>A “loader” is an object that is used to load a module during import.
+Currently this is done by calling the loader’s load_module() method.  A
+loader may also provide APIs for getting information about the modules
+it can load, as well as about data from sources associated with such a
+module.</p>
+<p>Right now loaders (via load_module()) are responsible for certain
+boilerplate, import-related operations.  These are:</p>
+<ol class="arabic simple">
+<li><p>Perform some (module-related) validation</p></li>
+<li><p>Create the module object</p></li>
+<li><p>Set import-related attributes on the module</p></li>
+<li><p>“Register” the module to sys.modules</p></li>
+<li><p>Exec the module</p></li>
+<li><p>Clean up in the event of failure while loading the module</p></li>
+</ol>
+<p>This all takes place during the import system’s call to
+Loader.load_module().</p>
+</section>
+<section id="origin">
+<h3><a class="toc-backref" href="#id16">origin</a><a class="headerlink" href="#origin" title="Permalink to this headline">¶</a></h3>
+<p>This is a new term and concept.  The idea of it exists subtly in the
+import system already, but this proposal makes the concept explicit.</p>
+<p>“origin” in an import context means the system (or resource within a
+system) from which a module originates.  For the purposes of this
+proposal, “origin” is also a string which identifies such a resource or
+system.  “origin” is applicable to all modules.</p>
+<p>For example, the origin for built-in and frozen modules is the
+interpreter itself.  The import system already identifies this origin as
+“built-in” and “frozen”, respectively.  This is demonstrated in the
+following module repr: “&lt;module ‘sys’ (built-in)&gt;”.</p>
+<p>In fact, the module repr is already a relatively reliable, though
+implicit, indicator of a module’s origin.  Other modules also indicate
+their origin through other means, as described in the entry for
+“location”.</p>
+<p>It is up to the loader to decide on how to interpret and use a module’s
+origin, if at all.</p>
+</section>
+<section id="location">
+<h3><a class="toc-backref" href="#id17">location</a><a class="headerlink" href="#location" title="Permalink to this headline">¶</a></h3>
+<p>This is a new term.  However the concept already exists clearly in the
+import system, as associated with the <code class="docutils literal notranslate"><span class="pre">__file__</span></code> and <code class="docutils literal notranslate"><span class="pre">__path__</span></code>
+attributes of modules, as well as the name/term “path” elsewhere.</p>
+<p>A “location” is a resource or “place”, rather than a system at large,
+from which a module is loaded.  It qualifies as an “origin”.  Examples
+of locations include filesystem paths and URLs.  A location is
+identified by the name of the resource, but may not necessarily identify
+the system to which the resource pertains.  In such cases the loader
+would have to identify the system itself.</p>
+<p>In contrast to other kinds of module origin, a location cannot be
+inferred by the loader just by the module name.  Instead, the loader
+must be provided with a string to identify the location, usually by the
+finder that generates the loader.  The loader then uses this information
+to locate the resource from which it will load the module.  In theory
+you could load the module at a given location under various names.</p>
+<p>The most common example of locations in the import system are the
+files from which source and extension modules are loaded.  For these
+modules the location is identified by the string in the <code class="docutils literal notranslate"><span class="pre">__file__</span></code>
+attribute.  Although <code class="docutils literal notranslate"><span class="pre">__file__</span></code> isn’t particularly accurate for some
+modules (e.g. zipped), it is currently the only way that the import
+system indicates that a module has a location.</p>
+<p>A module that has a location may be called “locatable”.</p>
+</section>
+<section id="cache">
+<h3><a class="toc-backref" href="#id18">cache</a><a class="headerlink" href="#cache" title="Permalink to this headline">¶</a></h3>
+<p>The import system stores compiled modules in the __pycache__ directory
+as an optimization.  This module cache that we use today was provided by
+<a class="reference external" href="pep-3147.html">PEP 3147</a>.  For this proposal, the relevant API for module caching is the
+<code class="docutils literal notranslate"><span class="pre">__cache__</span></code> attribute of modules and the cache_from_source() function
+in importlib.util.  Loaders are responsible for putting modules into the
+cache (and loading out of the cache).   Currently the cache is only used
+for compiled source modules.  However, loaders may take advantage of
+the module cache for other kinds of modules.</p>
+</section>
+<section id="package">
+<h3><a class="toc-backref" href="#id19">package</a><a class="headerlink" href="#package" title="Permalink to this headline">¶</a></h3>
+<p>The concept does not change, nor does the term.  However, the
+distinction between modules and packages is mostly superficial.
+Packages <em>are</em> modules.  They simply have a <code class="docutils literal notranslate"><span class="pre">__path__</span></code> attribute and
+import may add attributes bound to submodules.  The typically perceived
+difference is a source of confusion.  This proposal explicitly
+de-emphasizes the distinction between packages and modules where it
+makes sense to do so.</p>
+</section>
+</section>
+<section id="motivation">
+<h2><a class="toc-backref" href="#id20">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>The import system has evolved over the lifetime of Python.  In late 2002
+<a class="reference external" href="pep-0302.html">PEP 302</a> introduced standardized import hooks via finders and
+loaders and sys.meta_path.  The importlib module, introduced
+with Python 3.1, now exposes a pure Python implementation of the APIs
+described by <a class="reference external" href="pep-0302.html">PEP 302</a>, as well as of the full import system.  It is now
+much easier to understand and extend the import system.  While a benefit
+to the Python community, this greater accessibility also presents a
+challenge.</p>
+<p>As more developers come to understand and customize the import system,
+any weaknesses in the finder and loader APIs will be more impactful.  So
+the sooner we can address any such weaknesses the import system, the
+better…and there are a couple we hope to take care of with this proposal.</p>
+<p>Firstly, any time the import system needs to save information about a
+module we end up with more attributes on module objects that are
+generally only meaningful to the import system.  It would be nice to
+have a per-module namespace in which to put future import-related
+information and to pass around within the import system.  Secondly,
+there’s an API void between finders and loaders that causes undue
+complexity when encountered.  The <a class="reference external" href="pep-0420.html">PEP 420</a> (namespace packages)
+implementation had to work around this.  The complexity surfaced again
+during recent efforts on a separate proposal. <a class="footnote-reference brackets" href="#ref-files-pep" id="id2">1</a></p>
+<p>The <a class="reference internal" href="#finder">finder</a> and <a class="reference internal" href="#loader">loader</a> sections above detail current responsibility
+of both.  Notably, loaders are not required to provide any of the
+functionality of their load_module() method through other methods.  Thus,
+though the import-related information about a module is likely available
+without loading the module, it is not otherwise exposed.</p>
+<p>Furthermore, the requirements associated with load_module() are
+common to all loaders and mostly are implemented in exactly the same
+way.  This means every loader has to duplicate the same boilerplate
+code.  importlib.util provides some tools that help with this, but
+it would be more helpful if the import system simply took charge of
+these responsibilities.  The trouble is that this would limit the degree
+of customization that load_module() could easily continue to facilitate.</p>
+<p>More importantly, While a finder <em>could</em> provide the information that
+the loader’s load_module() would need, it currently has no consistent
+way to get it to the loader.  This is a gap between finders and loaders
+which this proposal aims to fill.</p>
+<p>Finally, when the import system calls a finder’s find_module(), the
+finder makes use of a variety of information about the module that is
+useful outside the context of the method.  Currently the options are
+limited for persisting that per-module information past the method call,
+since it only returns the loader.  Popular options for this limitation
+are to store the information in a module-to-info mapping somewhere on
+the finder itself, or store it on the loader.</p>
+<p>Unfortunately, loaders are not required to be module-specific.  On top
+of that, some of the useful information finders could provide is
+common to all finders, so ideally the import system could take care of
+those details.  This is the same gap as before between finders and
+loaders.</p>
+<p>As an example of complexity attributable to this flaw, the
+implementation of namespace packages in Python 3.3 (see <a class="reference external" href="pep-0420.html">PEP 420</a>) added
+FileFinder.find_loader() because there was no good way for
+find_module() to provide the namespace search locations.</p>
+<p>The answer to this gap is a ModuleSpec object that contains the
+per-module information and takes care of the boilerplate functionality
+involved with loading the module.</p>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#id21">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The goal is to address the gap between finders and loaders while
+changing as little of their semantics as possible.  Though some
+functionality and information is moved to the new ModuleSpec type,
+their behavior should remain the same.  However, for the sake of clarity
+the finder and loader semantics will be explicitly identified.</p>
+<p>Here is a high-level summary of the changes described by this PEP.  More
+detail is available in later sections.</p>
+<section id="importlib-machinery-modulespec-new">
+<h3><a class="toc-backref" href="#id22">importlib.machinery.ModuleSpec (new)</a><a class="headerlink" href="#importlib-machinery-modulespec-new" title="Permalink to this headline">¶</a></h3>
+<p>An encapsulation of a module’s import-system-related state during import.
+See the <a class="reference internal" href="#modulespec">ModuleSpec</a> section below for a more detailed description.</p>
+<ul class="simple">
+<li><p>ModuleSpec(name, loader, *, origin=None, loader_state=None, is_package=None)</p></li>
+</ul>
+<p>Attributes:</p>
+<ul class="simple">
+<li><p>name - a string for the fully-qualified name of the module.</p></li>
+<li><p>loader - the loader to use for loading.</p></li>
+<li><p>origin - the name of the place from which the module is loaded,
+e.g. “builtin” for built-in modules and the filename for modules
+loaded from source.</p></li>
+<li><p>submodule_search_locations - list of strings for where to find
+submodules, if a package (None otherwise).</p></li>
+<li><p>loader_state - a container of extra module-specific data for use
+during loading.</p></li>
+<li><p>cached (property) - a string for where the compiled module should be
+stored.</p></li>
+<li><p>parent (RO-property) - the fully-qualified name of the package to
+which the module belongs as a submodule (or None).</p></li>
+<li><p>has_location (RO-property) - a flag indicating whether or not the
+module’s “origin” attribute refers to a location.</p></li>
+</ul>
+</section>
+<section id="importlib-util-additions">
+<h3><a class="toc-backref" href="#id23">importlib.util Additions</a><a class="headerlink" href="#importlib-util-additions" title="Permalink to this headline">¶</a></h3>
+<p>These are ModuleSpec factory functions, meant as a convenience for
+finders.  See the <a class="reference internal" href="#factory-functions">Factory Functions</a> section below for more detail.</p>
+<ul class="simple">
+<li><p>spec_from_file_location(name, location, *, loader=None, submodule_search_locations=None)
+- build a spec from file-oriented information and loader APIs.</p></li>
+<li><p>spec_from_loader(name, loader, *, origin=None, is_package=None)
+- build a spec with missing information filled in by using loader
+APIs.</p></li>
+</ul>
+</section>
+<section id="other-api-additions">
+<h3><a class="toc-backref" href="#id24">Other API Additions</a><a class="headerlink" href="#other-api-additions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>importlib.find_spec(name, path=None, target=None) will work exactly
+the same as importlib.find_loader() (which it replaces), but return a
+spec instead of a loader.</p></li>
+</ul>
+<p>For finders:</p>
+<ul class="simple">
+<li><p>importlib.abc.MetaPathFinder.find_spec(name, path, target) and
+importlib.abc.PathEntryFinder.find_spec(name, target) will return a
+module spec to use during import.</p></li>
+</ul>
+<p>For loaders:</p>
+<ul class="simple">
+<li><p>importlib.abc.Loader.exec_module(module) will execute a module in its
+own namespace.  It replaces importlib.abc.Loader.load_module(), taking
+over its module execution functionality.</p></li>
+<li><p>importlib.abc.Loader.create_module(spec) (optional) will return the
+module to use for loading.</p></li>
+</ul>
+<p>For modules:</p>
+<ul class="simple">
+<li><p>Module objects will have a new attribute: <code class="docutils literal notranslate"><span class="pre">__spec__</span></code>.</p></li>
+</ul>
+</section>
+<section id="api-changes">
+<h3><a class="toc-backref" href="#id25">API Changes</a><a class="headerlink" href="#api-changes" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>InspectLoader.is_package() will become optional.</p></li>
+</ul>
+</section>
+<section id="deprecations">
+<h3><a class="toc-backref" href="#id26">Deprecations</a><a class="headerlink" href="#deprecations" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>importlib.abc.MetaPathFinder.find_module()</p></li>
+<li><p>importlib.abc.PathEntryFinder.find_module()</p></li>
+<li><p>importlib.abc.PathEntryFinder.find_loader()</p></li>
+<li><p>importlib.abc.Loader.load_module()</p></li>
+<li><p>importlib.abc.Loader.module_repr()</p></li>
+<li><p>importlib.util.set_package()</p></li>
+<li><p>importlib.util.set_loader()</p></li>
+<li><p>importlib.find_loader()</p></li>
+</ul>
+</section>
+<section id="removals">
+<h3><a class="toc-backref" href="#id27">Removals</a><a class="headerlink" href="#removals" title="Permalink to this headline">¶</a></h3>
+<p>These were introduced prior to Python 3.4’s release, so they can simply
+be removed.</p>
+<ul class="simple">
+<li><p>importlib.abc.Loader.init_module_attrs()</p></li>
+<li><p>importlib.util.module_to_load()</p></li>
+</ul>
+</section>
+<section id="other-changes">
+<h3><a class="toc-backref" href="#id28">Other Changes</a><a class="headerlink" href="#other-changes" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>The import system implementation in importlib will be changed to make
+use of ModuleSpec.</p></li>
+<li><p>importlib.reload() will make use of ModuleSpec.</p></li>
+<li><p>A module’s import-related attributes (other than <code class="docutils literal notranslate"><span class="pre">__spec__</span></code>) will no
+longer be used directly by the import system during that module’s
+import.  However, this does not impact use of those attributes
+(e.g. <code class="docutils literal notranslate"><span class="pre">__path__</span></code>) when loading other modules (e.g. submodules).</p></li>
+<li><p>Import-related attributes should no longer be added to modules
+directly, except by the import system.</p></li>
+<li><p>The module type’s <code class="docutils literal notranslate"><span class="pre">__repr__()</span></code> will be a thin wrapper around a pure
+Python implementation which will leverage ModuleSpec.</p></li>
+<li><p>The spec for the <code class="docutils literal notranslate"><span class="pre">__main__</span></code> module will reflect the appropriate
+name and origin.</p></li>
+</ul>
+</section>
+<section id="backward-compatibility">
+<h3><a class="toc-backref" href="#id29">Backward-Compatibility</a><a class="headerlink" href="#backward-compatibility" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>If a finder does not define find_spec(), a spec is derived from
+the loader returned by find_module().</p></li>
+<li><p>PathEntryFinder.find_loader() still takes priority over
+find_module().</p></li>
+<li><p>Loader.load_module() is used if exec_module() is not defined.</p></li>
+</ul>
+</section>
+<section id="what-will-not-change">
+<h3><a class="toc-backref" href="#id30">What Will not Change?</a><a class="headerlink" href="#what-will-not-change" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>The syntax and semantics of the import statement.</p></li>
+<li><p>Existing finders and loaders will continue to work normally.</p></li>
+<li><p>The import-related module attributes will still be initialized with
+the same information.</p></li>
+<li><p>Finders will still create loaders (now storing them in specs).</p></li>
+<li><p>Loader.load_module(), if a module defines it, will have all the
+same requirements and may still be called directly.</p></li>
+<li><p>Loaders will still be responsible for module data APIs.</p></li>
+<li><p>importlib.reload() will still overwrite the import-related attributes.</p></li>
+</ul>
+</section>
+<section id="responsibilities">
+<h3><a class="toc-backref" href="#id31">Responsibilities</a><a class="headerlink" href="#responsibilities" title="Permalink to this headline">¶</a></h3>
+<p>Here’s a quick breakdown of where responsibilities lie after this PEP.</p>
+<p>finders:</p>
+<ul class="simple">
+<li><p>create/identify a loader that can load the module.</p></li>
+<li><p>create the spec for the module.</p></li>
+</ul>
+<p>loaders:</p>
+<ul class="simple">
+<li><p>create the module (optional).</p></li>
+<li><p>execute the module.</p></li>
+</ul>
+<p>ModuleSpec:</p>
+<ul class="simple">
+<li><p>orchestrate module loading</p></li>
+<li><p>boilerplate for module loading, including managing sys.modules and
+setting import-related attributes</p></li>
+<li><p>create module if loader doesn’t</p></li>
+<li><p>call loader.exec_module(), passing in the module in which to exec</p></li>
+<li><p>contain all the information the loader needs to exec the module</p></li>
+<li><p>provide the repr for modules</p></li>
+</ul>
+</section>
+</section>
+<section id="what-will-existing-finders-and-loaders-have-to-do-differently">
+<h2><a class="toc-backref" href="#id32">What Will Existing Finders and Loaders Have to Do Differently?</a><a class="headerlink" href="#what-will-existing-finders-and-loaders-have-to-do-differently" title="Permalink to this headline">¶</a></h2>
+<p>Immediately?  Nothing.  The status quo will be deprecated, but will
+continue working.  However, here are the things that the authors of
+finders and loaders should change relative to this PEP:</p>
+<ul class="simple">
+<li><p>Implement find_spec() on finders.</p></li>
+<li><p>Implement exec_module() on loaders, if possible.</p></li>
+</ul>
+<p>The ModuleSpec factory functions in importlib.util are intended to be
+helpful for converting existing finders.  spec_from_loader() and
+spec_from_file_location() are both straightforward utilities in this
+regard.</p>
+<p>For existing loaders, exec_module() should be a relatively direct
+conversion from the non-boilerplate portion of load_module().  In some
+uncommon cases the loader should also implement create_module().</p>
+</section>
+<section id="modulespec-users">
+<h2><a class="toc-backref" href="#id33">ModuleSpec Users</a><a class="headerlink" href="#modulespec-users" title="Permalink to this headline">¶</a></h2>
+<p>ModuleSpec objects have 3 distinct target audiences: Python itself,
+import hooks, and normal Python users.</p>
+<p>Python will use specs in the import machinery, in interpreter startup,
+and in various standard library modules.  Some modules are
+import-oriented, like pkgutil, and others are not, like pickle and
+pydoc.  In all cases, the full ModuleSpec API will get used.</p>
+<p>Import hooks (finders and loaders) will make use of the spec in specific
+ways.  First of all, finders may use the spec factory functions in
+importlib.util to create spec objects.  They may also directly adjust
+the spec attributes after the spec is created.  Secondly, the finder may
+bind additional information to the spec (in finder_extras) for the
+loader to consume during module creation/execution.  Finally, loaders
+will make use of the attributes on a spec when creating and/or executing
+a module.</p>
+<p>Python users will be able to inspect a module’s <code class="docutils literal notranslate"><span class="pre">__spec__</span></code> to get
+import-related information about the object.  Generally, Python
+applications and interactive users will not be using the <code class="docutils literal notranslate"><span class="pre">ModuleSpec</span></code>
+factory functions nor any the instance methods.</p>
+</section>
+<section id="how-loading-will-work">
+<h2><a class="toc-backref" href="#id34">How Loading Will Work</a><a class="headerlink" href="#how-loading-will-work" title="Permalink to this headline">¶</a></h2>
+<p>Here is an outline of what the import machinery does during loading,
+adjusted to take advantage of the module’s spec and the new loader API:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">module</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">loader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="p">,</span> <span class="s1">&#39;create_module&#39;</span><span class="p">):</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">create_module</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">module</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="n">ModuleType</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="c1"># The import-related module attributes get set here:</span>
+<span class="n">_init_module_attrs</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">module</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">loader</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">spec</span><span class="o">.</span><span class="n">submodule_search_locations</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="c1"># Namespace package</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">module</span>
+<span class="k">elif</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="p">,</span> <span class="s1">&#39;exec_module&#39;</span><span class="p">):</span>
+    <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">load_module</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="c1"># __loader__ and __package__ would be explicitly set here for</span>
+    <span class="c1"># backwards-compatibility.</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">module</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">raise</span>
+<span class="n">module_to_return</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>These steps are exactly what Loader.load_module() is already
+expected to do.  Loaders will thus be simplified since they will only
+need to implement exec_module().</p>
+<p>Note that we must return the module from sys.modules.  During loading
+the module may have replaced itself in sys.modules.  Since we don’t have
+a post-import hook API to accommodate the use case, we have to deal with
+it.  However, in the replacement case we do not worry about setting the
+import-related module attributes on the object.  The module writer is on
+their own if they are doing this.</p>
+</section>
+<section id="how-reloading-will-work">
+<h2><a class="toc-backref" href="#id35">How Reloading Will Work</a><a class="headerlink" href="#how-reloading-will-work" title="Permalink to this headline">¶</a></h2>
+<p>Here is the corresponding outline for reload():</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">_RELOADING</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">def</span> <span class="nf">reload</span><span class="p">(</span><span class="n">module</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">__spec__</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">find_spec</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">module</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">module</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span>
+    <span class="k">if</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">_RELOADING</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_RELOADING</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="n">_RELOADING</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">module</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">loader</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Namespace loader</span>
+            <span class="n">_init_module_attrs</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">module</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">module</span>
+        <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">parent</span> <span class="ow">and</span> <span class="n">spec</span><span class="o">.</span><span class="n">parent</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ImportError</span>
+
+        <span class="n">_init_module_attrs</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">module</span><span class="p">)</span>
+        <span class="c1"># Ignoring backwards-compatibility call to load_module()</span>
+        <span class="c1"># for simplicity.</span>
+        <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">del</span> <span class="n">_RELOADING</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>A key point here is the switch to Loader.exec_module() means that
+loaders will no longer have an easy way to know at execution time if it
+is a reload or not.  Before this proposal, they could simply check to
+see if the module was already in sys.modules.  Now, by the time
+exec_module() is called during load (not reload) the import machinery
+would already have placed the module in sys.modules.  This is part of
+the reason why find_spec() has
+<a class="reference external" href="The&quot;target&quot;parameteroffind_spec()">the “target” parameter</a>.</p>
+<p>The semantics of reload will remain essentially the same as they exist
+already <a class="footnote-reference brackets" href="#reload-semantics-fix" id="id3">5</a>.  The impact of this PEP on some kinds
+of lazy loading modules was a point of discussion. <a class="footnote-reference brackets" href="#lazy-import-concerns" id="id4">4</a></p>
+</section>
+<section id="modulespec">
+<h2><a class="toc-backref" href="#id36">ModuleSpec</a><a class="headerlink" href="#modulespec" title="Permalink to this headline">¶</a></h2>
+<section id="attributes">
+<h3><a class="toc-backref" href="#id37">Attributes</a><a class="headerlink" href="#attributes" title="Permalink to this headline">¶</a></h3>
+<p>Each of the following names is an attribute on ModuleSpec objects.  A
+value of None indicates “not set”.  This contrasts with module
+objects where the attribute simply doesn’t exist.  Most of the
+attributes correspond to the import-related attributes of modules.  Here
+is the mapping.  The reverse of this mapping describes how the import
+machinery sets the module attributes right before calling exec_module().</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 65%" />
+<col style="width: 35%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>On ModuleSpec</p></th>
+<th class="head"><p>On Modules</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>name</p></td>
+<td><p>__name__</p></td>
+</tr>
+<tr class="row-odd"><td><p>loader</p></td>
+<td><p>__loader__</p></td>
+</tr>
+<tr class="row-even"><td><p>parent</p></td>
+<td><p>__package__</p></td>
+</tr>
+<tr class="row-odd"><td><p>origin</p></td>
+<td><p>__file__*</p></td>
+</tr>
+<tr class="row-even"><td><p>cached</p></td>
+<td><p>__cached__*,**</p></td>
+</tr>
+<tr class="row-odd"><td><p>submodule_search_locations</p></td>
+<td><p>__path__**</p></td>
+</tr>
+<tr class="row-even"><td><p>loader_state</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-odd"><td><p>has_location</p></td>
+<td><p>-</p></td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line">* Set on the module only if spec.has_location is true.</div>
+<div class="line">** Set on the module only if the spec attribute is not None.</div>
+</div>
+<p>While parent and has_location are read-only properties, the remaining
+attributes can be replaced after the module spec is created and even
+after import is complete.  This allows for unusual cases where directly
+modifying the spec is the best option.  However, typical use should not
+involve changing the state of a module’s spec.</p>
+<p><strong>origin</strong></p>
+<p>“origin” is a string for the name of the place from which the module
+originates.  See <a class="reference internal" href="#origin">origin</a> above.  Aside from the informational value,
+it is also used in the module’s repr.  In the case of a spec where
+“has_location” is true, <code class="docutils literal notranslate"><span class="pre">__file__</span></code> is set to the value of “origin”.
+For built-in modules “origin” would be set to “built-in”.</p>
+<p><strong>has_location</strong></p>
+<p>As explained in the <a class="reference internal" href="#location">location</a> section above, many modules are
+“locatable”, meaning there is a corresponding resource from which the
+module will be loaded and that resource can be described by a string.
+In contrast, non-locatable modules can’t be loaded in this fashion, e.g.
+builtin modules and modules dynamically created in code.  For these, the
+name is the only way to access them, so they have an “origin” but not a
+“location”.</p>
+<p>“has_location” is true if the module is locatable.  In that case the
+spec’s origin is used as the location and <code class="docutils literal notranslate"><span class="pre">__file__</span></code> is set to
+spec.origin.  If additional location information is required (e.g.
+zipimport), that information may be stored in spec.loader_state.</p>
+<p>“has_location” may be implied from the existence of a load_data() method
+on the loader.</p>
+<p>Incidentally, not all locatable modules will be cache-able, but most
+will.</p>
+<p><strong>submodule_search_locations</strong></p>
+<p>The list of location strings, typically directory paths, in which to
+search for submodules.  If the module is a package this will be set to
+a list (even an empty one).  Otherwise it is None.</p>
+<p>The name of the corresponding module attribute, <code class="docutils literal notranslate"><span class="pre">__path__</span></code>, is
+relatively ambiguous.  Instead of mirroring it, we use a more explicit
+attribute name that makes the purpose clear.</p>
+<p><strong>loader_state</strong></p>
+<p>A finder may set loader_state to any value to provide additional
+data for the loader to use during loading.  A value of None is the
+default and indicates that there is no additional data.  Otherwise it
+can be set to any object, such as a dict, list, or
+types.SimpleNamespace, containing the relevant extra information.</p>
+<p>For example, zipimporter could use it to pass the zip archive name
+to the loader directly, rather than needing to derive it from origin
+or create a custom loader for each find operation.</p>
+<p>loader_state is meant for use by the finder and corresponding loader.
+It is not guaranteed to be a stable resource for any other use.</p>
+</section>
+<section id="factory-functions">
+<h3><a class="toc-backref" href="#id38">Factory Functions</a><a class="headerlink" href="#factory-functions" title="Permalink to this headline">¶</a></h3>
+<p><strong>spec_from_file_location(name, location, *, loader=None, submodule_search_locations=None)</strong></p>
+<p>Build a spec from file-oriented information and loader APIs.</p>
+<ul class="simple">
+<li><p>“origin” will be set to the location.</p></li>
+<li><p>“has_location” will be set to True.</p></li>
+<li><p>“cached” will be set to the result of calling cache_from_source().</p></li>
+<li><p>“origin” can be deduced from loader.get_filename() (if “location” is
+not passed in.</p></li>
+<li><p>“loader” can be deduced from suffix if the location is a filename.</p></li>
+<li><p>“submodule_search_locations” can be deduced from loader.is_package()
+and from os.path.dirname(location) if location is a filename.</p></li>
+</ul>
+<p><strong>spec_from_loader(name, loader, *, origin=None, is_package=None)</strong></p>
+<p>Build a spec with missing information filled in by using loader APIs.</p>
+<ul class="simple">
+<li><p>“has_location” can be deduced from loader.get_data.</p></li>
+<li><p>“origin” can be deduced from loader.get_filename().</p></li>
+<li><p>“submodule_search_locations” can be deduced from loader.is_package()
+and from os.path.dirname(location) if location is a filename.</p></li>
+</ul>
+</section>
+<section id="id5">
+<h3><a class="toc-backref" href="#id39">Backward Compatibility</a><a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<p>ModuleSpec doesn’t have any.  This would be a different story if
+Finder.find_module() were to return a module spec instead of loader.
+In that case, specs would have to act like the loader that would have
+been returned instead.  Doing so would be relatively simple, but is an
+unnecessary complication.  It was part of earlier versions of this PEP.</p>
+</section>
+<section id="subclassing">
+<h3><a class="toc-backref" href="#id40">Subclassing</a><a class="headerlink" href="#subclassing" title="Permalink to this headline">¶</a></h3>
+<p>Subclasses of ModuleSpec are allowed, but should not be necessary.
+Simply setting loader_state or adding functionality to a custom
+finder or loader will likely be a better fit and should be tried first.
+However, as long as a subclass still fulfills the requirements of the
+import system, objects of that type are completely fine as the return
+value of Finder.find_spec().  The same points apply to duck-typing.</p>
+</section>
+</section>
+<section id="existing-types">
+<h2><a class="toc-backref" href="#id41">Existing Types</a><a class="headerlink" href="#existing-types" title="Permalink to this headline">¶</a></h2>
+<section id="module-objects">
+<h3><a class="toc-backref" href="#id42">Module Objects</a><a class="headerlink" href="#module-objects" title="Permalink to this headline">¶</a></h3>
+<p>Other than adding <code class="docutils literal notranslate"><span class="pre">__spec__</span></code>, none of the import-related module
+attributes will be changed or deprecated, though some of them could be;
+any such deprecation can wait until Python 4.</p>
+<p>A module’s spec will not be kept in sync with the corresponding import-
+related attributes.  Though they may differ, in practice they will
+typically be the same.</p>
+<p>One notable exception is that case where a module is run as a script by
+using the <code class="docutils literal notranslate"><span class="pre">-m</span></code> flag.  In that case <code class="docutils literal notranslate"><span class="pre">module.__spec__.name</span></code> will
+reflect the actual module name while <code class="docutils literal notranslate"><span class="pre">module.__name__</span></code> will be
+<code class="docutils literal notranslate"><span class="pre">__main__</span></code>.</p>
+<p>A module’s spec is not guaranteed to be identical between two modules
+with the same name.  Likewise there is no guarantee that successive
+calls to importlib.find_spec() will return the same object or even an
+equivalent object, though at least the latter is likely.</p>
+</section>
+<section id="finders">
+<h3><a class="toc-backref" href="#id43">Finders</a><a class="headerlink" href="#finders" title="Permalink to this headline">¶</a></h3>
+<p>Finders are still responsible for identifying, and typically creating,
+the loader that should be used to load a module.  That loader will
+now be stored in the module spec returned by find_spec() rather
+than returned directly.  As is currently the case without the PEP, if a
+loader would be costly to create, that loader can be designed to defer
+the cost until later.</p>
+<p><strong>MetaPathFinder.find_spec(name, path=None, target=None)</strong></p>
+<p><strong>PathEntryFinder.find_spec(name, target=None)</strong></p>
+<p>Finders must return ModuleSpec objects when find_spec() is
+called.  This new method replaces find_module() and
+find_loader() (in the PathEntryFinder case).  If a loader does
+not have find_spec(), find_module() and find_loader() are
+used instead, for backward-compatibility.</p>
+<p>Adding yet another similar method to loaders is a case of practicality.
+find_module() could be changed to return specs instead of loaders.
+This is tempting because the import APIs have suffered enough,
+especially considering PathEntryFinder.find_loader() was just
+added in Python 3.3.  However, the extra complexity and a less-than-
+explicit method name aren’t worth it.</p>
+</section>
+<section id="the-target-parameter-of-find-spec">
+<h3><a class="toc-backref" href="#id44">The “target” parameter of find_spec()</a><a class="headerlink" href="#the-target-parameter-of-find-spec" title="Permalink to this headline">¶</a></h3>
+<p>A call to find_spec() may optionally include a “target” argument.  This
+is the module object that will be used subsequently as the target of
+loading.  During normal import (and by default) “target” is None,
+meaning the target module has yet to be created.  During reloading the
+module passed in to reload() is passed through to find_spec() as the
+target.  This argument allows the finder to build the module spec with
+more information than is otherwise available.  Doing so is particularly
+relevant in identifying the loader to use.</p>
+<p>Through find_spec() the finder will always identify the loader it
+will return in the spec (or return None).  At the point the loader is
+identified, the finder should also decide whether or not the loader
+supports loading into the target module, in the case that “target” is
+passed in.  This decision may entail consulting with the loader.</p>
+<p>If the finder determines that the loader does not support loading into
+the target module, it should either find another loader or raise
+ImportError (completely stopping import of the module).  This
+determination is especially important during reload since, as noted in
+<a class="reference internal" href="#how-reloading-will-work">How Reloading Will Work</a>, loaders will no longer be able to trivially
+identify a reload situation on their own.</p>
+<p>Two alternatives were presented to the “target” parameter:
+Loader.supports_reload() and adding “target” to Loader.exec_module()
+instead of find_spec().  supports_reload() was the initial approach to
+the reload situation. <a class="footnote-reference brackets" href="#supports-reload" id="id6">6</a>  However, there was some
+opposition to the loader-specific, reload-centric approach.
+<a class="footnote-reference brackets" href="#supports-reload-considered-harmful" id="id7">7</a></p>
+<p>As to “target” on exec_module(), the loader may need other information
+from the target module (or spec) during reload, more than just “does
+this loader support reloading this module”, that is no longer available
+with the move away from load_module().  A proposal on the table was to
+add something like “target” to exec_module().  <a class="footnote-reference brackets" href="#exec-module-target" id="id8">8</a>
+However, putting “target” on find_spec() instead is more in line with
+the goals of this PEP.  Furthermore, it obviates the need for
+supports_reload().</p>
+</section>
+<section id="namespace-packages">
+<h3><a class="toc-backref" href="#id45">Namespace Packages</a><a class="headerlink" href="#namespace-packages" title="Permalink to this headline">¶</a></h3>
+<p>Currently a path entry finder may return (None, portions) from
+find_loader() to indicate it found part of a possible namespace
+package.  To achieve the same effect, find_spec() must return a spec
+with “loader” set to None (a.k.a. not set) and with
+submodule_search_locations set to the same portions as would have been
+provided by find_loader().  It’s up to PathFinder how to handle such
+specs.</p>
+</section>
+<section id="loaders">
+<h3><a class="toc-backref" href="#id46">Loaders</a><a class="headerlink" href="#loaders" title="Permalink to this headline">¶</a></h3>
+<p><strong>Loader.exec_module(module)</strong></p>
+<p>Loaders will have a new method, exec_module().  Its only job
+is to “exec” the module and consequently populate the module’s
+namespace.  It is not responsible for creating or preparing the module
+object, nor for any cleanup afterward.  It has no return value.
+exec_module() will be used during both loading and reloading.</p>
+<p>exec_module() should properly handle the case where it is called more
+than once.  For some kinds of modules this may mean raising ImportError
+every time after the first time the method is called.  This is
+particularly relevant for reloading, where some kinds of modules do not
+support in-place reloading.</p>
+<p><strong>Loader.create_module(spec)</strong></p>
+<p>Loaders may also implement create_module() that will return a
+new module to exec.  It may return None to indicate that the default
+module creation code should be used.  One use case, though atypical, for
+create_module() is to provide a module that is a subclass of the builtin
+module type.  Most loaders will not need to implement create_module(),</p>
+<p>create_module() should properly handle the case where it is called more
+than once for the same spec/module.  This may include returning None or
+raising ImportError.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>exec_module() and create_module() should not set any import-related
+module attributes.  The fact that load_module() does is a design flaw
+that this proposal aims to correct.</p>
+</div>
+<p>Other changes:</p>
+<p><a class="reference external" href="pep-0420.html">PEP 420</a> introduced the optional module_repr() loader method to limit
+the amount of special-casing in the module type’s <code class="docutils literal notranslate"><span class="pre">__repr__()</span></code>.  Since
+this method is part of ModuleSpec, it will be deprecated on loaders.
+However, if it exists on a loader it will be used exclusively.</p>
+<p>Loader.init_module_attr() method, added prior to Python 3.4’s
+release, will be removed in favor of the same method on ModuleSpec.</p>
+<p>However, InspectLoader.is_package() will not be deprecated even
+though the same information is found on ModuleSpec.  ModuleSpec
+can use it to populate its own is_package if that information is
+not otherwise available.  Still, it will be made optional.</p>
+<p>In addition to executing a module during loading, loaders will still be
+directly responsible for providing APIs concerning module-related data.</p>
+</section>
+</section>
+<section id="id9">
+<h2><a class="toc-backref" href="#id47">Other Changes</a><a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>The various finders and loaders provided by importlib will be
+updated to comply with this proposal.</p></li>
+<li><p>Any other implementations of or dependencies on the import-related APIs
+(particularly finders and loaders) in the stdlib will be likewise
+adjusted to this PEP.  While they should continue to work, any such
+changes that get missed should be considered bugs for the Python 3.4.x
+series.</p></li>
+<li><p>The spec for the <code class="docutils literal notranslate"><span class="pre">__main__</span></code> module will reflect how the interpreter
+was started.  For instance, with <code class="docutils literal notranslate"><span class="pre">-m</span></code> the spec’s name will be that
+of the module used, while <code class="docutils literal notranslate"><span class="pre">__main__.__name__</span></code> will still be
+“__main__”.</p></li>
+<li><p>We will add importlib.find_spec() to mirror importlib.find_loader()
+(which becomes deprecated).</p></li>
+<li><p>importlib.reload() is changed to use ModuleSpec.</p></li>
+<li><p>importlib.reload() will now make use of the per-module import lock.</p></li>
+</ul>
+</section>
+<section id="reference-implementation">
+<h2><a class="toc-backref" href="#id48">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>A reference implementation is available at
+<a class="reference external" href="http://bugs.python.org/issue18864">http://bugs.python.org/issue18864</a>.</p>
+<section id="implementation-notes">
+<h3><a class="toc-backref" href="#id49">Implementation Notes</a><a class="headerlink" href="#implementation-notes" title="Permalink to this headline">¶</a></h3>
+<p>* The implementation of this PEP needs to be cognizant of its impact on
+pkgutil (and setuptools).  pkgutil has some generic function-based
+extensions to <a class="reference external" href="pep-0302.html">PEP 302</a> which may break if importlib starts wrapping
+loaders without the tools’ knowledge.</p>
+<p>* Other modules to look at: runpy (and pythonrun.c), pickle, pydoc,
+inspect.</p>
+<p>For instance, pickle should be updated in the <code class="docutils literal notranslate"><span class="pre">__main__</span></code> case to look
+at <code class="docutils literal notranslate"><span class="pre">module.__spec__.name</span></code>.</p>
+</section>
+</section>
+<section id="rejected-additions-to-the-pep">
+<h2><a class="toc-backref" href="#id50">Rejected Additions to the PEP</a><a class="headerlink" href="#rejected-additions-to-the-pep" title="Permalink to this headline">¶</a></h2>
+<p>There were a few proposed additions to this proposal that did not fit
+well enough into its scope.</p>
+<p>There is no “PathModuleSpec” subclass of ModuleSpec that separates out
+has_location, cached, and submodule_search_locations.  While that might
+make the separation cleaner, module objects don’t have that distinction.
+ModuleSpec will support both cases equally well.</p>
+<p>While “ModuleSpec.is_package” would be a simple additional attribute
+(aliasing self.submodule_search_locations is not None), it perpetuates
+the artificial (and mostly erroneous) distinction between modules and
+packages.</p>
+<p>The module spec <a class="reference internal" href="#factory-functions">Factory Functions</a> could be classmethods on
+ModuleSpec.  However that would expose them on <em>all</em> modules via
+<code class="docutils literal notranslate"><span class="pre">__spec__</span></code>, which has the potential to unnecessarily confuse
+non-advanced Python users.  The factory functions have a specific use
+case, to support finder authors.  See <a class="reference internal" href="#modulespec-users">ModuleSpec Users</a>.</p>
+<p>Likewise, several other methods could be added to ModuleSpec that expose
+the specific uses of module specs by the import machinery:</p>
+<ul class="simple">
+<li><p>create() - a wrapper around Loader.create_module().</p></li>
+<li><p>exec(module) - a wrapper around Loader.exec_module().</p></li>
+<li><p>load() - an analogue to the deprecated Loader.load_module().</p></li>
+</ul>
+<p>As with the factory functions, exposing these methods via
+module.__spec__ is less than desirable.  They would end up being an
+attractive nuisance, even if only exposed as “private” attributes (as
+they were in previous versions of this PEP).  If someone finds a need
+for these methods later, we can expose the via an appropriate API
+(separate from ModuleSpec) at that point, perhaps relative to <a class="reference external" href="pep-0406.html">PEP 406</a>
+(import engine).</p>
+<p>Conceivably, the load() method could optionally take a list of
+modules with which to interact instead of sys.modules.  Also, load()
+could be leveraged to implement multi-version imports.  Both are
+interesting ideas, but definitely outside the scope of this proposal.</p>
+<p>Others left out:</p>
+<ul class="simple">
+<li><p>Add ModuleSpec.submodules (RO-property) - returns possible submodules
+relative to the spec.</p></li>
+<li><p>Add ModuleSpec.loaded (RO-property) - the module in sys.module, if
+any.</p></li>
+<li><p>Add ModuleSpec.data - a descriptor that wraps the data API of the
+spec’s loader.</p></li>
+<li><p>Also see <a class="footnote-reference brackets" href="#cleaner-reload-support" id="id10">3</a>.</p></li>
+</ul>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#id51">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="ref-files-pep"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd><p><a class="reference external" href="https://mail.python.org/pipermail/import-sig/2013-August/000658.html">https://mail.python.org/pipermail/import-sig/2013-August/000658.html</a></p>
+</dd>
+<dt class="label" id="import-system-docs"><span class="brackets"><a class="fn-backref" href="#id1">2</a></span></dt>
+<dd><p><a class="reference external" href="http://docs.python.org/3/reference/import.html">http://docs.python.org/3/reference/import.html</a></p>
+</dd>
+<dt class="label" id="cleaner-reload-support"><span class="brackets"><a class="fn-backref" href="#id10">3</a></span></dt>
+<dd><p><a class="reference external" href="https://mail.python.org/pipermail/import-sig/2013-September/000735.html">https://mail.python.org/pipermail/import-sig/2013-September/000735.html</a></p>
+</dd>
+<dt class="label" id="lazy-import-concerns"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-August/128129.html">https://mail.python.org/pipermail/python-dev/2013-August/128129.html</a></p>
+</dd>
+<dt class="label" id="reload-semantics-fix"><span class="brackets"><a class="fn-backref" href="#id3">5</a></span></dt>
+<dd><p><a class="reference external" href="http://bugs.python.org/issue19413">http://bugs.python.org/issue19413</a></p>
+</dd>
+<dt class="label" id="supports-reload"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-October/129913.html">https://mail.python.org/pipermail/python-dev/2013-October/129913.html</a></p>
+</dd>
+<dt class="label" id="supports-reload-considered-harmful"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-October/129971.html">https://mail.python.org/pipermail/python-dev/2013-October/129971.html</a></p>
+</dd>
+<dt class="label" id="exec-module-target"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd><p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-October/129933.html">https://mail.python.org/pipermail/python-dev/2013-October/129933.html</a></p>
+</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#id52">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0451.txt">https://github.com/python/peps/blob/master/pep-0451.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0451.txt">2021-06-28T11:16:08Z</a></span>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../contents/">PEPs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">PEP Table of Contents (needed for Sphinx):</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pep-0000/">PEP 0 – Index of Python Enhancement Proposals (PEPs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0001/">PEP 1 – PEP Purpose and Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0002/">PEP 2 – Procedure for Adding New Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0003/">PEP 3 – Guidelines for Handling Bug Reports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0004/">PEP 4 – Deprecation of Standard Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0006/">PEP 6 – Bug Fix Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0007/">PEP 7 – Style Guide for C Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0008/">PEP 8 – Style Guide for Python Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0009/">PEP 9 – Sample Plaintext PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0010/">PEP 10 – Voting Guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0011/">PEP 11 – Removing support for little used platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0012/">PEP 12 – Sample reStructuredText PEP Template</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0013/">PEP 13 – Python Language Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0020/">PEP 20 – The Zen of Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0042/">PEP 42 – Feature Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0100/">PEP 100 – Python Unicode Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0101/">PEP 101 – Doing Python Releases 101</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0102/">PEP 102 – Doing Python Micro Releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0103/">PEP 103 – Collecting information about git</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0160/">PEP 160 – Python 1.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0200/">PEP 200 – Python 2.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0201/">PEP 201 – Lockstep Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0202/">PEP 202 – List Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0203/">PEP 203 – Augmented Assignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0204/">PEP 204 – Range Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0205/">PEP 205 – Weak References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0206/">PEP 206 – Python Advanced Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0207/">PEP 207 – Rich Comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0208/">PEP 208 – Reworking the Coercion Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0209/">PEP 209 – Multi-dimensional Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0210/">PEP 210 – Decoupling the Interpreter Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0211/">PEP 211 – Adding A New Outer Product Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0212/">PEP 212 – Loop Counter Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0213/">PEP 213 – Attribute Access Handlers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0214/">PEP 214 – Extended Print Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0215/">PEP 215 – String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0216/">PEP 216 – Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0217/">PEP 217 – Display Hook for Interactive Use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0218/">PEP 218 – Adding a Built-In Set Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0219/">PEP 219 – Stackless Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0220/">PEP 220 – Coroutines, Generators, Continuations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0221/">PEP 221 – Import As</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0222/">PEP 222 – Web Library Enhancements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0223/">PEP 223 – Change the Meaning of ``\x`` Escapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0224/">PEP 224 – Attribute Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0225/">PEP 225 – Elementwise/Objectwise Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0226/">PEP 226 – Python 2.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0227/">PEP 227 – Statically Nested Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0228/">PEP 228 – Reworking Python’s Numeric Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0229/">PEP 229 – Using Distutils to Build Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0230/">PEP 230 – Warning Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0231/">PEP 231 – __findattr__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0232/">PEP 232 – Function Attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0233/">PEP 233 – Python Online Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0234/">PEP 234 – Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0235/">PEP 235 – Import on Case-Insensitive Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0237/">PEP 237 – Unifying Long Integers and Integers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0238/">PEP 238 – Changing the Division Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0239/">PEP 239 – Adding a Rational Type to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0240/">PEP 240 – Adding a Rational Literal to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0241/">PEP 241 – Metadata for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0242/">PEP 242 – Numeric Kinds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0243/">PEP 243 – Module Repository Upload Mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0244/">PEP 244 – The ``directive`` statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0245/">PEP 245 – Python Interface Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0246/">PEP 246 – Object Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0247/">PEP 247 – API for Cryptographic Hash Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0248/">PEP 248 – Python Database API Specification v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0249/">PEP 249 – Python Database API Specification v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0250/">PEP 250 – Using site-packages on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0251/">PEP 251 – Python 2.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0252/">PEP 252 – Making Types Look More Like Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0253/">PEP 253 – Subtyping Built-in Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0254/">PEP 254 – Making Classes Look More Like Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0255/">PEP 255 – Simple Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0256/">PEP 256 – Docstring Processing System Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0257/">PEP 257 – Docstring Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0258/">PEP 258 – Docutils Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0259/">PEP 259 – Omit printing newline after newline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0260/">PEP 260 – Simplify xrange()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0261/">PEP 261 – Support for “wide” Unicode characters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0262/">PEP 262 – A Database of Installed Python Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0263/">PEP 263 – Defining Python Source Code Encodings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0264/">PEP 264 – Future statements in simulated shells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0265/">PEP 265 – Sorting Dictionaries by Value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0266/">PEP 266 – Optimizing Global Variable/Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0267/">PEP 267 – Optimized Access to Module Namespaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0268/">PEP 268 – Extended HTTP functionality and WebDAV</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0269/">PEP 269 – Pgen Module for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0270/">PEP 270 – uniq method for list objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0271/">PEP 271 – Prefixing sys.path by command line option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0272/">PEP 272 – API for Block Encryption Algorithms v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0273/">PEP 273 – Import Modules from Zip Archives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0274/">PEP 274 – Dict Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0275/">PEP 275 – Switching on Multiple Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0276/">PEP 276 – Simple Iterator for ints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0277/">PEP 277 – Unicode file name support for Windows NT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0278/">PEP 278 – Universal Newline Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0279/">PEP 279 – The enumerate() built-in function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0280/">PEP 280 – Optimizing access to globals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0281/">PEP 281 – Loop Counter Iteration with range and xrange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0282/">PEP 282 – A Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0283/">PEP 283 – Python 2.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0284/">PEP 284 – Integer for-loops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0285/">PEP 285 – Adding a bool type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0286/">PEP 286 – Enhanced Argument Tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0287/">PEP 287 – reStructuredText Docstring Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0288/">PEP 288 – Generators Attributes and Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0289/">PEP 289 – Generator Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0290/">PEP 290 – Code Migration and Modernization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0291/">PEP 291 – Backward Compatibility for the Python 2 Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0292/">PEP 292 – Simpler String Substitutions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0293/">PEP 293 – Codec Error Handling Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0294/">PEP 294 – Type Names in the types Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0295/">PEP 295 – Interpretation of multiline string constants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0296/">PEP 296 – Adding a bytes Object Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0297/">PEP 297 – Support for System Upgrades</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0298/">PEP 298 – The Locked Buffer Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0299/">PEP 299 – Special __main__() function in modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0301/">PEP 301 – Package Index and Metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0302/">PEP 302 – New Import Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0303/">PEP 303 – Extend divmod() for Multiple Divisors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0304/">PEP 304 – Controlling Generation of Bytecode Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0305/">PEP 305 – CSV File API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0306/">PEP 306 – How to Change Python’s Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0307/">PEP 307 – Extensions to the pickle protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0308/">PEP 308 – Conditional Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0309/">PEP 309 – Partial Function Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0310/">PEP 310 – Reliable Acquisition/Release Pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0311/">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0312/">PEP 312 – Simple Implicit Lambda</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0313/">PEP 313 – Adding Roman Numeral Literals to Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0314/">PEP 314 – Metadata for Python Software Packages v1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0315/">PEP 315 – Enhanced While Loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0316/">PEP 316 – Programming by Contract for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0317/">PEP 317 – Eliminate Implicit Exception Instantiation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0318/">PEP 318 – Decorators for Functions and Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0319/">PEP 319 – Python Synchronize/Asynchronize Block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0320/">PEP 320 – Python 2.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0321/">PEP 321 – Date/Time Parsing and Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0322/">PEP 322 – Reverse Iteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0323/">PEP 323 – Copyable Iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0324/">PEP 324 – subprocess - New process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0325/">PEP 325 – Resource-Release Support for Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0326/">PEP 326 – A Case for Top and Bottom Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0327/">PEP 327 – Decimal Data Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0328/">PEP 328 – Imports: Multi-Line and Absolute/Relative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0329/">PEP 329 – Treating Builtins as Constants in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0330/">PEP 330 – Python Bytecode Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0331/">PEP 331 – Locale-Independent Float/String Conversions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0332/">PEP 332 – Byte vectors and String/Unicode Unification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0333/">PEP 333 – Python Web Server Gateway Interface v1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0334/">PEP 334 – Simple Coroutines via SuspendIteration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0335/">PEP 335 – Overloadable Boolean Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0336/">PEP 336 – Make None Callable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0337/">PEP 337 – Logging Usage in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0338/">PEP 338 – Executing modules as scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0339/">PEP 339 – Design of the CPython Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0340/">PEP 340 – Anonymous Block Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0341/">PEP 341 – Unifying try-except and try-finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0342/">PEP 342 – Coroutines via Enhanced Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0343/">PEP 343 – The “with” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0344/">PEP 344 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0345/">PEP 345 – Metadata for Python Software Packages 1.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0346/">PEP 346 – User Defined (“``with``”) Statements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0347/">PEP 347 – Migrating the Python CVS to Subversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0348/">PEP 348 – Exception Reorganization for Python 3.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0349/">PEP 349 – Allow str() to return unicode strings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0350/">PEP 350 – Codetags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0351/">PEP 351 – The freeze protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0352/">PEP 352 – Required Superclass for Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0353/">PEP 353 – Using ssize_t as the index type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0354/">PEP 354 – Enumerations in Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0355/">PEP 355 – Path - Object oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0356/">PEP 356 – Python 2.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0357/">PEP 357 – Allowing Any Object to be Used for Slicing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0358/">PEP 358 – The “bytes” Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0359/">PEP 359 – The “make” Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0360/">PEP 360 – Externally Maintained Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0361/">PEP 361 – Python 2.6 and 3.0 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0362/">PEP 362 – Function Signature Object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0363/">PEP 363 – Syntax For Dynamic Attribute Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0364/">PEP 364 – Transitioning to the Py3K Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0365/">PEP 365 – Adding the pkg_resources module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0366/">PEP 366 – Main module explicit relative imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0367/">PEP 367 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0368/">PEP 368 – Standard image protocol and class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0369/">PEP 369 – Post import hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0370/">PEP 370 – Per user site-packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0371/">PEP 371 – Addition of the multiprocessing package to the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0372/">PEP 372 – Adding an ordered dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0373/">PEP 373 – Python 2.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0374/">PEP 374 – Choosing a distributed VCS for the Python project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0375/">PEP 375 – Python 3.1 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0376/">PEP 376 – Database of Installed Python Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0377/">PEP 377 – Allow __enter__() methods to skip the statement body</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0378/">PEP 378 – Format Specifier for Thousands Separator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0379/">PEP 379 – Adding an Assignment Expression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0380/">PEP 380 – Syntax for Delegating to a Subgenerator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0381/">PEP 381 – Mirroring infrastructure for PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0382/">PEP 382 – Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0383/">PEP 383 – Non-decodable Bytes in System Character Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0384/">PEP 384 – Defining a Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0385/">PEP 385 – Migrating from Subversion to Mercurial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0386/">PEP 386 – Changing the version comparison module in Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0387/">PEP 387 – Backwards Compatibility Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0389/">PEP 389 – argparse - New Command Line Parsing Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0390/">PEP 390 – Static metadata for Distutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0391/">PEP 391 – Dictionary-Based Configuration For Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0392/">PEP 392 – Python 3.2 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0393/">PEP 393 – Flexible String Representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0394/">PEP 394 – The “python” Command on Unix-Like Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0395/">PEP 395 – Qualified Names for Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0396/">PEP 396 – Module Version Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0397/">PEP 397 – Python launcher for Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0398/">PEP 398 – Python 3.3 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0399/">PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0400/">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0401/">PEP 401 – BDFL Retirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0402/">PEP 402 – Simplified Package Layout and Partitioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0403/">PEP 403 – General purpose decorator clause (aka “&#64;in” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0404/">PEP 404 – Python 2.8 Un-release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0405/">PEP 405 – Python Virtual Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0406/">PEP 406 – Improved Encapsulation of Import State</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0407/">PEP 407 – New release cycle and introducing long-term support versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0408/">PEP 408 – Standard library __preview__ package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0409/">PEP 409 – Suppressing exception context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0410/">PEP 410 – Use decimal.Decimal type for timestamps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0412/">PEP 412 – Key-Sharing Dictionary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0413/">PEP 413 – Faster evolution of the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0414/">PEP 414 – Explicit Unicode Literal for Python 3.3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0415/">PEP 415 – Implement context suppression with exception attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0416/">PEP 416 – Add a frozendict builtin type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0417/">PEP 417 – Including mock in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0418/">PEP 418 – Add monotonic time, performance counter, and process time functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0419/">PEP 419 – Protecting cleanup statements from interruptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0420/">PEP 420 – Implicit Namespace Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0421/">PEP 421 – Adding sys.implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0422/">PEP 422 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0423/">PEP 423 – Naming conventions and recipes related to packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0424/">PEP 424 – A method for exposing a length hint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0425/">PEP 425 – Compatibility Tags for Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0426/">PEP 426 – Metadata for Python Software Packages 2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0427/">PEP 427 – The Wheel Binary Package Format 1.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0428/">PEP 428 – The pathlib module – object-oriented filesystem paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0429/">PEP 429 – Python 3.4 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0430/">PEP 430 – Migrating to Python 3 as the default online documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0431/">PEP 431 – Time zone support improvements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0432/">PEP 432 – Restructuring the CPython startup sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0433/">PEP 433 – Easier suppression of file descriptor inheritance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0434/">PEP 434 – IDLE Enhancement Exception for All Branches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0435/">PEP 435 – Adding an Enum type to the Python standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0436/">PEP 436 – The Argument Clinic DSL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0437/">PEP 437 – A DSL for specifying signatures, annotations and argument converters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0438/">PEP 438 – Transitioning to release-file hosting on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0439/">PEP 439 – Inclusion of implicit pip bootstrap in Python installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0440/">PEP 440 – Version Identification and Dependency Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0441/">PEP 441 – Improving Python ZIP Application Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0442/">PEP 442 – Safe object finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0443/">PEP 443 – Single-dispatch generic functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0444/">PEP 444 – Python Web3 Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0445/">PEP 445 – Add new APIs to customize Python memory allocators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0446/">PEP 446 – Make newly created file descriptors non-inheritable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0447/">PEP 447 – Add __getdescriptor__ method to metaclass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0448/">PEP 448 – Additional Unpacking Generalizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0449/">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0450/">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PEP 451 – A ModuleSpec Type for the Import System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0452/">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0453/">PEP 453 – Explicit bootstrapping of pip in Python installations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0454/">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0455/">PEP 455 – Adding a key-transforming dictionary to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0456/">PEP 456 – Secure and interchangeable hash algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0457/">PEP 457 – Notation For Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0458/">PEP 458 – Secure PyPI downloads with signed repository metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0459/">PEP 459 – Standard Metadata Extensions for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0460/">PEP 460 – Add binary interpolation and formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0461/">PEP 461 – Adding % formatting to bytes and bytearray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0462/">PEP 462 – Core development workflow automation for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0463/">PEP 463 – Exception-catching expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0464/">PEP 464 – Removal of the PyPI Mirror Authenticity API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0465/">PEP 465 – A dedicated infix operator for matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0466/">PEP 466 – Network Security Enhancements for Python 2.7.x</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0467/">PEP 467 – Minor API improvements for binary sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0468/">PEP 468 – Preserving the order of \*\*kwargs in a function.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0469/">PEP 469 – Migration of dict iteration code to Python 3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0470/">PEP 470 – Removing External Hosting Support on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0471/">PEP 471 – os.scandir() function – a better and faster directory iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0472/">PEP 472 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0473/">PEP 473 – Adding structured data to built-in exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0474/">PEP 474 – Creating forge.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0475/">PEP 475 – Retry system calls failing with EINTR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0476/">PEP 476 – Enabling certificate verification by default for stdlib http clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0477/">PEP 477 – Backport ensurepip (PEP 453) to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0478/">PEP 478 – Python 3.5 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0479/">PEP 479 – Change StopIteration handling inside generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0480/">PEP 480 – Surviving a Compromise of PyPI: End-to-end signing of packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0481/">PEP 481 – Migrate CPython to Git, Github, and Phabricator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0482/">PEP 482 – Literature Overview for Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0483/">PEP 483 – The Theory of Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0484/">PEP 484 – Type Hints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0485/">PEP 485 – A Function for testing approximate equality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0486/">PEP 486 – Make the Python Launcher aware of virtual environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0487/">PEP 487 – Simpler customisation of class creation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0488/">PEP 488 – Elimination of PYO files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0489/">PEP 489 – Multi-phase extension module initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0490/">PEP 490 – Chain exceptions at C level</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0491/">PEP 491 – The Wheel Binary Package Format 1.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0492/">PEP 492 – Coroutines with async and await syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0493/">PEP 493 – HTTPS verification migration tools for Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0494/">PEP 494 – Python 3.6 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0495/">PEP 495 – Local Time Disambiguation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0496/">PEP 496 – Environment Markers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0498/">PEP 498 – Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0499/">PEP 499 – ``python -m foo`` should bind ``sys.modules[‘foo’]`` in addition to ``sys.modules[‘__main__’]``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0500/">PEP 500 – A protocol for delegating datetime methods to their
+tzinfo implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0501/">PEP 501 – General purpose string interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0502/">PEP 502 – String Interpolation - Extended Discussion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0503/">PEP 503 – Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0504/">PEP 504 – Using the System RNG by default</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0505/">PEP 505 – None-aware operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0506/">PEP 506 – Adding A Secrets Module To The Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0507/">PEP 507 – Migrate CPython to Git and GitLab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0508/">PEP 508 – Dependency specification for Python Software Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0509/">PEP 509 – Add a private version to dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0510/">PEP 510 – Specialize functions with guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0511/">PEP 511 – API for code transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0512/">PEP 512 – Migrating from hg.python.org to GitHub</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0513/">PEP 513 – A Platform Tag for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0514/">PEP 514 – Python registration in the Windows registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0515/">PEP 515 – Underscores in Numeric Literals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0516/">PEP 516 – Build system abstraction for pip/conda etc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0517/">PEP 517 – A build-system independent format for source trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0518/">PEP 518 – Specifying Minimum Build System Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0519/">PEP 519 – Adding a file system path protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0520/">PEP 520 – Preserving Class Attribute Definition Order</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0521/">PEP 521 – Managing global context via ‘with’ blocks in generators and coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0522/">PEP 522 – Allow BlockingIOError in security sensitive APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0523/">PEP 523 – Adding a frame evaluation API to CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0524/">PEP 524 – Make os.urandom() blocking on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0525/">PEP 525 – Asynchronous Generators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0526/">PEP 526 – Syntax for Variable Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0527/">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0528/">PEP 528 – Change Windows console encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0529/">PEP 529 – Change Windows filesystem encoding to UTF-8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0530/">PEP 530 – Asynchronous Comprehensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0531/">PEP 531 – Existence checking operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0532/">PEP 532 – A circuit breaking protocol and binary operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0533/">PEP 533 – Deterministic cleanup for iterators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0534/">PEP 534 – Improved Errors for Missing Standard Library Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0535/">PEP 535 – Rich comparison chaining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0536/">PEP 536 – Final Grammar for Literal String Interpolation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0537/">PEP 537 – Python 3.7 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0538/">PEP 538 – Coercing the legacy C locale to a UTF-8 based locale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0539/">PEP 539 – A New C-API for Thread-Local Storage in CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0540/">PEP 540 – Add a new UTF-8 Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0541/">PEP 541 – Package Index Name Retention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0542/">PEP 542 – Dot Notation Assignment In Function Header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0543/">PEP 543 – A Unified TLS API for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0544/">PEP 544 – Protocols: Structural subtyping (static duck typing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0545/">PEP 545 – Python Documentation Translations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0546/">PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0547/">PEP 547 – Running extension modules using the -m option</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0548/">PEP 548 – More Flexible Loop Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0549/">PEP 549 – Instance Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0550/">PEP 550 – Execution Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0551/">PEP 551 – Security transparency in the Python runtime</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0552/">PEP 552 – Deterministic pycs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0553/">PEP 553 – Built-in breakpoint()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0554/">PEP 554 – Multiple Interpreters in the Stdlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0555/">PEP 555 – Context-local variables (contextvars)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0556/">PEP 556 – Threaded garbage collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0557/">PEP 557 – Data Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0558/">PEP 558 – Defined semantics for locals()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0559/">PEP 559 – Built-in noop()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0560/">PEP 560 – Core support for typing module and generic types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0561/">PEP 561 – Distributing and Packaging Type Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0562/">PEP 562 – Module __getattr__ and __dir__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0563/">PEP 563 – Postponed Evaluation of Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0564/">PEP 564 – Add new time functions with nanosecond resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0565/">PEP 565 – Show DeprecationWarning in __main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0566/">PEP 566 – Metadata for Python Software Packages 2.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0567/">PEP 567 – Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0568/">PEP 568 – Generator-sensitivity for Context Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0569/">PEP 569 – Python 3.8 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0570/">PEP 570 – Python Positional-Only Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0571/">PEP 571 – The manylinux2010 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0572/">PEP 572 – Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0573/">PEP 573 – Module State Access from C Extension Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0574/">PEP 574 – Pickle protocol 5 with out-of-band data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0575/">PEP 575 – Unifying function/method classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0576/">PEP 576 – Rationalize Built-in function classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0577/">PEP 577 – Augmented Assignment Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0578/">PEP 578 – Python Runtime Audit Hooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0579/">PEP 579 – Refactoring C functions and methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0580/">PEP 580 – The C call protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0581/">PEP 581 – Using GitHub Issues for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0582/">PEP 582 – Python local packages directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0583/">PEP 583 – A Concurrency Memory Model for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0584/">PEP 584 – Add Union Operators To dict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0585/">PEP 585 – Type Hinting Generics In Standard Collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0586/">PEP 586 – Literal Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0587/">PEP 587 – Python Initialization Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0588/">PEP 588 – GitHub Issues Migration Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0589/">PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0590/">PEP 590 – Vectorcall: a fast calling protocol for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0591/">PEP 591 – Adding a final qualifier to typing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0592/">PEP 592 – Adding “Yank” Support to the Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0593/">PEP 593 – Flexible function and variable annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0594/">PEP 594 – Removing dead batteries from the standard library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0595/">PEP 595 – Improving bugs.python.org</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0596/">PEP 596 – Python 3.9 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0597/">PEP 597 – Add optional EncodingWarning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0598/">PEP 598 – Introducing incremental feature releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0599/">PEP 599 – The manylinux2014 Platform Tag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0600/">PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0601/">PEP 601 – Forbid return/break/continue breaking out of finally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0603/">PEP 603 – Adding a frozenmap type to collections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0604/">PEP 604 – Allow writing union types as ``X | Y``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0606/">PEP 606 – Python Compatibility Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0607/">PEP 607 – Reducing CPython’s Feature Delivery Latency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0608/">PEP 608 – Coordinated Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0609/">PEP 609 – PyPA Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0610/">PEP 610 – Recording the Direct URL Origin of installed distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0611/">PEP 611 – The one million limit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0612/">PEP 612 – Parameter Specification Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0613/">PEP 613 – Explicit Type Aliases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0614/">PEP 614 – Relaxing Grammar Restrictions On Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0615/">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0616/">PEP 616 – String methods to remove prefixes and suffixes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0617/">PEP 617 – New PEG parser for CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0618/">PEP 618 – Add Optional Length-Checking To zip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0619/">PEP 619 – Python 3.10 Release Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0620/">PEP 620 – Hide implementation details from the C API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0621/">PEP 621 – Storing project metadata in pyproject.toml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0622/">PEP 622 – Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0623/">PEP 623 – Remove wstr from Unicode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0624/">PEP 624 – Remove Py_UNICODE encoder APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0625/">PEP 625 – File name of a Source Distribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0626/">PEP 626 – Precise line numbers for debugging and other tools.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0627/">PEP 627 – Recording installed projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0628/">PEP 628 – Add ``math.tau``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0629/">PEP 629 – Versioning PyPI’s Simple API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0630/">PEP 630 – Isolating Extension Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0631/">PEP 631 – Dependency specification in pyproject.toml based on PEP 508</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0632/">PEP 632 – Deprecate distutils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0633/">PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0634/">PEP 634 – Structural Pattern Matching: Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0635/">PEP 635 – Structural Pattern Matching: Motivation and Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0636/">PEP 636 – Structural Pattern Matching: Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0637/">PEP 637 – Support for indexing with keyword arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0638/">PEP 638 – Syntactic Macros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0639/">PEP 639 – Metadata for Python Software Packages 2.2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0640/">PEP 640 – Unused variable syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0641/">PEP 641 – Using an underscore in the version portion of Python 3.10 compatibility tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0642/">PEP 642 – Explicit Pattern Syntax for Structural Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0643/">PEP 643 – Metadata for Package Source Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0644/">PEP 644 – Require OpenSSL 1.1.1 or newer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0645/">PEP 645 – Allow writing optional types as ``x?``</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0646/">PEP 646 – Variadic Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0647/">PEP 647 – User-Defined Type Guards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0648/">PEP 648 – Extensible customizations of the interpreter at startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0649/">PEP 649 – Deferred Evaluation Of Annotations Using Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0650/">PEP 650 – Specifying Installer Requirements for Python Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0651/">PEP 651 – Robust Stack Overflow Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0652/">PEP 652 – Maintaining the Stable ABI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0653/">PEP 653 – Precise Semantics for Pattern Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0654/">PEP 654 – Exception Groups and except*</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0655/">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0656/">PEP 656 – Platform Tag for Linux Distributions Using Musl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0657/">PEP 657 – Include Fine Grained Error Locations in Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0658/">PEP 658 – Serve Distribution Metadata in the Simple Repository API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0659/">PEP 659 – Specializing Adaptive Interpreter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0660/">PEP 660 – Editable installs for pyproject.toml based builds (wheel based)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0661/">PEP 661 – Sentinel Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0662/">PEP 662 – Editable installs via virtual wheels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0666/">PEP 666 – Reject Foolish Indentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0754/">PEP 754 – IEEE 754 Floating Point Special Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-0801/">PEP 801 – Reserved</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3000/">PEP 3000 – Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3001/">PEP 3001 – Procedure for reviewing and improving standard library modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3003/">PEP 3003 – Python Language Moratorium</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3099/">PEP 3099 – Things that will Not Change in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3100/">PEP 3100 – Miscellaneous Python 3.0 Plans</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3101/">PEP 3101 – Advanced String Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3102/">PEP 3102 – Keyword-Only Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3103/">PEP 3103 – A Switch/Case Statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3104/">PEP 3104 – Access to Names in Outer Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3105/">PEP 3105 – Make print a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3106/">PEP 3106 – Revamping dict.keys(), .values() and .items()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3107/">PEP 3107 – Function Annotations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3108/">PEP 3108 – Standard Library Reorganization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3109/">PEP 3109 – Raising Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3110/">PEP 3110 – Catching Exceptions in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3111/">PEP 3111 – Simple input built-in in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3112/">PEP 3112 – Bytes literals in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3113/">PEP 3113 – Removal of Tuple Parameter Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3114/">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3115/">PEP 3115 – Metaclasses in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3116/">PEP 3116 – New I/O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3117/">PEP 3117 – Postfix type declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3118/">PEP 3118 – Revising the buffer protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3119/">PEP 3119 – Introducing Abstract Base Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3120/">PEP 3120 – Using UTF-8 as the default source encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3121/">PEP 3121 – Extension Module Initialization and Finalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3122/">PEP 3122 – Delineation of the main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3123/">PEP 3123 – Making PyObject_HEAD conform to standard C</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3124/">PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3125/">PEP 3125 – Remove Backslash Continuation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3126/">PEP 3126 – Remove Implicit String Concatenation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3127/">PEP 3127 – Integer Literal Support and Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3128/">PEP 3128 – BList: A Faster List-like Type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3129/">PEP 3129 – Class Decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3130/">PEP 3130 – Access to Current Module/Class/Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3131/">PEP 3131 – Supporting Non-ASCII Identifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3132/">PEP 3132 – Extended Iterable Unpacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3133/">PEP 3133 – Introducing Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3135/">PEP 3135 – New Super</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3136/">PEP 3136 – Labeled break and continue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3137/">PEP 3137 – Immutable Bytes and Mutable Buffer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3138/">PEP 3138 – String representation in Python 3000</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3139/">PEP 3139 – Cleaning out sys and the “interpreter” module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3140/">PEP 3140 – str(container) should call str(item), not repr(item)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3141/">PEP 3141 – A Type Hierarchy for Numbers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3142/">PEP 3142 – Add a “while” clause to generator expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3143/">PEP 3143 – Standard daemon process library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3144/">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3145/">PEP 3145 – Asynchronous I/O For subprocess.Popen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3146/">PEP 3146 – Merging Unladen Swallow into CPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3147/">PEP 3147 – PYC Repository Directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3148/">PEP 3148 – futures - execute computations asynchronously</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3149/">PEP 3149 – ABI version tagged .so files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3150/">PEP 3150 – Statement local namespaces (aka “given” clause)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3151/">PEP 3151 – Reworking the OS and IO exception hierarchy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3152/">PEP 3152 – Cofunctions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3153/">PEP 3153 – Asynchronous IO support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3154/">PEP 3154 – Pickle protocol version 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3155/">PEP 3155 – Qualified name for classes and functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3156/">PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-3333/">PEP 3333 – Python Web Server Gateway Interface v1.0.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8000/">PEP 8000 – Python Language Governance Proposal Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8001/">PEP 8001 – Python Governance Voting Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8002/">PEP 8002 – Open Source Governance Survey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8010/">PEP 8010 – The Technical Leader Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8011/">PEP 8011 – Python Governance Model Lead by Trio of Pythonistas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8012/">PEP 8012 – The Community Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8013/">PEP 8013 – The External Council Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8014/">PEP 8014 – The Commons Governance Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8015/">PEP 8015 – Organization of the Python community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8016/">PEP 8016 – The Steering Council Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8100/">PEP 8100 – January 2019 steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8101/">PEP 8101 – 2020 Term steering council election</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pep-8102/">PEP 8102 – 2021 Term steering council election</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../contents/">Documentation overview</a><ul>
+      <li>Previous: <a href="../pep-0450/" title="previous chapter">PEP 450 – Adding A Statistics Module To The Standard Library</a></li>
+      <li>Next: <a href="../pep-0452/" title="next chapter">PEP 452 – API for Cryptographic Hash Functions v2.0</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pep-0451.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
